@@ -29,7 +29,7 @@ export interface OperationalUseCase {
 export const OPERATIONAL_USE_CASES: OperationalUseCase[] = [
   {
     id: 'benchmark_55c',
-    badge: 'SIH26073 Core Benchmark',
+    badge: 'Core Benchmark',
     title: 'Sudden +55°C Hardware Sensor Spike',
     subtitle: 'Isolated Single-Parameter Wire Open-Circuit Fault',
     icon: '⚡',

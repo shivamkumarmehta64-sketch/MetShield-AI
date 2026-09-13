@@ -24,10 +24,10 @@ import {
   VolumeX,
 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { getStationProfile } from '@/lib/stationData';
 import { TelemetryPacket } from '@/lib/anomalyLogic';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
+import { saveReadingLocally, getQueuedReadings, clearQueuedReading } from '@/lib/offlineStorage';
 
 // Predefined Indian Meteorological Cities for instant 1-tap live weather
 const INDIAN_CITIES = [
@@ -73,6 +73,8 @@ export default function MobileEdgeNodePage() {
   const [liveDataStatus, setLiveDataStatus] = useState<string | null>(null);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isJsonCopied, setIsJsonCopied] = useState<boolean>(false);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
 
   // Hardware Sensors Hook (Expanded with Compass, Shake-to-Gust, Solar, Battery, Haptics & Audio)
   const {
@@ -173,6 +175,60 @@ export default function MobileEdgeNodePage() {
     return () => clearTimeout(t);
   }, [requestGpsLocation]);
 
+  // Handle Online/Offline Status and sync
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      // Initial queue check
+      getQueuedReadings().then(q => setOfflineQueueCount(q.length));
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
+  const syncOfflineQueue = useCallback(async () => {
+    if (!isOnline) return;
+    const queued = await getQueuedReadings();
+    setOfflineQueueCount(queued.length);
+    if (queued.length === 0) return;
+
+    let successCount = 0;
+    for (const packet of queued) {
+      try {
+        const res = await fetch('/api/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(packet),
+        });
+        if (res.ok && packet.id) {
+          await clearQueuedReading(packet.id);
+          successCount++;
+        }
+      } catch (e) {
+        break; // Network failed again
+      }
+    }
+    const remaining = await getQueuedReadings();
+    setOfflineQueueCount(remaining.length);
+    if (successCount > 0) {
+      setLiveDataStatus(`Synced ${successCount} offline packets to edge server.`);
+    }
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (isOnline) {
+      syncOfflineQueue();
+    }
+  }, [isOnline, syncOfflineQueue]);
+
   // Transmit telemetry packet to central Next.js server API
   const transmitObservation = useCallback(
     async (override?: { t?: number; p?: number; h?: number; w?: number; wd?: number; rain?: number }) => {
@@ -200,6 +256,15 @@ export default function MobileEdgeNodePage() {
       };
 
       try {
+        if (!navigator.onLine) {
+          await saveReadingLocally(payload);
+          const q = await getQueuedReadings();
+          setOfflineQueueCount(q.length);
+          setLastTransmittedTime(new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' (Queued Offline)');
+          setIsSending(false);
+          return;
+        }
+
         const res = await fetch('/api/telemetry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -343,17 +408,14 @@ export default function MobileEdgeNodePage() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <div className="h-8 w-6 shrink-0 flex items-center justify-center bg-white/10 p-0.5 rounded border border-amber-400/50 shadow-sm" title="State Emblem of India">
-            <Image src="/emblem-of-india.svg" alt="Emblem of India" width={24} height={32} className="h-full w-auto object-contain brightness-200" priority />
-          </div>
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-amber-400/80 bg-white flex items-center justify-center shrink-0">
-            <Image src="/jatayu-seal.jpg" alt="JATAYU Emblem" width={32} height={32} className="w-full h-full object-cover" />
+          <div className="w-8 h-8 rounded-lg border border-cyan-400/80 bg-[#0b1329] flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
             <div className="font-bold text-xs tracking-wide text-white flex items-center gap-1.5">
-              <span>PROJECT JATAYU</span>
+              <span>METSHIELD AI</span>
               <span className="text-[9px] bg-amber-400 text-slate-950 font-mono font-extrabold px-1.5 py-0.2 rounded">
-                MOBILE NODE
+                FIELD NODE
               </span>
             </div>
             <div className="text-[10px] text-slate-300 font-mono">
@@ -446,6 +508,18 @@ export default function MobileEdgeNodePage() {
             {liveDataStatus && (
               <div className="text-[10px] text-emerald-400 font-mono bg-emerald-950/40 px-2 py-1 rounded border border-emerald-800/50">
                 {liveDataStatus}
+              </div>
+            )}
+            {offlineQueueCount > 0 && (
+              <div className="flex items-center gap-1.5 text-amber-400 bg-amber-400/10 px-2 py-1 rounded text-[10px]">
+                <Activity className="w-3.5 h-3.5" />
+                <span>{offlineQueueCount} Offline Packets</span>
+              </div>
+            )}
+            {!isOnline && (
+              <div className="flex items-center gap-1.5 text-rose-400 bg-rose-400/10 px-2 py-1 rounded text-[10px]">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Offline Mode</span>
               </div>
             )}
           </div>
@@ -771,7 +845,7 @@ export default function MobileEdgeNodePage() {
 
       {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 px-4 py-2 text-center text-[10px] text-slate-400">
-        Project JATAYU • National AWS Quality Management System (SIH26073) • Zero-Tracking DPDPA 2023 Compliant
+        Metshield AI • Automated Weather Station Quality Management System • Zero-Tracking DPDPA 2023 Compliant
       </footer>
     </div>
   );

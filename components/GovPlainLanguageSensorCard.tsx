@@ -168,13 +168,13 @@ export function GovPlainLanguageSensorCard({ station, packet, language, onSimula
       {/* Header: Non-Technical Plain Verdict & Compression Ratio */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-[#002147] text-white rounded">
+          <div className="p-2 bg-[#0b1329] text-cyan-400 rounded border border-slate-800">
             <HelpCircle className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm sm:text-base font-bold text-[#002147] tracking-tight">
-                {language === 'hi' ? 'सरल भाषा में सेंसर स्वास्थ्य जांच (Which Sensor Has a Problem?)' : 'Plain-Language Sensor Health Inspector (SIH26073)'}
+              <h3 className="text-sm sm:text-base font-bold text-[#0b1329] tracking-tight">
+                {language === 'hi' ? 'सरल भाषा में सेंसर स्वास्थ्य जांच (Which Sensor Has a Problem?)' : 'Plain-Language Sensor Health Inspector'}
               </h3>
               <span className="text-[10px] bg-sky-100 text-sky-800 border border-sky-300 font-mono px-2 py-0.5 rounded font-bold">
                 Non-Technical View
@@ -206,18 +206,18 @@ export function GovPlainLanguageSensorCard({ station, packet, language, onSimula
             }`}
             title="Listen to audio diagnosis"
           >
-            {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-[#002147]" />}
+            {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-cyan-600" />}
             <span>{isSpeaking ? (language === 'hi' ? 'बंद करें' : 'Stop') : (language === 'hi' ? '🔊 सुनें (Audio)' : '🔊 Listen')}</span>
           </button>
         </div>
       </div>
 
-      {/* 1-Click SIH26073 Quick Interactive Simulator Bar */}
+      {/* 1-Click Quick Interactive Simulator Bar */}
       {onSimulateFault && (
         <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
           <span className="font-bold text-slate-700 flex items-center gap-1">
             <Zap className="w-3.5 h-3.5 text-amber-600" />
-            <span>{language === 'hi' ? '1-क्लिक समस्या परीक्षण:' : 'Test SIH26073 Problem Cases:'}</span>
+            <span>{language === 'hi' ? '1-क्लिक समस्या परीक्षण:' : 'Test Sensor Scenarios:'}</span>
           </span>
           <div className="flex items-center gap-1.5 flex-wrap">
             <button

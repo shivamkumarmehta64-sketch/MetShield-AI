@@ -239,8 +239,8 @@ export const GovTimeLogicMatrix: React.FC<Props> = ({ language, onSimulateCase }
                 <h3 className="font-bold text-base tracking-wide uppercase">
                   {language === 'hi' ? 'समय-स्तरीय विसंगति पहचान तर्क' : 'Multi-Horizon Temporal Logic Engine'}
                 </h3>
-                <span className="bg-[#138808] text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                  SIH 6073 CORE
+                <span className="bg-cyan-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                  TEMPORAL CORE
                 </span>
               </div>
               <p className="text-xs text-sky-200 mt-0.5">
@@ -387,7 +387,7 @@ export const GovTimeLogicMatrix: React.FC<Props> = ({ language, onSimulateCase }
           <div className="flex items-center gap-1.5">
             <HelpCircle className="w-4 h-4 text-[#002147]" />
             <span>
-              <strong>Smart India Hackathon Compliance:</strong> Addresses all time-domain sensor challenges stipulated in SIH 6073 Problem Statement.
+              <strong>Temporal Coverage:</strong> Addresses all time-domain sensor challenges from sub-minute spikes to 72-hour barometer creep.
             </span>
           </div>
           <div className="flex items-center gap-2 font-mono text-[11px]">

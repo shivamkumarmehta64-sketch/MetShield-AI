@@ -27,6 +27,8 @@ import { startPoller, pausePoller } from '@/lib/vayuPoller';
 import { IMDStationProfile } from '@/lib/stationData';
 import { JatayuAICopilotModal } from '@/components/JatayuAICopilotModal';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
+import { StormVsFaultSimulator } from '@/components/StormVsFaultSimulator';
+import { AIEnginePipeline } from '@/components/AIEnginePipeline';
 import { MapPin, BarChart3, Activity, Cpu, QrCode, AlertTriangle, RefreshCw, Smartphone, Bot } from 'lucide-react';
 
 
@@ -522,8 +524,8 @@ export default function GovernmentAWSManagementPortal() {
           <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Storm vs Fault Isolation</span>
-              <span className="text-[10px] bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded font-mono font-bold">
-                SIH26073
+              <span className="text-[10px] bg-cyan-50 text-cyan-800 border border-cyan-200 px-2 py-0.5 rounded font-mono font-bold">
+                XAI Powered
               </span>
             </div>
             <div className="flex items-baseline justify-between">
@@ -546,7 +548,7 @@ export default function GovernmentAWSManagementPortal() {
             {[
               { id: 'map', label: 'National GIS Observation Network', icon: <MapPin className="w-3.5 h-3.5" /> },
               { id: 'analytics', label: '766 District Vayu Grid', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-              { id: 'diagnostics', label: 'WMO QC & Maintenance Alerts (SIH26073)', icon: <Activity className="w-3.5 h-3.5" /> },
+              { id: 'diagnostics', label: 'WMO QC & Maintenance Alerts', icon: <Activity className="w-3.5 h-3.5" /> },
               { id: 'simulator', label: 'Field Hardware Simulator', icon: <Cpu className="w-3.5 h-3.5" /> },
             ].map(tab => (
               <button
@@ -579,7 +581,7 @@ export default function GovernmentAWSManagementPortal() {
             <button
               onClick={() => setIsAICopilotOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
-              title="Open JATAYU AI Meteorological Copilot"
+              title="Open Metshield AI Meteorological Copilot"
             >
               <Bot className="w-3.5 h-3.5 text-amber-700" />
               <span>AI Met-Copilot</span>
@@ -727,6 +729,8 @@ export default function GovernmentAWSManagementPortal() {
         {/* Tab 4: Fault Logic Simulator */}
         {activeTab === 'simulator' && (
           <div className="space-y-5">
+            <StormVsFaultSimulator />
+            <AIEnginePipeline />
             <GovLiveIndiaAutoTester
               language={language}
               onOpenMobileQR={() => setIsMobileQROpen(true)}
@@ -782,34 +786,34 @@ export default function GovernmentAWSManagementPortal() {
       />
 
       {/* Footer */}
-      {/* Official Government Footer */}
-      <footer className="mt-12 bg-[#002147] text-slate-200 border-t-4 border-[#FF9933] text-xs">
+      <footer className="mt-12 bg-[#070d1e] text-slate-200 border-t border-slate-800 text-xs">
+        <div className="w-full h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-600" />
         <div className="max-w-[1750px] mx-auto px-4 lg:px-8 py-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pb-6 border-b border-white/10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pb-6 border-b border-slate-800">
             {[
-              { title: language === 'hi' ? 'मौसम सेवाएं' : 'Observational Network', items: ['Automatic Weather Stations (AWS)', 'Agro-Meteorological Network', 'INSAT-3D Meteorological DCP Link', 'Doppler Weather Radar (DWR) Grid'] },
+              { title: language === 'hi' ? 'मौसम सेवाएं' : 'Observational Network', items: ['Automatic Weather Stations (AWS)', 'Agro-Meteorological Network', 'INSAT-3D DCP Telemetry Link', 'Doppler Weather Radar (DWR) Grid'] },
               { title: language === 'hi' ? 'गुणवत्ता आश्वासन' : 'Quality Assurance & Standards', items: ['WMO-No. 8 Weather Instrument Standards', 'NABL Calibration Traceability', 'ISO 9001:2015 QC Procedures', 'Real-Time Automated Data Verification'] },
-              { title: language === 'hi' ? 'क्षेत्रीय मौसम विज्ञान केंद्र' : 'Regional Met Centres (RMC)', items: ['RMC New Delhi (Northern Region)', 'RMC Mumbai (Western Region)', 'RMC Kolkata (Eastern Region)', 'RMC Chennai (Southern Region)'] },
+              { title: language === 'hi' ? 'क्षेत्रीय मौसम विज्ञान केंद्र' : 'Regional Network Support', items: ['Northern Regional Met Grid', 'Western Regional Met Grid', 'Eastern Regional Met Grid', 'Southern Regional Met Grid'] },
             ].map(col => (
               <div key={col.title}>
-                <div className="font-bold text-amber-400 mb-2 uppercase tracking-wider text-[11px]">{col.title}</div>
+                <div className="font-bold text-cyan-400 mb-2 uppercase tracking-wider text-[11px]">{col.title}</div>
                 <ul className="space-y-1.5 text-slate-300 text-[11px]">{col.items.map(i => <li key={i}>{i}</li>)}</ul>
               </div>
             ))}
             <div>
-              <div className="font-bold text-amber-400 mb-2 uppercase tracking-wider text-[11px]">
+              <div className="font-bold text-cyan-400 mb-2 uppercase tracking-wider text-[11px]">
                 {language === 'hi' ? 'प्रणाली वास्तुकला' : 'System Architecture & Innovation'}
               </div>
               <p className="text-slate-300 text-[11px] leading-relaxed">
-                Project JATAYU: Joint Atmospheric Telemetry &amp; Anomaly Unification (JATAYU-QMS) — Real-time edge quality control, WMO Pub 8 physical validation, and reliable meteorological feeds for India.
+                Metshield AI (AWS-QMS) — Real-time edge quality control, WMO Pub 8 physical validation, and reliable meteorological feeds for national observation networks.
               </p>
-              <button onClick={() => setActiveModal('architecture')} className="mt-2.5 text-sky-300 hover:text-white underline text-[11px] font-semibold cursor-pointer">
-                {language === 'hi' ? 'पूर्ण प्रणाली वास्तुकला पढ़ें →' : 'Read JATAYU Architecture & Vercel Strategy →'}
+              <button onClick={() => setActiveModal('architecture')} className="mt-2.5 text-cyan-300 hover:text-white underline text-[11px] font-semibold cursor-pointer">
+                {language === 'hi' ? 'पूर्ण प्रणाली वास्तुकला पढ़ें →' : 'Read Metshield AI Architecture & Edge Strategy →'}
               </button>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-300">
-            <div>© 2026 Project JATAYU (JATAYU-QMS) • National AWS Quality Management System • SIH26073</div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
+            <div>© 2026 Metshield AI (AWS-QMS) • National AWS Quality Management System</div>
             <div className="flex items-center gap-4 flex-wrap">
               {([
                 ['legal', 'Legal & Privacy (DPDPA 2023)'],
@@ -819,14 +823,14 @@ export default function GovernmentAWSManagementPortal() {
                 ['provenance', 'Data Sources & Disclosure'],
               ] as const).map(([key, label], i) => (
                 <React.Fragment key={key}>
-                  {i > 0 && <span className="text-white/30">•</span>}
+                  {i > 0 && <span className="text-slate-700">•</span>}
                   <button onClick={() => setActiveModal(key)} className="hover:underline hover:text-white cursor-pointer">{label}</button>
                 </React.Fragment>
               ))}
             </div>
           </div>
-          <div className="text-[10px] text-slate-300 border-t border-white/10 pt-3 text-center">
-            Institutional Advisory: Project JATAYU (JATAYU-QMS) is an advanced automated quality assurance solution engineered for the Ministry of Earth Sciences (MoES) and India Meteorological Department (IMD) under SIH26073. Validated for pre-commissioning operational evaluation. For official public weather forecasts and civil defense bulletins, visit <a href="https://mausam.imd.gov.in" target="_blank" rel="noopener noreferrer" className="text-amber-300 hover:underline">mausam.imd.gov.in</a>.
+          <div className="text-[10px] text-slate-400 border-t border-slate-800 pt-3 text-center">
+            Metshield AI (AWS-QMS) is an advanced automated quality assurance solution. Compliant with WMO Pub 8 standards for real-time telemetry validation, edge anomaly detection, and predictive sensor maintenance.
           </div>
         </div>
       </footer>

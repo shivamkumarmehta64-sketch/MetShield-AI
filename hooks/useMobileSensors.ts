@@ -34,19 +34,23 @@ function getCardinal(deg: number): string {
 }
 
 export function useMobileSensors() {
-  // Pressure
+  // Pressure & Elevation Delta (1 hPa ≈ 8.4m)
   const [pressure, setPressure] = useState<number | null>(null);
   const [isHardwareActive, setIsHardwareActive] = useState<boolean>(false);
   const [sensorSource, setSensorSource] = useState<'hardware' | 'simulated'>('simulated');
   const [error, setError] = useState<string | null>(null);
+  const [elevationDeltaMeters, setElevationDeltaMeters] = useState<number>(0);
+  const [pressureDeltaHpa, setPressureDeltaHpa] = useState<number>(0);
+  const baselinePressureRef = useRef<number | null>(null);
 
   // Compass / Wind Direction
-  const [compassHeading, setCompassHeading] = useState<number>(225); // Default SW
+  const [compassHeading, setCompassHeading] = useState<number>(225); // SW
   const [compassCardinal, setCompassCardinal] = useState<string>('SW');
   const [isOrientationActive, setIsOrientationActive] = useState<boolean>(false);
 
-  // Accelerometer / Kinetic Wind Gust
+  // Accelerometer / Kinetic Wind Gust & Motion Intensity
   const [windGustKph, setWindGustKph] = useState<number>(14.5);
+  const [motionIntensity, setMotionIntensity] = useState<number>(0);
   const [isShaking, setIsShaking] = useState<boolean>(false);
   const lastShakeTimeRef = useRef<number>(0);
 
@@ -62,13 +66,15 @@ export function useMobileSensors() {
   const [batteryVoltage, setBatteryVoltage] = useState<number>(12.42);
   const [batteryLevel, setBatteryLevel] = useState<number>(94);
 
-  // 1. Physical Barometer
+  // 1. Physical Barometer using Web Generic Sensor API
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     if (!('PressureSensor' in window) || !window.PressureSensor) {
       const timer = setTimeout(() => {
-        setError('PressureSensor API not available (using Open-Meteo calibrated assimilation).');
+        setIsHardwareActive(false);
+        setSensorSource('simulated');
+        setError('Web PressureSensor API not available on this device/browser. Using simulated AWS feed.');
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -76,13 +82,26 @@ export function useMobileSensors() {
     let sensor: PressureSensorInstance | null = null;
     try {
       if (window.PressureSensor) {
-        sensor = new window.PressureSensor({ frequency: 1 });
+        sensor = new window.PressureSensor({ frequency: 2 });
         sensor.addEventListener('reading', () => {
-          if (sensor && sensor.pressure !== undefined) {
-            setPressure(sensor.pressure);
+          if (sensor && typeof sensor.pressure === 'number' && !isNaN(sensor.pressure)) {
+            const hpa = Math.round(sensor.pressure * 10) / 10;
+            setPressure(hpa);
             setIsHardwareActive(true);
             setSensorSource('hardware');
             setError(null);
+
+            // Establish or track baseline pressure for dynamic elevation variations
+            if (baselinePressureRef.current === null) {
+              baselinePressureRef.current = hpa;
+            } else {
+              const deltaP = Math.round((hpa - baselinePressureRef.current) * 100) / 100;
+              setPressureDeltaHpa(deltaP);
+              // Standard barometric altimetry lapse: 1 hPa decrease ≈ 8.4 m height gain
+              // -deltaP * 8.4m
+              const elevationDelta = Math.round((-deltaP * 8.4) * 10) / 10;
+              setElevationDeltaMeters(elevationDelta);
+            }
           }
         });
         sensor.addEventListener('error', (event: SensorErrorEvent) => {
@@ -114,7 +133,6 @@ export function useMobileSensors() {
     if (typeof window === 'undefined') return;
 
     const handleOrientation = (e: DeviceOrientationEvent) => {
-      // alpha gives heading in degrees (0 = North, 90 = East, 180 = South, 270 = West)
       if (e.alpha !== null && !isNaN(e.alpha)) {
         const heading = Math.round(e.alpha);
         setCompassHeading(heading);
@@ -129,7 +147,7 @@ export function useMobileSensors() {
     };
   }, []);
 
-  // 3. Hardware Accelerometer (Shake-to-Gust feature)
+  // 3. Hardware Accelerometer (Shake-to-Gust feature & Motion Intensity)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -141,14 +159,15 @@ export function useMobileSensors() {
       const x = acc.x || 0;
       const y = acc.y || 0;
       const z = acc.z || 0;
-      const totalAcc = Math.sqrt(x * x + y * y + z * z);
+      const totalAcc = Math.round(Math.sqrt(x * x + y * y + z * z) * 10) / 10;
+      
+      setMotionIntensity(totalAcc);
 
-      // Resting gravity is ~9.8 m/s^2. Vigorous shake is > 18 m/s^2
+      // Resting gravity is ~9.8 m/s^2. Vigorous shake is > 16.5 m/s^2
       if (totalAcc > 16.5) {
         const now = Date.now();
         lastShakeTimeRef.current = now;
         setIsShaking(true);
-        // Calculate gust proportional to shake intensity (from 45 to 95 km/h)
         const gust = Math.min(95, Math.round((totalAcc - 9.8) * 4.2 + 35));
         setWindGustKph(gust);
 
@@ -176,7 +195,6 @@ export function useMobileSensors() {
         const updateBattery = () => {
           const pct = Math.round(battery.level * 100);
           setBatteryLevel(pct);
-          // Lead-Acid / Li-ion float voltage equivalent: 11.8V to 12.7V
           const v = Math.round((11.8 + (battery.level * 0.9)) * 100) / 100;
           setBatteryVoltage(v);
         };
@@ -200,7 +218,7 @@ export function useMobileSensors() {
     }
   }, []);
 
-  // 6. Web Audio API Acoustic Telemetry Confirmation Chime
+  // 6. Web Audio API Acoustic Confirmation Chime
   const playTelemetryChime = useCallback((freq = 880, duration = 0.08) => {
     if (typeof window === 'undefined') return;
     try {
@@ -230,6 +248,8 @@ export function useMobileSensors() {
     isHardwareActive,
     sensorSource,
     error,
+    elevationDeltaMeters,
+    pressureDeltaHpa,
     compassHeading,
     compassCardinal,
     isOrientationActive,
@@ -238,6 +258,7 @@ export function useMobileSensors() {
     solarRadiationWm2,
     batteryVoltage,
     batteryLevel,
+    motionIntensity,
     triggerHaptic,
     playTelemetryChime,
   };

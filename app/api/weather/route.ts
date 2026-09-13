@@ -17,9 +17,11 @@ interface ProviderObservation {
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const lat = searchParams.get('lat') || '28.585';
-  const lon = searchParams.get('lon') || '77.206';
-  const stationId = searchParams.get('stationId') || 'AWS-DEL-04';
+  const rawLat = parseFloat(searchParams.get('lat') || '28.585');
+  const rawLon = parseFloat(searchParams.get('lon') || '77.206');
+  const lat = (!isNaN(rawLat) && rawLat >= -90 && rawLat <= 90 ? rawLat : 28.585).toFixed(3);
+  const lon = (!isNaN(rawLon) && rawLon >= -180 && rawLon <= 180 ? rawLon : 77.206).toFixed(3);
+  const stationId = (searchParams.get('stationId') || 'AWS-DEL-04').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 30);
   const requestedProvider = (searchParams.get('provider') || 'auto').toLowerCase() as SupportedWeatherProvider;
 
   const observations: ProviderObservation[] = [];
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
       const headers: Record<string, string> = {
-        'User-Agent': 'Jatayu-AWS-QMS/1.0 (MoES-IMD-Ingestion)',
+        'User-Agent': 'Metshield-AWS-QMS/1.0 (MoES-IMD-Ingestion)',
         'Accept': 'application/json',
       };
       if (imdApiKey) {
@@ -67,7 +69,7 @@ export async function GET(request: NextRequest) {
     return null;
   };
 
-  // Helper 1: Weatherstack Fetcher (Disabled for SIH to ensure zero-cost API key-less operation)
+  // Helper 1: Weatherstack Fetcher (Zero-cost API key-less operation fallback)
   const fetchWeatherstack = async (): Promise<ProviderObservation | null> => {
     return null;
   };

@@ -41,8 +41,8 @@ export const GovNetworkStrip = React.memo<Props>(function GovNetworkStrip({
           </div>
 
           <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono">
-            <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[#002147] font-semibold flex items-center gap-1.5">
-              <Radio className="w-3 h-3 text-[#002147]" />
+            <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[#0b1329] font-semibold flex items-center gap-1.5">
+              <Radio className="w-3 h-3 text-cyan-600" />
               <span>{totalStations} Observatories ({onlineStations} Online)</span>
             </span>
             <span className="bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-emerald-800 font-semibold flex items-center gap-1.5">
@@ -84,10 +84,10 @@ export const GovNetworkStrip = React.memo<Props>(function GovNetworkStrip({
 
           <button
             onClick={() => setShowMissionBrief(prev => !prev)}
-            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-[#002147] border border-slate-300 px-2.5 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-[#0b1329] border border-slate-300 px-2.5 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>{language === 'hi' ? 'समस्या संदर्भ (SIH 6073)' : 'Operational Context (SIH 6073)'}</span>
+            <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
+            <span>{language === 'hi' ? 'संचालन संदर्भ' : 'Operational Context'}</span>
             {showMissionBrief ? (
               <ChevronUp className="w-3 h-3 text-slate-500" />
             ) : (
@@ -107,17 +107,17 @@ export const GovNetworkStrip = React.memo<Props>(function GovNetworkStrip({
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-sm text-[#002147]">
-                    {language === 'hi' ? 'वास्तविक समस्या जिसे प्रोजेक्ट JATAYU हल करता है:' : 'The Real-World Operational Challenge (SIH26073):'}
+                  <span className="font-bold text-sm text-[#0b1329]">
+                    {language === 'hi' ? 'वास्तविक समस्या जिसे प्रोजेक्ट Metshield AI हल करता है:' : 'The Real-World Operational Challenge:'}
                   </span>
-                  <span className="text-[10px] bg-sky-100 text-sky-800 border border-sky-300 px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider">
-                    MoES • IMD Mandate
+                  <span className="text-[10px] bg-cyan-100 text-cyan-800 border border-cyan-300 px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider">
+                    AWS-QMS Telemetry
                   </span>
                 </div>
                 <p className="text-xs text-slate-700 leading-relaxed max-w-4xl">
                   {language === 'hi'
-                    ? 'मौसम वेधशालाओं में थर्मामीटर के टूटे तार, जमी हुई रीडिंग और बैरोमीटर के ड्रिफ्ट जैसे सेंसर दोष वास्तविक गंभीर तूफानों के साथ भ्रमित हो सकते हैं। JATAYU-QMS विश्व मौसम विज्ञान संगठन (WMO-No. 8) मानकों पर आधारित स्वचालित गुणवत्ता नियंत्रण परत प्रदान करता है, जो वास्तविक तूफान और सेंसर की खराबी में तुरंत अंतर करता है और खराब डेटा को मौसम मॉडल में जाने से रोकता है।'
-                    : 'In automated weather networks, broken thermistors, stuck sensors, and drifting barometers mimic genuine storm events. JATAYU-QMS implements automated WMO-No. 8 physical quality control algorithms that immediately discriminate between real severe weather fronts and instrument hardware failures, protecting Numerical Weather Prediction (NWP) models from data corruption.'}
+                    ? 'मौसम वेधशालाओं में थर्मामीटर के टूटे तार, जमी हुई रीडिंग और बैरोमीटर के ड्रिफ्ट जैसे सेंसर दोष वास्तविक गंभीर तूफानों के साथ भ्रमित हो सकते हैं। Metshield AI विश्व मौसम विज्ञान संगठन (WMO-No. 8) मानकों पर आधारित स्वचालित गुणवत्ता नियंत्रण परत प्रदान करता है, जो वास्तविक तूफान और सेंसर की खराबी में तुरंत अंतर करता है और खराब डेटा को मौसम मॉडल में जाने से रोकता है।'
+                    : 'In automated weather networks, broken thermistors, stuck sensors, and drifting barometers mimic genuine storm events. Metshield AI implements automated WMO-No. 8 physical quality control algorithms that immediately discriminate between real severe weather fronts and instrument hardware failures, protecting Numerical Weather Prediction (NWP) models from data corruption.'}
                 </p>
               </div>
             </div>
@@ -127,7 +127,7 @@ export const GovNetworkStrip = React.memo<Props>(function GovNetworkStrip({
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>NWP Model Gating Active</span>
               </div>
-              <div className="bg-sky-50 border border-sky-300 text-[#002147] px-2.5 py-1 rounded text-[11px] font-mono font-bold flex items-center gap-1.5">
+              <div className="bg-sky-50 border border-sky-300 text-[#0b1329] px-2.5 py-1 rounded text-[11px] font-mono font-bold flex items-center gap-1.5">
                 <Brain className="w-3.5 h-3.5 text-sky-700" />
                 <span>Line-Rate &lt;5ms</span>
               </div>

@@ -1,5 +1,5 @@
-import PitchDeck from '@/components/features/PitchDeck';
+import { redirect } from 'next/navigation';
 
 export default function PitchPage() {
-  return <PitchDeck />;
+  redirect('/');
 }

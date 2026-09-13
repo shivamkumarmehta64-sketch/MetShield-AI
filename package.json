@@ -1,5 +1,5 @@
 {
-  "name": "jatayu",
+  "name": "metshield-ai",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,10 +16,14 @@
     "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.66",
+    "@supabase/supabase-js": "^2.116.0",
     "@types/qrcode": "^1.5.6",
+    "ai": "^7.0.99",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "framer-motion": "^13.2.0",
+    "idb": "^8.0.3",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
     "lucide-react": "^1.43.0",

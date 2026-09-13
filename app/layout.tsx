@@ -20,17 +20,17 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Project JATAYU | National Automated Weather Station QMS (JATAYU-QMS)',
+  title: 'Metshield AI | Automated Weather Station Quality Management System (AWS-QMS)',
   description:
-    'Project JATAYU (Joint Atmospheric Telemetry & Anomaly Unification) — National Automated Weather Station Quality Management System (JATAYU-QMS) under Ministry of Earth Sciences (MoES) & IMD for SIH26073.',
+    'Metshield AI — Automated Weather Station Quality Management System (AWS-QMS). Real-time WMO Pub 8 Quality Control, edge anomaly detection, and predictive maintenance.',
   keywords: [
-    'Project JATAYU', 'JATAYU-QMS', 'Automatic Weather Station', 'IMD Weather', 'Weather Telemetry', 
-    'Sensor Health Check', 'SIH26073', 'Ministry of Earth Sciences', 'WMO Pub 8', 'India Weather Network',
+    'Metshield AI', 'Metshield-QMS', 'Automatic Weather Station', 'Weather Telemetry',
+    'Sensor Health Check', 'WMO Pub 8', 'India Weather Network', 'Predictive Maintenance',
   ],
   manifest: '/manifest.json',
   icons: {
-    icon: '/jatayu-seal.jpg',
-    apple: '/jatayu-seal.jpg',
+    icon: '/metshield-logo.jpg',
+    apple: '/metshield-logo.jpg',
   },
 };
 
@@ -43,8 +43,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-slate-900 font-sans selection:bg-amber-100 selection:text-amber-950">
+    <html lang="en" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased dark`}>
+      <body className="min-h-full flex flex-col bg-[#070d1e] text-[#f8fafc] font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
         {children}
         {process.env.NODE_ENV === 'production' && (
           <Script

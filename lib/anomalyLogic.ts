@@ -279,13 +279,13 @@ export class NICWMOAnomalyEngine {
     const isFrozen = rawT !== null && recent6.length >= 6 && recent6.every(v => v !== null && Math.abs(v - (rawT as number)) < 0.00001);
 
     // Convective storm discrimination (Coupled Microburst / Kalbaisakhi signature)
-    const isPD = pD <= -1.5 || rPD <= -2.5 || (rawP !== null && rawP < 1004 && (pD < -0.6 || rPD < -1.5));
-    const isHS = hD >= 8 || rHD >= 15 || (rawH !== null && rawH >= 88 && (hD > 2 || rHD > 5));
-    const isC = tD <= -0.5 || rTD <= -1.5 || (rawT !== null && rawT <= 32);
+    const isPD = pD <= -2.5 || rPD <= -2.5; // Benchmark: ΔP <= -2.5 hPa
+    const isHS = hD >= 15 || rHD >= 15;     // Benchmark: ΔRH >= +15%
+    const isC = tD <= -1.5 || rTD <= -1.5;  // Benchmark: ΔT <= -1.5°C
     const isStorm = !isFrozen && rawP !== null && rawH !== null && rawT !== null && isPD && isHS && isC;
 
-    // Temp spike: unphysical reading (>50°C or |ΔT| > 3.2°C) without coupled barometric plunge
-    const isSpike = !isStorm && rawT !== null && (rawT > 50 || Math.abs(tD) > 3.2);
+    // Temp spike: unphysical reading (>50°C or |ΔT| > 8°C/tick) without coupled barometric plunge
+    const isSpike = !isStorm && rawT !== null && (rawT > 50 || Math.abs(tD) > 8);
 
     // Wind spike: >100 km/h sudden jump — stuck wind vane (zero variance)
     const recentW6 = [...buf.slice(-5), { raw: { windSpeedKph: rawW } }].map(p => p.raw.windSpeedKph);
@@ -521,7 +521,7 @@ export function getInitialSeededDataset(): SeededTelemetryDataset {
   return { stationPackets, latestPackets, workOrders: unique };
 }
 
-// ─── Predictive Maintenance & Degradation Engine (SIH Competitive Edge) ───
+// ─── Predictive Maintenance & Degradation Engine (Sensor RUL & Health Matrix) ───
 export interface SensorHealthScorecard {
   sensorType: 'TEMPERATURE_PT100' | 'PRESSURE_BAROMETER' | 'HUMIDITY_POLYMER';
   displayName: string;
@@ -627,7 +627,7 @@ export function generateCapAlert(pkt: TelemetryPacket, stationName: string, stat
 
   return {
     alertId: `CAP-IN-MD-${Date.now().toString(36).toUpperCase()}`,
-    sender: 'IMD-JATAYU-QMS/HQ-NEW-DELHI',
+    sender: 'IMD-METSHIELD-AI/HQ-NEW-DELHI',
     sentTime: new Date(pkt.timestamp).toISOString(),
     status: 'ACTUAL',
     msgType: 'ALERT',

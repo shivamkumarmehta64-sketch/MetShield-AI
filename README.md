@@ -1,7 +1,7 @@
-# Project JATAYU: Joint Atmospheric Telemetry & Anomaly Unification
-## JATAYU-QMS: National Automated Weather Station Quality Management System
+# Metshield AI: Automated Weather Station Quality Management System
+## NAWS-MetShield: Real-Time Intelligent Telemetry Validation & Thermodynamic Anomaly Defense
 ### Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD) | Government of India
-#### Standardized Solution Architecture for Smart India Hackathon (Problem Statement SIH26073)
+#### Standardized Solution Architecture for National AWS Telemetry Assurance (Team AEROTECH)
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16.3.4-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-5.x_Strict-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -13,11 +13,11 @@
 
 ---
 
-## 1. Executive Summary & Problem Alignment (SIH26073)
+## 1. Executive Summary & Problem Alignment
 
 India's national meteorological observing network spans over **1,350+ Automatic Weather Stations (AWS)** and **1,500+ Automated Rain Gauges (ARG)** deployed across extreme topographies—from the trans-Himalayan peaks of Kargil to the coastal cyclone tracks of Visakhapatnam and the Thar desert of Rajasthan.
 
-### The Operational Challenge (SIH26073)
+### The Operational Challenge
 Surface automated weather sensors frequently encounter severe mechanical, electrical, and environmental degradation:
 1. **Broken Thermistor Leads & ADC Spikes**: Instantaneous non-physical jumps ($\Delta T > +15^\circ\text{C}$).
 2. **Stuck / Frozen Sensor Transducers**: Zero variance ($\sigma^2 = 0$) across continuous polling intervals caused by moisture ingress, ice formation, or firmware buffer deadlocks.
@@ -26,8 +26,8 @@ Surface automated weather sensors frequently encounter severe mechanical, electr
 
 > **The Critical Hazard**: In standard automated monitoring systems, a genuine severe convective squall line (characterized by sudden pressure plunges of $3-5\text{ hPa}$ accompanied by intense rain and temperature drops) is frequently **misdiagnosed as a hardware sensor failure**. Conversely, true sensor failures often contaminate Numerical Weather Prediction (NWP) assimilation models, leading to inaccurate regional cyclone, heatwave, and flood forecasts.
 
-### The JATAYU-QMS Solution
-**Project JATAYU** (**J**oint **A**tmospheric **T**elemetry & **A**nomaly **Y**ield / **U**nification) provides an autonomous, real-time, edge-native Quality Management System engineered to:
+### The Metshield AI Solution
+**Metshield AI** (**M**eteorological **E**dge **T**elemetry **S**hield) provides an autonomous, real-time, edge-native Quality Management System engineered to:
 - **Discriminate** genuine atmospheric events (e.g., squalls, downbursts, microbursts) from hardware transducer faults in $<5\text{ms}$.
 - **Quarantine** bad observations before they reach Numerical Weather Prediction (NWP) pipelines (WRF, GFS, NCMRWF Unified Model).
 - **Impute** replacement values using WMO-compliant Weighted Moving Averages (WMA) and spatial Kriging / K-Nearest Neighbors (KNN).

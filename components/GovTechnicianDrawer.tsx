@@ -17,10 +17,10 @@ interface Props {
 }
 
 const SCENARIOS = [
-  { label: '1. Thermistor Open-Circuit', desc: 'Unphysical jump (>54°C in <5s) → SENSOR_SPIKE', color: 'red', key: 'spike' },
-  { label: '2. Stuck Sensor / Wire Disconnect', desc: 'Zero variance across 6 ticks → FROZEN_VALUE', color: 'slate', key: 'freeze' },
+  { label: '1. Simulate Thermistor Open-Circuit', desc: 'Unphysical jump (>54°C in <5s) → SENSOR_SPIKE', color: 'red', key: 'spike' },
+  { label: '2. Simulate Signal Wire Disconnect', desc: 'Zero variance across 6 ticks → FROZEN_VALUE', color: 'slate', key: 'freeze' },
   { label: '3. Barometer Drift (-0.4 hPa/hr)', desc: 'Monotonic drift → CALIBRATION_DRIFT', color: 'yellow', key: 'drift' },
-  { label: '4. Severe Convective Storm', desc: 'Pressure drop + Humidity surge (Valid storm)', color: 'amber', key: 'storm' },
+  { label: '4. Simulate Convective Front Dynamics', desc: 'Pressure drop + Humidity surge (Valid storm)', color: 'amber', key: 'storm' },
   { label: '5. Telemetry Frame Drop', desc: 'Missing frames → TELEMETRY_PACKET_LOSS (WMO Flag 5)', color: 'purple', key: 'loss' },
 ] as const;
 

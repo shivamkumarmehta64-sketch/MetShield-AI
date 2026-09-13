@@ -114,8 +114,8 @@ export const GovEmergencyAlertModal: React.FC<Props> = ({
                 <span>False Alarm Siren Inhabited (Citizen Panic Prevented)</span>
               </div>
               <p className="text-[11px] text-emerald-800 leading-relaxed">
-                <strong>SIH Value Demonstration:</strong> A broken temperature probe spiked suddenly to 54.8°C.
-                Legacy systems would trigger a false heatwave or fire alert. JATAYU-QMS identified the unphysical step and
+                <strong>False Alarm Prevented:</strong> A broken temperature probe spiked suddenly to 54.8°C.
+                Legacy systems would trigger a false heatwave or fire alert. Metshield AI identified the unphysical step and
                 silenced the public alert while creating a quiet technician repair ticket.
               </p>
             </div>

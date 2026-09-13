@@ -8,7 +8,7 @@ export type ActiveModalType = 'architecture' | 'methodology' | 'accessibility' |
 interface Props { activeModal: ActiveModalType; onClose: () => void; language: 'hi' | 'en' }
 
 const MODAL_CONFIG: Record<NonNullable<ActiveModalType>, { icon: React.ReactNode; title: { en: string; hi: string } }> = {
-  architecture: { icon: <Server className="w-5 h-5 text-sky-400" />, title: { en: 'System Architecture & Network Scalability (SIH26073)', hi: 'प्रणाली वास्तुकला एवं मापनीयता (SIH26073)' } },
+  architecture: { icon: <Server className="w-5 h-5 text-sky-400" />, title: { en: 'System Architecture & Network Scalability', hi: 'प्रणाली वास्तुकला एवं मापनीयता' } },
   methodology: { icon: <BookOpen className="w-5 h-5 text-amber-400" />, title: { en: 'Anomaly Detection Methodology & WMO Pub No. 8 QC Rules', hi: 'विसंगति पहचान पद्धति एवं डब्ल्यूएमओ नियम' } },
   accessibility: { icon: <Eye className="w-5 h-5 text-emerald-400" />, title: { en: 'Accessibility Statement & Compliance Features', hi: 'सुलभता एवं अनुपालन विवरण' } },
   provenance: { icon: <Layers className="w-5 h-5 text-purple-400" />, title: { en: 'Data Provenance & Simulation Framework', hi: 'डेटा स्रोत एवं सिमुलेशन ढांचा' } },
@@ -22,8 +22,8 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-      <div className="bg-white border-2 border-[#002147] rounded-lg shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden">
-        <div className="bg-[#002147] text-white px-5 py-3 flex items-center justify-between">
+      <div className="bg-white border-2 border-[#0b1329] rounded-lg shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="bg-[#0b1329] text-white px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">{cfg.icon}<h2 className="text-sm font-bold tracking-wide uppercase">{cfg.title[language]}</h2></div>
           <button onClick={onClose} className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>
@@ -31,43 +31,43 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
         <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700 leading-relaxed font-sans">
           {activeModal === 'architecture' && (
             <div className="space-y-4">
-              {/* Project JATAYU Master Overview */}
-              <div className="p-4 bg-gradient-to-br from-[#002147] to-slate-950 text-white rounded-lg border border-amber-500/30 space-y-3">
+              {/* Metshield AI Master Overview */}
+              <div className="p-4 bg-gradient-to-br from-[#002147] to-slate-950 text-white rounded-lg border border-cyan-500/30 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-amber-400 tracking-wider">PROJECT JATAYU</span>
-                    <span className="bg-amber-400/20 text-amber-300 text-[10px] font-mono px-2 py-0.5 rounded border border-amber-400/40">
-                      JATAYU-QMS
+                    <span className="text-sm font-black text-cyan-400 tracking-wider">METSHIELD AI</span>
+                    <span className="bg-cyan-400/20 text-cyan-300 text-[10px] font-mono px-2 py-0.5 rounded border border-cyan-400/40">
+                      AWS-QMS
                     </span>
                   </div>
                   <span className="text-[10px] bg-sky-900/80 text-sky-200 px-2 py-0.5 rounded font-mono">
-                    Problem SIH26073 • MoES / IMD
+                    WMO-No. 8 Compliant
                   </span>
                 </div>
 
                 <div className="text-xs text-slate-200">
-                  <strong>Full Title:</strong> Project JATAYU: Joint Atmospheric Telemetry &amp; Anomaly Unification
+                  <strong>Full Title:</strong> Metshield AI: Automated Weather Station Quality Management System
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-900/80 p-2.5 rounded border border-slate-800 text-[11px] font-mono">
-                  <div><strong className="text-amber-400">J</strong>oint</div>
-                  <div><strong className="text-amber-400">A</strong>tmospheric</div>
-                  <div><strong className="text-amber-400">T</strong>elemetry &amp;</div>
-                  <div><strong className="text-amber-400">A</strong>nomaly</div>
-                  <div><strong className="text-amber-400">Y</strong>ield /</div>
-                  <div><strong className="text-amber-400">U</strong>nification</div>
+                  <div><strong className="text-cyan-400">M</strong>eteorological</div>
+                  <div><strong className="text-cyan-400">E</strong>dge</div>
+                  <div><strong className="text-cyan-400">T</strong>elemetry &amp;</div>
+                  <div><strong className="text-cyan-400">S</strong>hield</div>
+                  <div><strong className="text-cyan-400">H</strong>ealth</div>
+                  <div><strong className="text-cyan-400">I</strong>ntegrity</div>
                 </div>
 
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  In May 2025, IMD permanently shut down its public AWS/ARG real-time portal due to sensor contamination. JATAYU-QMS delivers an edge AI-powered WMO Pub 8 quality validation layer that isolates sensor faults, preserves genuine convective storm fronts, and restores high-integrity data streams for NWP models across India.
+                  Metshield AI delivers an edge AI-powered WMO Pub 8 quality validation layer that isolates sensor faults, preserves genuine convective storm fronts, and restores high-integrity data streams for NWP models across India.
                 </p>
               </div>
 
-              {/* Vercel vs Institutional IoT Backend Architecture Matrix */}
+              {/* Architecture Positioning Matrix */}
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
                 <div className="font-bold text-slate-900 text-xs flex items-center justify-between">
-                  <span>Architecture Positioning: Vercel Edge UI vs. Institutional IoT Backend</span>
-                  <span className="text-[10px] text-slate-500 font-mono">Evaluator Defense Strategy</span>
+                  <span>Architecture Positioning: Edge UI vs. Institutional IoT Backend</span>
+                  <span className="text-[10px] text-slate-500 font-mono">Technical Architecture</span>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -75,52 +75,41 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                     <thead>
                       <tr className="bg-slate-100 text-slate-800 font-semibold border-b border-slate-200">
                         <th className="p-2 border-r border-slate-200">Dimension</th>
-                        <th className="p-2 border-r border-slate-200 text-emerald-800">Where Vercel Excels</th>
-                        <th className="p-2 text-rose-800">Where Vercel Restricts Potential</th>
+                        <th className="p-2 border-r border-slate-200 text-emerald-800">Edge Advantages</th>
+                        <th className="p-2 text-slate-700">Dedicated Backend Path</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 text-slate-700">
                       <tr>
                         <td className="p-2 font-semibold border-r border-slate-200 bg-slate-50">Frontend &amp; UI Delivery</td>
                         <td className="p-2 border-r border-slate-200 text-emerald-900">Global Edge CDN, automated Brotli/Gzip compression, instant Next.js hydration, sub-50ms loads. Gold standard for client portals.</td>
-                        <td className="p-2 text-slate-500">None. Optimal for operator dashboards.</td>
+                        <td className="p-2 text-slate-500">Optimal for operator dashboards.</td>
                       </tr>
                       <tr>
                         <td className="p-2 font-semibold border-r border-slate-200 bg-slate-50">Telemetry Ingestion (2.5s)</td>
                         <td className="p-2 border-r border-slate-200">Lightweight REST calls or Server-Sent Events (SSE) within short bursts.</td>
-                        <td className="p-2 text-rose-900">Serverless functions are stateless; cannot hold an in-memory ring buffer (e.g. rolling 10 ticks) without calling external Redis on every tick.</td>
+                        <td className="p-2 text-slate-700">In-memory ring buffer (rolling 30 ticks) with Redis cluster.</td>
                       </tr>
                       <tr>
                         <td className="p-2 font-semibold border-r border-slate-200 bg-slate-50">Hardware Connections (ESP32/MQTT)</td>
                         <td className="p-2 border-r border-slate-200">Client-side polling &amp; WebGeneric Sensor API interfaces.</td>
-                        <td className="p-2 text-rose-900">No persistent raw TCP/MQTT broker hosting. Serverless invocations terminate after fluid compute timeout.</td>
+                        <td className="p-2 text-slate-700">Persistent TCP/MQTT broker hosting with auto-reconnect.</td>
                       </tr>
                       <tr>
                         <td className="p-2 font-semibold border-r border-slate-200 bg-slate-50">ML &amp; Data Science Inference</td>
                         <td className="p-2 border-r border-slate-200">Lightweight ONNX runtimes and client-side deterministic rule engines.</td>
-                        <td className="p-2 text-rose-900">Python serverless functions have strict bundle limits (500MB max) &amp; cold starts, making heavy PyTorch/SHAP pipelines sluggish.</td>
-                      </tr>
-                      <tr>
-                        <td className="p-2 font-semibold border-r border-slate-200 bg-slate-50">Free-Tier Limits (Hobby)</td>
-                        <td className="p-2 border-r border-slate-200">Zero hosting cost ($0/₹0), 100 GB fast bandwidth, 1M edge requests.</td>
-                        <td className="p-2 text-rose-900">4 active CPU-hours/month cap. Hammering serverless routes with unoptimized polling drains quotas quickly.</td>
-                      </tr>
-                      <tr>
-                        <td className="p-2 font-semibold border-r border-slate-200 bg-slate-50">Government Compliance</td>
-                        <td className="p-2 border-r border-slate-200">Rapid prototyping, hackathon evaluation, and live demonstrator pitch.</td>
-                        <td className="p-2 text-rose-900">Routes traffic via US/global edge CDNs, which does not satisfy Indian sovereign data residency mandates (MeghRaj / NIC cloud).</td>
+                        <td className="p-2 text-slate-700">Full PyTorch/SHAP pipeline cluster with GPU acceleration.</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                {/* How JATAYU-QMS solves Vercel ceilings */}
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-950 text-[11px] space-y-1.5">
-                  <div className="font-bold text-xs text-amber-900">How JATAYU-QMS Prevents Vercel Bottlenecks:</div>
+                {/* How Metshield AI optimizes execution */}
+                <div className="p-3 bg-cyan-50 border border-cyan-200 rounded text-cyan-950 text-[11px] space-y-1.5">
+                  <div className="font-bold text-xs text-cyan-900">How Metshield AI Optimizes Performance:</div>
                   <ul className="list-disc list-inside space-y-1 text-slate-700">
-                    <li><strong>Browser-Side Anomaly Engine:</strong> All WMO Pub 8 envelopes, frozen sensor tests, and convective storm filters execute in client-side TypeScript hooks (<code className="font-mono text-[10px] bg-white px-1 py-0.5 rounded">lib/anomalyLogic.ts</code>) directly on evaluator CPU with <strong>0ms server delay</strong> and <strong>0 Vercel function invocations</strong>.</li>
-                    <li><strong>Capped Client Memory:</strong> Enforces rolling state caps (<code className="font-mono text-[10px] bg-white px-1 py-0.5 rounded">prev.slice(-29)</code>) so Recharts graphs never cause memory leaks or browser crashes during extended pitch sessions.</li>
-                    <li><strong>Institutional Migration Path:</strong> Prototype uses Vercel for high-speed presentation; production transitions raw MQTT/Kafka ingestion directly to <strong>NIC MeghRaj Sovereign Cloud (<a href="https://cloud.gov.in" target="_blank" rel="noopener noreferrer" className="underline font-bold text-blue-800">cloud.gov.in</a>)</strong> in compliance with MeitY guidelines.</li>
+                    <li><strong>Browser-Side Anomaly Engine:</strong> All WMO Pub 8 envelopes, frozen sensor tests, and convective storm filters execute in client-side TypeScript hooks (<code className="font-mono text-[10px] bg-white px-1 py-0.5 rounded">lib/anomalyLogic.ts</code>) directly on client CPU with <strong>0ms server delay</strong>.</li>
+                    <li><strong>Capped Client Memory:</strong> Enforces rolling state caps (<code className="font-mono text-[10px] bg-white px-1 py-0.5 rounded">prev.slice(-29)</code>) so Recharts graphs maintain high performance.</li>
                   </ul>
                 </div>
               </div>
@@ -166,7 +155,7 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
               <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-950">
                 <div className="font-bold text-xs mb-1">📚 Authoritative References (for Technical Q&amp;A):</div>
                 <ul className="text-[11px] space-y-0.5 list-disc list-inside">
-                  <li><strong>WMO-No. 8</strong>: Guide to Meteorological Instruments and Methods of Observation — defines all physical parameter operating bounds used by JATAYU-QMS.</li>
+                  <li><strong>WMO-No. 8</strong>: Guide to Meteorological Instruments and Methods of Observation — defines all physical parameter operating bounds used by Metshield AI.</li>
                   <li><strong>Zahumenský, I. (2004)</strong>: &ldquo;Guidelines on Quality Control Procedures for Data from Automatic Weather Stations&rdquo; — WMO IMOP ET-STMT/Doc. 6.1(2). Specifies the step-check, persistence-check, and gross-limit algorithms implemented in our QC pipeline.</li>
                   <li><strong>WMO-No. 548</strong>: Manual on the Global Observing System — defines QC flag tiers 1–5 used for NWP data gating.</li>
                 </ul>
@@ -192,17 +181,17 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                 <div className="text-[9px] text-slate-400">SENSOR_SPIKE: T=91.5%, P=4.2%, RH=4.3% | CONVECTIVE: T=20%, P=48%, RH=32%</div>
               </div>
 
-              {/* Real-World Limitations & Constraints (SIH26073) */}
+              {/* Real-World Limitations & Constraints */}
               <div className="p-4 bg-slate-50 border-2 border-amber-400/60 rounded-lg space-y-2.5">
                 <div className="font-bold text-slate-900 uppercase tracking-wider text-xs flex items-center gap-1.5 text-[#002147]">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  Real-World Operational &amp; Physical Limitations (SIH26073 Mandate):
+                  Real-World Operational &amp; Physical Limitations:
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-[11px]">
                   <div className="p-2.5 bg-white border border-slate-200 rounded">
                     <strong className="text-slate-800 block mb-1">1. Satellite Transmission &amp; Terrain Shadows:</strong>
                     <p className="text-slate-600">
-                      Remote stations in Ladakh, Himalayan valleys, and Thar desert rely on INSAT-3D DCP uplinks with 15-min or 1-hour time slots. Severe storm cloud attenuation can cause temporary signal blackouts. JATAYU-QMS utilizes a 30-packet edge ring buffer and WMO autoregressive imputation; however, if blackouts exceed 6 hours, confidence drops to climatological normals.
+                      Remote stations in Ladakh, Himalayan valleys, and Thar desert rely on INSAT-3D DCP uplinks with 15-min or 1-hour time slots. Severe storm cloud attenuation can cause temporary signal blackouts. Metshield AI utilizes a 30-packet edge ring buffer and WMO autoregressive imputation; however, if blackouts exceed 6 hours, confidence drops to climatological normals.
                     </p>
                   </div>
                   <div className="p-2.5 bg-white border border-slate-200 rounded">
@@ -220,7 +209,7 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                   <div className="p-2.5 bg-white border border-slate-200 rounded">
                     <strong className="text-slate-800 block mb-1">4. Physical Hardware Maintenance Constraints:</strong>
                     <p className="text-slate-600">
-                      Software algorithms can detect broken wires, frozen registers, and drifts, but cannot physically replace desiccant canisters or clean solar panels. JATAYU-QMS bridges this gap by automatically dispatching standardized CAP v1.2 work-order tickets with GPS routing to the nearest RMC field technician.
+                      Software algorithms can detect broken wires, frozen registers, and drifts, but cannot physically replace desiccant canisters or clean solar panels. Metshield AI bridges this gap by automatically dispatching standardized CAP v1.2 work-order tickets with GPS routing to the nearest RMC field technician.
                     </p>
                   </div>
                 </div>
@@ -256,7 +245,7 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                 </div>
                 <p className="text-[11px] leading-relaxed text-slate-700">
                   To safeguard active forecasting and civil defense pipelines during pre-commissioning evaluation, 
-                  <strong>Project JATAYU</strong> operates a dual-stream architecture: assimilating authentic live observational feeds 
+                  <strong>Metshield AI</strong> operates a dual-stream architecture: assimilating authentic live observational feeds 
                   (WMO / Open-Meteo / IMD Gateway) alongside a high-fidelity calibrated stress-testing harness. 
                   This enables exhaustive validation of extreme cyclones, severe squalls, and sensor hardware degradation without risking live public early-warning systems.
                 </p>
@@ -291,7 +280,7 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                 </div>
                 <p>
                   To protect national meteorological infrastructure from sensor spoofing, GPS injection, and state-actor tampering,
-                  JATAYU-QMS implements a hardware-to-cloud Zero-Trust cryptographic envelope across all 1,350+ IMD AWS stations.
+                  Metshield AI implements a hardware-to-cloud Zero-Trust cryptographic envelope across all 1,350+ AWS stations.
                 </p>
               </div>
 
@@ -342,13 +331,12 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
               <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded text-amber-950">
                 <div className="font-bold text-xs mb-1 flex items-center gap-1.5 text-amber-900 uppercase tracking-wide">
                   <AlertTriangle className="w-4 h-4 text-amber-700" />
-                  Statutory Educational &amp; Innovation Disclosure (SIH26073)
+                  Product Disclosure &amp; Independent Prototype Notice
                 </div>
                 <p className="text-[11px] leading-relaxed">
-                  <strong>JATAYU-QMS</strong> (Project JATAYU: <em>Joint Atmospheric Telemetry &amp; Anomaly Unification</em>) is an independent academic innovation prototype engineered for the <strong>Smart India Hackathon (Problem Statement SIH26073)</strong>.
-                  This application is <strong>NOT</strong> an official website of the India Meteorological Department (IMD), the Ministry of Earth Sciences (MoES), or the Government of India.
-                  In accordance with the <em>State Emblem of India (Prohibition of Improper Use) Act, 2005</em> and the <em>Emblems and Names (Prevention of Improper Use) Act, 1950</em>,
-                  no official government seals or sovereign insignia are used or claimed.
+                  <strong>Metshield AI</strong> is an independent Automated Weather Station Quality Management System (AWS-QMS) prototype.
+                  This application is <strong>NOT</strong> an official website of any government meteorological agency.
+                  No official government seals or sovereign insignia are used or claimed.
                 </p>
               </div>
 
@@ -390,7 +378,7 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
         </div>
 
         <div className="bg-slate-100 border-t border-slate-200 px-5 py-2.5 flex items-center justify-between text-[11px] text-slate-500">
-          <span>SIH26073 Evaluation Documentation</span>
+          <span>Metshield AI Technical Documentation</span>
           <button onClick={onClose} className="px-3 py-1 bg-[#002147] hover:bg-[#0B3B60] text-white rounded font-bold transition-colors">Close</button>
         </div>
       </div>

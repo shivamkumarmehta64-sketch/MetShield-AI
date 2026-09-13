@@ -240,7 +240,7 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
           <div>
             <div className="flex items-center gap-2">
               <h2 className={`text-sm font-bold uppercase tracking-wide ${isMissionControlVibe ? 'text-sky-300 font-mono flex items-center gap-1.5' : 'text-[#002147]'}`}>
-                {language === 'hi' ? 'प्राथमिक अवलोकन एवं टेलीमेट्री कंसोल' : 'Primary Observation & Telemetry Console (SIH26073)'}
+                {language === 'hi' ? 'प्राथमिक अवलोकन एवं टेलीमेट्री कंसोल' : 'Primary Observation & Telemetry Console'}
               </h2>
               {isMissionControlVibe && (
                 <span className="text-[9px] font-mono font-bold bg-sky-950/80 text-sky-300 border border-sky-800/80 px-1.5 py-0.5 rounded">

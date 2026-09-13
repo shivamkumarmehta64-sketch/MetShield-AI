@@ -1,5 +1,37 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "next build",
-  "cleanUrls": true
+  "crons": [
+    {
+      "path": "/api/telemetry/cron",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/telemetry",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=5, stale-while-revalidate=20"
+        }
+      ]
+    },
+    {
+      "source": "/api/weather",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=30, stale-while-revalidate=120"
+        }
+      ]
+    },
+    {
+      "source": "/api/og/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
+  ]
 }

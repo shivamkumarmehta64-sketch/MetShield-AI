@@ -166,8 +166,8 @@ export const GovDatasetReplayModal: React.FC<GovDatasetReplayModalProps> = ({
         {/* Header */}
         <div className="bg-[#002147] text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-amber-400">
           <div className="flex items-center gap-3">
-            <div className="bg-amber-400 text-slate-950 p-1.5 rounded font-black text-xs">
-              SIH26073
+            <div className="bg-cyan-400 text-slate-950 p-1.5 rounded font-black text-xs">
+              AWS-QMS
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold tracking-wide flex items-center gap-2">
@@ -504,8 +504,8 @@ export const GovDatasetReplayModal: React.FC<GovDatasetReplayModalProps> = ({
         <div className="bg-slate-100 border-t border-slate-300 px-5 py-2.5 flex items-center justify-between text-[11px] text-slate-600">
           <span>
             {language === 'hi'
-              ? 'WMO Pub No. 8 एवं MoES/IMD SIH26073 मानकों के अनुरूप 100% अनुपालन।'
-              : 'Strict adherence to WMO Pub No. 8 & MoES/IMD SIH26073 Quality Assurance Standards.'}
+              ? 'WMO Pub No. 8 मानकों के अनुरूप 100% अनुपालन।'
+              : 'Strict adherence to WMO Pub No. 8 Quality Assurance Standards.'}
           </span>
           <button
             onClick={onClose}

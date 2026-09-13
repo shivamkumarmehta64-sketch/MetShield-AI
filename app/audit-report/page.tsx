@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { IMD_AWS_STATIONS } from '@/lib/stationData';
 import { getInitialSeededDataset, TelemetryPacket, WorkOrderTicket } from '@/lib/anomalyLogic';
-import { Printer, ArrowLeft, FileCheck, AlertTriangle } from 'lucide-react';
+import { Printer, ArrowLeft, FileCheck, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 export default function OfficialAuditReportPage() {
   const [dataset] = useState(() => getInitialSeededDataset());
@@ -30,42 +30,44 @@ export default function OfficialAuditReportPage() {
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to QMS Portal
           </Link>
-          <span className="text-xs text-slate-500">Document Classification: <strong>OFFICIAL RECORD / SIH26073</strong></span>
+          <span className="text-xs text-slate-500">Document Classification: <strong>METSHIELD AI OFFICIAL AUDIT RECORD</strong></span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#002147] hover:bg-[#0B3B60] text-white text-xs font-bold shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0b1329] hover:bg-slate-800 text-cyan-300 text-xs font-bold shadow-sm transition-all border border-slate-700"
           >
-            <Printer className="w-4 h-4" /> Print / Save as PDF
+            <Printer className="w-4 h-4 text-cyan-400" /> Print / Save as PDF
           </button>
         </div>
       </div>
 
       {/* Official Audit Document Sheet (A4 format) */}
       <div className="max-w-5xl mx-auto bg-white p-8 sm:p-12 shadow-lg border border-slate-300 print:shadow-none print:border-none print:p-4 rounded-sm">
-        {/* Tricolor Ribbon */}
-        <div className="h-1.5 w-full flex mb-6">
-          <div className="h-full w-1/3 bg-[#FF9933]" />
-          <div className="h-full w-1/3 bg-white" />
-          <div className="h-full w-1/3 bg-[#138808]" />
-        </div>
+        {/* Sleek Cyan Ribbon Accent */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-600 mb-6" />
 
-        {/* Header & Statutory Classification */}
+        {/* Header & Classification */}
         <div className="text-center border-b-2 border-slate-800 pb-5 mb-6">
-          <div className="inline-block bg-slate-100 text-slate-700 border border-slate-300 px-3 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase mb-2">
-            Smart India Hackathon (SIH26073) Innovation Prototype · Technical Evaluation Document
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-xl border border-cyan-500 bg-[#0b1329] shadow-md flex items-center justify-center">
+              <ShieldCheck className="w-7 h-7 text-cyan-400" />
+            </div>
+            <div className="text-left">
+              <span className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-1">
+                METSHIELD <span className="text-cyan-600 font-extrabold">AI</span>
+              </span>
+              <span className="text-xs font-mono font-bold text-slate-600 block">AWS-QMS Telemetry Audit Engine</span>
+            </div>
           </div>
-          <div className="text-[11px] uppercase tracking-widest text-slate-600 font-bold mb-1">
-            Ministry of Earth Sciences (MoES) &amp; India Meteorological Department (IMD)
+
+          <div className="inline-block bg-cyan-50 text-cyan-800 border border-cyan-200 px-3 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase mb-2">
+            Automated Quality Assurance &amp; Sensor Health Dossier
           </div>
-          <h1 className="text-xl sm:text-2xl font-black uppercase text-[#002147] tracking-tight">
-            Project JATAYU: Joint Atmospheric Telemetry &amp; Anomaly Unification
+          <h1 className="text-xl sm:text-2xl font-black uppercase text-[#0b1329] tracking-tight">
+            Metshield AI: Automated Weather Station Quality Management System
           </h1>
-          <div className="text-xs uppercase font-bold tracking-wide text-amber-800 mt-1">
-            JATAYU-QMS — Automated Sensor Integrity &amp; Weather Data Verification Dossier
-          </div>
-          <div className="text-xs font-semibold text-slate-600 mt-0.5">
+          <div className="text-xs font-semibold text-slate-600 mt-1">
             Conforming to WMO-No. 8 (CIMO) &amp; WMO-No. 548 Automated QC Standards
           </div>
         </div>
@@ -74,7 +76,7 @@ export default function OfficialAuditReportPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-3 bg-slate-50 border border-slate-300 rounded text-xs mb-6">
           <div>
             <span className="block text-[10px] uppercase font-bold text-slate-500">Document ID</span>
-            <span className="font-mono font-bold text-[#002147]">IMD/QMS/AUDIT/2026-09</span>
+            <span className="font-mono font-bold text-[#0b1329]">METSHIELD/QMS/AUDIT/2026-09</span>
           </div>
           <div>
             <span className="block text-[10px] uppercase font-bold text-slate-500">Date of Inspection</span>
@@ -111,14 +113,14 @@ export default function OfficialAuditReportPage() {
 
         {/* Section 1: All 20 National AWS Observatories Status Matrix */}
         <div className="mb-8">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#002147] mb-2 flex items-center gap-1.5 border-b border-slate-300 pb-1">
-            <FileCheck className="w-4 h-4 text-[#002147]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#0b1329] mb-2 flex items-center gap-1.5 border-b border-slate-300 pb-1">
+            <FileCheck className="w-4 h-4 text-cyan-600" />
             1. National AWS Observational Nodes & Sensor Integrity Matrix
           </h2>
           <div className="overflow-x-auto border border-slate-300 rounded">
             <table className="w-full text-left text-[11px] border-collapse font-sans">
               <thead>
-                <tr className="bg-[#002147] text-white font-semibold text-[10px] uppercase">
+                <tr className="bg-[#0b1329] text-white font-semibold text-[10px] uppercase">
                   <th className="py-1.5 px-2">Station Code</th>
                   <th className="py-1.5 px-2">Observatory & State</th>
                   <th className="py-1.5 px-2">Coordinates</th>
@@ -136,7 +138,7 @@ export default function OfficialAuditReportPage() {
                   const isCond = flag === 'FLAG_3_SUSPECT_DRIFT' || flag === 'FLAG_5_PACKET_LOSS';
                   return (
                     <tr key={s.stationId} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="py-1.5 px-2 font-mono font-bold text-[#002147] whitespace-nowrap">{s.stationId}</td>
+                      <td className="py-1.5 px-2 font-mono font-bold text-[#0b1329] whitespace-nowrap">{s.stationId}</td>
                       <td className="py-1.5 px-2">
                         <div className="font-semibold text-slate-800">{s.name}</div>
                         <div className="text-[10px] text-slate-500">{s.state} · WMO #{s.wmoBlockNo}</div>
@@ -174,7 +176,7 @@ export default function OfficialAuditReportPage() {
 
         {/* Section 2: Active Maintenance Work Orders */}
         <div className="mb-8">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#002147] mb-2 flex items-center gap-1.5 border-b border-slate-300 pb-1">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#0b1329] mb-2 flex items-center gap-1.5 border-b border-slate-300 pb-1">
             <AlertTriangle className="w-4 h-4 text-amber-600" />
             2. Active Incident Tickets & Field Dispatch Registry
           </h2>
@@ -198,7 +200,7 @@ export default function OfficialAuditReportPage() {
                 <tbody className="divide-y divide-slate-200">
                   {workOrders.slice(0, 10).map((wo, idx) => (
                     <tr key={wo.ticketId} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="py-1.5 px-2 font-mono font-bold text-[#002147] whitespace-nowrap">{wo.ticketId}</td>
+                      <td className="py-1.5 px-2 font-mono font-bold text-[#0b1329] whitespace-nowrap">{wo.ticketId}</td>
                       <td className="py-1.5 px-2 whitespace-nowrap font-medium text-slate-800">{wo.stationId} ({wo.state})</td>
                       <td className="py-1.5 px-2 font-semibold text-red-700 whitespace-nowrap">{wo.classification.replace(/_/g, ' ')}</td>
                       <td className="py-1.5 px-2 font-mono text-[10px] text-slate-600">{wo.xaiBreakdown}</td>
@@ -242,7 +244,7 @@ export default function OfficialAuditReportPage() {
           </div>
 
           <div className="text-center text-[10px] text-slate-500 mt-8 pt-4 border-t border-slate-200">
-            <strong>Institutional Operational Notice:</strong> This technical audit dossier is automatically compiled by the Project JATAYU Quality Management System (JATAYU-QMS) under Ministry of Earth Sciences (MoES) and India Meteorological Department (IMD) standards (SIH26073). Field telemetry and sensor health parameters are continuously cross-validated against WMO Pub 8 and Zahumenský (2004) criteria. For official public weather forecasts and civil defense bulletins, consult <a href="https://mausam.imd.gov.in" target="_blank" rel="noopener noreferrer" className="text-blue-800 underline font-semibold">mausam.imd.gov.in</a>.
+            <strong>System Operational Notice:</strong> This technical audit dossier is automatically compiled by Metshield AI Automated Weather Station Quality Management System (AWS-QMS). Field telemetry and sensor health parameters are continuously cross-validated against WMO Pub 8 and physical thermodynamic coupling criteria.
           </div>
         </div>
       </div>

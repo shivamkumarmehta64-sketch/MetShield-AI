@@ -31,8 +31,8 @@ function isRateLimited(key: string): boolean {
 }
 
 /**
- * Project JATAYU: Joint Atmospheric Telemetry & Anomaly Unification
- * JATAYU-QMS Real-Time Telemetry Ingestion API (Problem SIH26073)
+ * Metshield AI: Automated Weather Station Quality Management System
+ * Metshield-QMS Real-Time Telemetry Ingestion API
  * Provides high-throughput, low-latency (<5ms) validation of 3 primary parameters:
  * - Temperature (°C)
  * - Atmospheric Pressure (hPa)
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         latencyMs,
-        compliance: 'WMO Pub No. 8 & SIH26073 Quality Management Standards',
+        compliance: 'WMO Pub No. 8 Quality Management Standards',
         data: evaluatedPacket,
       },
       { status: 200 }
@@ -281,9 +281,9 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     {
-      system: 'Project JATAYU: Joint Atmospheric Telemetry & Anomaly Unification (JATAYU-QMS)',
+      system: 'Metshield AI: Automated Weather Station Quality Management System (AWS-QMS)',
       version: '4.2.8',
-      problemStatement: 'SIH26073 - Automated Weather Station Anomaly Detection',
+      compliance: 'WMO Pub No. 8 & CIMO Standards',
       liveDataSource: 'Open-Meteo Free Public Satellite & Surface API',
       qualityFlags: {
         FLAG_1_VERIFIED_GOOD: 'Observation nominal, within step limits and verified for NWP ingestion.',
