@@ -28,6 +28,15 @@ import { getStationProfile } from '@/lib/stationData';
 import { TelemetryPacket } from '@/lib/anomalyLogic';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
 import { saveReadingLocally, getQueuedReadings, clearQueuedReading } from '@/lib/offlineStorage';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 
 // Predefined Indian Meteorological Cities for instant 1-tap live weather
 const INDIAN_CITIES = [
@@ -89,9 +98,55 @@ export default function MobileEdgeNodePage() {
     solarRadiationWm2,
     batteryVoltage,
     batteryLevel,
+    elevationDeltaMeters,
     triggerHaptic,
     playTelemetryChime,
   } = useMobileSensors();
+
+  interface MobileChartPoint {
+    time: string;
+    pressure: number;
+    elevation: number;
+    gust: number;
+  }
+
+  const [sensorHistory, setSensorHistory] = useState<MobileChartPoint[]>(() => {
+    const pts: MobileChartPoint[] = [];
+    const now = Date.now();
+    for (let i = 8; i >= 0; i--) {
+      const t = new Date(now - i * 1500).toTimeString().split(' ')[0];
+      pts.push({
+        time: t,
+        pressure: 1008.2,
+        elevation: 0,
+        gust: 14.5,
+      });
+    }
+    return pts;
+  });
+  const [chartMetric, setChartMetric] = useState<'all' | 'pressure' | 'elevation' | 'gust'>('all');
+
+  // Stream rolling real-time sensor history
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const timeStr = new Date().toTimeString().split(' ')[0];
+      const curP = isHardwareActive && hardwarePressure !== null ? hardwarePressure : press;
+      const curElev = elevationDeltaMeters ?? Math.round((1013.25 - curP) * 8.4);
+      const curGust = windGustKph;
+
+      setSensorHistory((prev) => [
+        ...prev.slice(-17),
+        {
+          time: timeStr,
+          pressure: Math.round(curP * 10) / 10,
+          elevation: Math.round(curElev * 10) / 10,
+          gust: Math.round(curGust * 10) / 10,
+        },
+      ]);
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [isHardwareActive, hardwarePressure, press, elevationDeltaMeters, windGustKph]);
 
   // Fetch real live weather for any latitude/longitude (Weatherstack + Open-Meteo)
   const fetchRealWeatherForCoords = useCallback(async (lat: number, lon: number, locationLabel?: string) => {
@@ -659,6 +714,91 @@ export default function MobileEdgeNodePage() {
                 <span>Battery Voltage:</span>
               </span>
               <span className="text-emerald-300 font-bold">{batteryVoltage.toFixed(2)}V ({batteryLevel}%)</span>
+            </div>
+          </div>
+
+          {/* ─── LIVE MOBILE HARDWARE SENSOR OSCILLOSCOPE GRAPH ─── */}
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5 shadow-md">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-sky-400">
+                <Activity className="w-3.5 h-3.5 animate-pulse" />
+                <span>Live Hardware Sensor Oscilloscope</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-950/80 border border-sky-800/60 text-sky-300">
+                {isHardwareActive ? '● PHONE SENSORS' : '● SIMULATED HW'}
+              </span>
+            </div>
+
+            {/* Metric Toggle Chips */}
+            <div className="flex items-center gap-1 text-[10px] bg-slate-900 p-1 rounded-lg border border-slate-800 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setChartMetric('all')}
+                className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer shrink-0 ${
+                  chartMetric === 'all' ? 'bg-slate-800 text-white font-bold border border-slate-700' : 'text-slate-400'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMetric('pressure')}
+                className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer shrink-0 ${
+                  chartMetric === 'pressure' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold' : 'text-slate-400'
+                }`}
+              >
+                Pressure (hPa)
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMetric('elevation')}
+                className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer shrink-0 ${
+                  chartMetric === 'elevation' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold' : 'text-slate-400'
+                }`}
+              >
+                Elevation Δ (m)
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMetric('gust')}
+                className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer shrink-0 ${
+                  chartMetric === 'gust' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold' : 'text-slate-400'
+                }`}
+              >
+                Gust (km/h)
+              </button>
+            </div>
+
+            {/* Recharts Container */}
+            <div className="w-full h-[160px] bg-[#070d1e] rounded-lg p-1 border border-slate-800/80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={sensorHistory} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.5} />
+                  <XAxis dataKey="time" stroke="#475569" fontSize={9} tickLine={false} />
+                  <YAxis yAxisId="p" stroke="#38bdf8" fontSize={9} domain={['auto', 'auto']} tickLine={false} />
+                  {chartMetric === 'all' && (
+                    <YAxis yAxisId="g" orientation="right" stroke="#34d399" fontSize={9} domain={[0, 100]} tickLine={false} />
+                  )}
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '6px', fontSize: '10px' }}
+                  />
+                  {(chartMetric === 'all' || chartMetric === 'pressure') && (
+                    <Line yAxisId="p" type="monotone" dataKey="pressure" name="Baro (hPa)" stroke="#38bdf8" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  )}
+                  {(chartMetric === 'all' || chartMetric === 'gust') && (
+                    <Line yAxisId={chartMetric === 'all' ? 'g' : 'p'} type="monotone" dataKey="gust" name="Gust (km/h)" stroke="#34d399" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                  )}
+                  {chartMetric === 'elevation' && (
+                    <Line yAxisId="p" type="monotone" dataKey="elevation" name="Elev Δ (m)" stroke="#fbbf24" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono px-1">
+              <span>Baro: <strong className="text-sky-300 font-bold">{hardwarePressure ? hardwarePressure.toFixed(1) : press.toFixed(1)} hPa</strong></span>
+              <span>Kinetic Gust: <strong className="text-emerald-300 font-bold">{windGustKph.toFixed(1)} km/h</strong></span>
+              <span>Elev Δ: <strong className="text-amber-300 font-bold">{elevationDeltaMeters ? `${elevationDeltaMeters > 0 ? '+' : ''}${elevationDeltaMeters}m` : '0m'}</strong></span>
             </div>
           </div>
 
