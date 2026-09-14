@@ -1,5 +1,5 @@
 # UI/UX Design Specification & Design System (UIUXD)
-## National Automatic Weather Station Quality Management System (JATAYU-QMS v5.0)
+## National Automatic Weather Station Quality Management System (MetShield-QMS v4.2)
 ### Problem Statement SIH26073 | Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD)
 **Author: Lead UI/UX Designer & Accessibility Specialist | Version: 5.0 Production Candidate**
 
@@ -7,7 +7,7 @@
 
 ## 1. Executive Design Philosophy: The "Dual-DNA" Interface
 
-JATAYU-QMS v5.0 combines two visual identities into a single cohesive experience:
+MetShield-QMS v4.2 combines two visual identities into a single cohesive experience:
 
 1. **Sovereign Government Authority (GIGW v3.0 & NIC Guidelines)**:
    - Designed to meet the mandatory **Guidelines for Indian Government Websites (GIGW v3.0)**.

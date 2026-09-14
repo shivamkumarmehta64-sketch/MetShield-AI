@@ -1,5 +1,5 @@
 # System Limitations & SIH Problem Evaluation Report
-## National Automatic Weather Station Quality Management System (JATAYU-QMS v5.0)
+## National Automatic Weather Station Quality Management System (MetShield-QMS v4.2)
 ### Problem Statement SIH26073 | Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD)
 **Author: Lead Systems & Meteorological Architect**
 
@@ -9,20 +9,20 @@
 
 ### **THE VERDICT: YES — FULLY, DETERMINISTICALLY, AND OPERATIONALLY.**
 
-JATAYU-QMS directly and rigorously solves the fundamental mandate of **Smart India Hackathon Problem Statement SIH26073**:
+MetShield-QMS directly and rigorously solves the fundamental mandate of **Smart India Hackathon Problem Statement SIH26073**:
 
 ### 1.1 The Two Catastrophic Bottlenecks in Current IMD Operations Solved
 
-| Problem Dimension | Real-World Failure in Existing IMD/MoES Systems | How JATAYU-QMS Solves It Deterministically | Proven Verification Evidence |
+| Problem Dimension | Real-World Failure in Existing IMD/MoES Systems | How MetShield-QMS Solves It Deterministically | Proven Verification Evidence |
 | :--- | :--- | :--- | :--- |
-| **The "Catastrophic False Positive" (Convective Storm Blind Spot)** | Violent pre-monsoon squalls (Kalbaisakhi, Nor'westers, Haboobs) trigger abrupt barometric plunges ($\Delta P \le -2.0\text{ hPa}$) and sudden evaporative cooling ($\Delta T \le -3.0^\circ\text{C}$). Traditional static QC algorithms misclassify this as broken thermistors or failed barometers, **quarantine the packet, and suppress life-saving disaster warnings!** | JATAYU-QMS implements a **Multivariate Thermodynamic Convective Coupler**: checks whether pressure plunge ($\Delta P \le -1.5\text{ hPa}$) is physically coupled with relative humidity saturation ($\Delta RH \ge +8\%$) and downdraft cooling ($\Delta T \le -0.5^\circ\text{C}$). When physically coupled, it awards **WMO Flag 2 (GENUINE_CONVECTIVE_EVENT)**, marks data *"Validated for NWP Assimilation"*, and **suppresses false technician dispatches**. | Verified via Vitest unit test suite (`convective storm injection produces FLAG_2_CONVECTIVE_STORM`) and live interactive Bench Injection Drawer across 20 national stations. |
-| **The "Silent False Negative" (Undetected Sensor Degenerations)** | 1) An RTD thermistor cracks or experiences an open-circuit spike ($+50^\circ\text{C}$ jump).<br>2) A microcontroller ADC register freezes ($\sigma^2 = 0$).<br>3) A piezoresistive silicon barometer drifts slowly by $-0.4\text{ hPa/day}$ due to membrane fatigue. Corrupted data pollutes GFS/WRF numerical weather models nationwide. | JATAYU-QMS evaluates 3-tier deterministic tests: rate-of-change temporal checks, variance across sliding 6-tick buffers ($\sigma^2 < 10^{-8}$), and 24-sample linear regression drift tracking. It quarantines bad packets with **WMO Flag 3 (Drift)** or **WMO Flag 4 (Hardware Corrupt)**, issues automated maintenance work orders, and seamlessly reconstructs clean telemetry via WMO-compliant WMA and spatial baseline imputation. | Verified via test suite: `thermistor spike injection produces FLAG_4`, `frozen value injection produces FLAG_4`, and `barometer drift injection produces FLAG_3`. |
+| **The "Catastrophic False Positive" (Convective Storm Blind Spot)** | Violent pre-monsoon squalls (Kalbaisakhi, Nor'westers, Haboobs) trigger abrupt barometric plunges ($\Delta P \le -2.0\text{ hPa}$) and sudden evaporative cooling ($\Delta T \le -3.0^\circ\text{C}$). Traditional static QC algorithms misclassify this as broken thermistors or failed barometers, **quarantine the packet, and suppress life-saving disaster warnings!** | MetShield-QMS implements a **Multivariate Thermodynamic Convective Coupler**: checks whether pressure plunge ($\Delta P \le -1.5\text{ hPa}$) is physically coupled with relative humidity saturation ($\Delta RH \ge +8\%$) and downdraft cooling ($\Delta T \le -0.5^\circ\text{C}$). When physically coupled, it awards **WMO Flag 2 (GENUINE_CONVECTIVE_EVENT)**, marks data *"Validated for NWP Assimilation"*, and **suppresses false technician dispatches**. | Verified via Vitest unit test suite (`convective storm injection produces FLAG_2_CONVECTIVE_STORM`) and live interactive Bench Injection Drawer across 20 national stations. |
+| **The "Silent False Negative" (Undetected Sensor Degenerations)** | 1) An RTD thermistor cracks or experiences an open-circuit spike ($+50^\circ\text{C}$ jump).<br>2) A microcontroller ADC register freezes ($\sigma^2 = 0$).<br>3) A piezoresistive silicon barometer drifts slowly by $-0.4\text{ hPa/day}$ due to membrane fatigue. Corrupted data pollutes GFS/WRF numerical weather models nationwide. | MetShield-QMS evaluates 3-tier deterministic tests: rate-of-change temporal checks, variance across sliding 6-tick buffers ($\sigma^2 < 10^{-8}$), and 24-sample linear regression drift tracking. It quarantines bad packets with **WMO Flag 3 (Drift)** or **WMO Flag 4 (Hardware Corrupt)**, issues automated maintenance work orders, and seamlessly reconstructs clean telemetry via WMO-compliant WMA and spatial baseline imputation. | Verified via test suite: `thermistor spike injection produces FLAG_4`, `frozen value injection produces FLAG_4`, and `barometer drift injection produces FLAG_3`. |
 
 ---
 
 ## 2. In-Depth Comparative Analysis: Lacking & Limitations of Both Websites
 
-The JATAYU-QMS project encompasses two deployment platforms (Vercel vs Cloudflare Workers) and two user experiences (Desktop Operator Cockpit vs Mobile Companion). Here is the honest, rigorous evaluation of their architectures, limitations, and operational trade-offs.
+The MetShield-QMS project encompasses two deployment platforms (Vercel vs Cloudflare Workers) and two user experiences (Desktop Operator Cockpit vs Mobile Companion). Here is the honest, rigorous evaluation of their architectures, limitations, and operational trade-offs.
 
 ---
 
@@ -85,14 +85,14 @@ The JATAYU-QMS project encompasses two deployment platforms (Vercel vs Cloudflar
 
 ## 3. Detailed Breakdown: What Is Missing / Lacking in Current Implementations & How to Bridge It
 
-While JATAYU-QMS solves the hackathon problem statement with flying colors, production enterprise deployment across all 1,200+ IMD stations nationwide will benefit from the following future augmentations:
+While MetShield-QMS solves the hackathon problem statement with flying colors, production enterprise deployment across all 1,200+ IMD stations nationwide will benefit from the following future augmentations:
 
 ### 3.1 Radar / Satellite (INSAT-3D TIR-1) Doppler Coupling
-- **Current State**: JATAYU-QMS uses ground-level atmospheric thermodynamic coupling ($\Delta P, \Delta RH, \Delta T, \text{Wind}$) combined with Spatial KNN cross-validation across neighboring stations within 500km.
+- **Current State**: MetShield-QMS uses ground-level atmospheric thermodynamic coupling ($\Delta P, \Delta RH, \Delta T, \text{Wind}$) combined with Spatial KNN cross-validation across neighboring stations within 500km.
 - **Enhancement**: In mountainous terrain (e.g. Western Ghats, Himachal Pradesh), microclimates can cause localized convective storms without affecting neighbors 40km away. Ingesting INSAT-3D Thermal Infrared (TIR) cloud-top temperature ($<-40^\circ\text{C}$) or IMD Doppler Weather Radar (DWR) reflectivity ($>45\text{ dBZ}$) will provide 100% validation in sparse mountainous zones.
 
 ### 3.2 Bidirectional Hardware Calibration Loopback
-- **Current State**: When JATAYU-QMS detects barometric drift (e.g. $-1.5\text{ hPa}$), it flags the station, issues work order `IMD-QMS-2026-XXXX`, and applies dynamic software imputation offset to clean the NWP feed.
+- **Current State**: When MetShield-QMS detects barometric drift (e.g. $-1.5\text{ hPa}$), it flags the station, issues work order `IMD-QMS-2026-XXXX`, and applies dynamic software imputation offset to clean the NWP feed.
 - **Enhancement**: Implement a remote OTA (Over-The-Air) MQTT down-link to the Campbell Scientific / Sutron / Komoline datalogger to automatically adjust the transducer zero-offset register without requiring manual on-site potentiometer adjustment.
 
 ### 3.3 Historical Long-Term Trend Database
@@ -103,7 +103,7 @@ While JATAYU-QMS solves the hackathon problem statement with flying colors, prod
 
 ## 4. Summary Matrix: Problem Statement SIH26073 Requirements vs Solution
 
-| SIH26073 Requirement | JATAYU-QMS Implementation | Status |
+| SIH26073 Requirement | MetShield-QMS Implementation | Status |
 | :--- | :--- | :---: |
 | **Real-time QC of AWS Telemetry** | 3-Tier Multi-Parameter Quality Control running every 2.5s (<1ms per packet). | **COMPLETED & VERIFIED** |
 | **Severe Weather vs Sensor Fault Discrimination** | Coupled thermodynamic microburst formula ($\Delta P \le -1.5\text{ hPa}$, $\Delta RH \ge +8\%$, $\Delta T \le -0.5^\circ\text{C}$). | **COMPLETED & VERIFIED** |

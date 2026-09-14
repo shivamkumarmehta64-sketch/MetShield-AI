@@ -1,5 +1,5 @@
 {
-  "name": "jatayu",
+  "name": "metshield-ai",
   "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat"],
 
@@ -7,7 +7,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "jatayu-db",
+      "database_name": "metshield-db",
       "database_id": "782656b2-0693-4505-9cbb-f8005ea2d1c6"
     }
   ]

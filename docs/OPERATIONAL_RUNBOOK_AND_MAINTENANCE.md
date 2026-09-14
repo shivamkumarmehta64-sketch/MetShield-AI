@@ -1,5 +1,5 @@
 # Operational Runbook & Field Maintenance Standard (SOP)
-## National Automatic Weather Station Quality Management System (JATAYU-QMS v5.0)
+## National Automatic Weather Station Quality Management System (MetShield-QMS v4.2)
 ### Problem Statement SIH26073 | Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD)
 **Author: Lead Instrumentation & Operations Engineer | Document ID: SOP-IMD-QMS-2026-01**
 
@@ -9,13 +9,13 @@
 
 This Standard Operating Procedure (SOP) governs the triage, automated ticketing, diagnostic verification, on-site physical maintenance, and sensor recalibration for Automatic Weather Stations (AWS) operated under the India Meteorological Department (IMD).
 
-When the JATAYU-QMS algorithmic engine identifies an unphysical sensor anomaly (`WMO Flag 3: Suspect Drift` or `WMO Flag 4: Corrupt Hardware`), it automatically suppresses the corrupt data from the Numerical Weather Prediction (NWP) feed, applies WMO-compliant reconstruction, and issues an authorized Common Alerting Protocol (CAP v1.2) Maintenance Work Order.
+When the MetShield-QMS algorithmic engine identifies an unphysical sensor anomaly (`WMO Flag 3: Suspect Drift` or `WMO Flag 4: Corrupt Hardware`), it automatically suppresses the corrupt data from the Numerical Weather Prediction (NWP) feed, applies WMO-compliant reconstruction, and issues an authorized Common Alerting Protocol (CAP v1.2) Maintenance Work Order.
 
 ```
  [ Telemetry Packet Ingested ]
               │
               ▼
-   [ JATAYU-QMS Engine ]
+   [ MetShield-QMS Engine ]
    ├── Is Genuine Storm (Coupled ΔP, ΔT, ΔRH)? ──► [ YES ] ──► Feed NWP (Flag 2)
    └── [ NO: Transducer Anomaly ]
               │
@@ -55,7 +55,7 @@ When the JATAYU-QMS algorithmic engine identifies an unphysical sensor anomaly (
 
 ## 3. Common Alerting Protocol (CAP v1.2) Specification
 
-JATAYU-QMS automatically constructs CAP v1.2 compliant JSON and XML payloads adhering to the National Disaster Management Authority (NDMA) and MoES standards:
+MetShield-QMS automatically constructs CAP v1.2 compliant JSON and XML payloads adhering to the National Disaster Management Authority (NDMA) and MoES standards:
 
 ```json
 {
@@ -129,8 +129,8 @@ JATAYU-QMS automatically constructs CAP v1.2 compliant JSON and XML payloads adh
 ## 5. Work-Order Resolution & Re-Integration Protocol
 
 Once on-site repair or replacement is completed:
-1. The field engineer connects via the **JATAYU Mobile Companion** (`/mobile`) or sends SMS verification code to `IMD-QMS-GW`.
+1. The field engineer connects via the **MetShield Mobile Companion** (`/mobile`) or sends SMS verification code to `IMD-QMS-GW`.
 2. The technician inputs the bench calibration code: `CALIB-OK-[TICKET_ID]`.
-3. The JATAYU-QMS edge engine monitors 6 consecutive telemetry cycles ($15\text{s}$).
+3. The MetShield-QMS edge engine monitors 6 consecutive telemetry cycles ($15\text{s}$).
 4. If physical consistency and spatial cross-validation confirm nominal status (`FLAG_1_VERIFIED_GOOD`), the work order automatically transitions to `CLOSED_RESOLVED`.
 5. The station is seamlessly re-admitted into the primary NWP numerical ingestion pipeline.

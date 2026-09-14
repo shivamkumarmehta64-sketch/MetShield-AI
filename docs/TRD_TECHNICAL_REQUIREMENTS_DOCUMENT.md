@@ -1,5 +1,5 @@
 # Technical Requirements & Architecture Document (TRD)
-## National Automatic Weather Station Quality Management System (JATAYU-QMS v5.0)
+## National Automatic Weather Station Quality Management System (MetShield-QMS v4.2)
 ### Problem Statement SIH26073 | Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD)
 **Author: Lead Systems Architect | Version: 5.0 Production Candidate**
 
@@ -30,7 +30,7 @@
                                           │
                                           ▼
                 ┌──────────────────────────────────────────────────┐
-                │         JATAYU-QMS 3-TIER QC RUNTIME ENGINE      │
+                │         MetShield-QMS 3-TIER QC RUNTIME ENGINE      │
                 │   (Dual Support: Vercel Node.js & CF Workers)    │
                 └─────────────────────────┬────────────────────────┘
                                           │
@@ -117,7 +117,7 @@ $$S = \frac{|\Delta T|}{\Delta T_{\text{lim}}} + \frac{|\Delta P|}{\Delta P_{\te
 
 ## 3. Dual-Build Deployment Pipeline: Vercel & Cloudflare Workers
 
-JATAYU-QMS maintains a dual-build capability to guarantee zero platform lock-in:
+MetShield-QMS maintains a dual-build capability to guarantee zero platform lock-in:
 
 ### 3.1 Vercel Standard Deployment (`npm run build`)
 - **Engine**: Next.js 16.3.4 with Turbopack.

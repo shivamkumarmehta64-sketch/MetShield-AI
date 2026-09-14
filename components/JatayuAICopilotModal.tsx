@@ -21,7 +21,7 @@ interface Message {
   category?: 'diagnostic' | 'advisory' | 'wmo_standard' | 'general';
 }
 
-export const JatayuAICopilotModal: React.FC<Props> = ({
+export const MetshieldAICopilotModal: React.FC<Props> = ({
   isOpen,
   onClose,
   selectedStation,
@@ -269,4 +269,5 @@ export const JatayuAICopilotModal: React.FC<Props> = ({
   );
 };
 
-export const MetshieldAICopilotModal = JatayuAICopilotModal;
+export const JatayuAICopilotModal = MetshieldAICopilotModal;
+export default MetshieldAICopilotModal;

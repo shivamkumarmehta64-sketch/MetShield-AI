@@ -1,6 +1,6 @@
 /**
- * Project JATAYU — Service Worker (PWA Offline Support)
- * Version: jatayu-qms-v1
+ * MetShield AI — Service Worker (PWA Offline Support)
+ * Version: metshield-ai-v1
  *
  * Strategies:
  * - Cache-first for static assets (CSS, JS, fonts, images)
@@ -9,7 +9,7 @@
  * - Pre-caches landing page, dashboard, mobile interface, and audit report
  */
 
-const CACHE_NAME = 'jatayu-qms-v1';
+const CACHE_NAME = 'metshield-ai-v1';
 
 const PRECACHE_URLS = [
   '/',
@@ -17,7 +17,7 @@ const PRECACHE_URLS = [
   '/mobile',
   '/audit-report',
   '/manifest.json',
-  '/jatayu-seal.jpg',
+  '/metshield-logo.jpg',
   '/favicon.ico',
 ];
 
@@ -121,7 +121,7 @@ self.addEventListener('fetch', (event) => {
             success: false,
             status: 'offline',
             packets: [],
-            message: 'Network connection unavailable. Operating in JATAYU offline mode.',
+            message: 'Network connection unavailable. Operating in MetShield AI offline mode.',
             timestamp: new Date().toISOString(),
           };
 
@@ -194,7 +194,7 @@ self.addEventListener('fetch', (event) => {
           }
 
           return new Response(
-            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>JATAYU Offline</title><style>body{font-family:sans-serif;background:#030712;color:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;flex-direction:column}h1{color:#f59e0b}p{color:#94a3b8}</style></head><body><h1>JATAYU Offline</h1><p>You are currently offline. Please reconnect to access real-time telemetry.</p></body></html>',
+            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>MetShield AI Offline</title><style>body{font-family:sans-serif;background:#030712;color:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;flex-direction:column}h1{color:#38bdf8}p{color:#94a3b8}</style></head><body><h1>MetShield AI Offline</h1><p>You are currently offline. Please reconnect to access real-time telemetry.</p></body></html>',
             {
               status: 200,
               headers: { 'Content-Type': 'text/html' },

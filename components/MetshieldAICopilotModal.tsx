@@ -1,3 +1,6 @@
 'use client';
 
-export { JatayuAICopilotModal as MetshieldAICopilotModal } from './JatayuAICopilotModal';
+import { MetshieldAICopilotModal } from './JatayuAICopilotModal';
+
+export { MetshieldAICopilotModal };
+export default MetshieldAICopilotModal;

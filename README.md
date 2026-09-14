@@ -51,17 +51,17 @@ Surface automated weather sensors frequently encounter severe mechanical, electr
 
 ## 3. Operational Standards & Regulatory Compliance
 
-Project JATAYU is designed strictly against official national and international meteorological mandates:
+MetShield AI is designed strictly against official national and international meteorological mandates:
 
 ```mermaid
 graph LR
-    WMO["WMO-No. 8 & Zahumenský 2004<br/>Physical Tolerances & Step Limits"] --> JATAYU["Project JATAYU<br/>Operational QMS Engine"]
-    MoES["MoES & IMD Guidelines<br/>AWS Protocol (1,350+ Stations)"] --> JATAYU
-    NIC["NIC GIGW 3.0 & WCAG AAA<br/>Accessibility & Sovereignty"] --> JATAYU
-    DPDPA["DPDPA 2023 Compliance<br/>Zero-Tracking Sovereign Privacy"] --> JATAYU
+    WMO["WMO-No. 8 & Zahumenský 2004<br/>Physical Tolerances & Step Limits"] --> METSHIELD["MetShield AI<br/>Operational QMS Engine"]
+    MoES["MoES & IMD Guidelines<br/>AWS Protocol (1,350+ Stations)"] --> METSHIELD
+    NIC["NIC GIGW 3.0 & WCAG AAA<br/>Accessibility & Sovereignty"] --> METSHIELD
+    DPDPA["DPDPA 2023 Compliance<br/>Zero-Tracking Sovereign Privacy"] --> METSHIELD
 
-    JATAYU --> NWP["Approved Data Feed<br/>(NWP Assimilation Ready)"]
-    JATAYU --> NABL["NABL Work Order Dispatch<br/>(Field Maintenance Depot)"]
+    METSHIELD --> NWP["Approved Data Feed<br/>(NWP Assimilation Ready)"]
+    METSHIELD --> NABL["NABL Work Order Dispatch<br/>(Field Maintenance Depot)"]
 ```
 
 1. **WMO-No. 8 (Guide to Meteorological Instruments and Methods of Observation)**:
@@ -85,7 +85,7 @@ graph LR
 
 ## 4. Multi-Tier Intelligence Engine: Rules + Edge ML Classifier
 
-JATAYU-QMS employs an ensemble architecture combining **deterministic physical heuristics** with an **Edge ML Decision Tree Classifier**:
+MetShield-QMS employs an ensemble architecture combining **deterministic physical heuristics** with an **Edge ML Decision Tree Classifier**:
 
 ```
                               [ INCOMING TELEMETRY OBSERVATION ]
@@ -123,7 +123,7 @@ JATAYU-QMS employs an ensemble architecture combining **deterministic physical h
 
 ## 5. Mobile Smartphone as Distributed AWS Mesh Node (`/mobile`)
 
-Project JATAYU includes a Progressive Web App (PWA) field application turning any Android or iOS device into a field-grade telemetry node:
+MetShield AI includes a Progressive Web App (PWA) field application turning any Android or iOS device into a field-grade telemetry node:
 
 ```mermaid
 graph TD
@@ -172,9 +172,9 @@ The system includes the complete database of **all 766 administrative districts 
 
 ## 7. Complete Zero-Cost Public API Ecosystem
 
-Project JATAYU operates at **₹0 / $0 zero external infrastructure cost** by leveraging authoritative, free public meteorological, GIS, and geospatial APIs:
+MetShield AI operates at **₹0 / $0 zero external infrastructure cost** by leveraging authoritative, free public meteorological, GIS, and geospatial APIs:
 
-| Service / API | Endpoint / Provider | Usage in JATAYU-QMS | Cost / Tier |
+| Service / API | Endpoint / Provider | Usage in MetShield-QMS | Cost / Tier |
 | :--- | :--- | :--- | :--- |
 | **Official IMD City Forecast API** | `https://api.imd.gov.in/api/v1/cityforecast` | Authoritative government forecast assimilation | **Free Public Tier** |
 | **Open-Meteo Current & Forecast** | `https://api.open-meteo.com/v1/forecast` | Real-time global surface telemetry & multi-station batching | **Free (Non-commercial)** |
@@ -226,8 +226,8 @@ npm test
 ### Installation & Execution
 ```bash
 # 1. Clone the repository
-git clone https://github.com/shivamkumarmehta64-sketch/jatayu.git
-cd jatayu
+git clone https://github.com/shivamkumarmehta64-sketch/AWS2026.git
+cd AWS2026
 
 # 2. Install dependencies
 npm install
@@ -252,7 +252,7 @@ The portal is active at:
 
 ## 10. Institutional Deployment Blueprint (MeghRaj Cloud Migration)
 
-While the evaluation version runs on Vercel Serverless Edge Cloud for sub-millisecond worldwide responsiveness, Project JATAYU is architected with complete container portability for on-premise commissioning within the **National Informatics Centre (NIC MeghRaj) Sovereign Government Cloud**:
+While the evaluation version runs on Vercel Serverless Edge Cloud for sub-millisecond worldwide responsiveness, MetShield AI is architected with complete container portability for on-premise commissioning within the **National Informatics Centre (NIC MeghRaj) Sovereign Government Cloud**:
 
 ```
 [ Field AWS Network (1,350+ Stations) ]
@@ -261,7 +261,7 @@ While the evaluation version runs on Vercel Serverless Edge Cloud for sub-millis
 [ NIC MeghRaj Sovereign IoT Ingestion Cluster ]
                   │
                   ▼ (Containerized Microservices: Docker / Kubernetes)
-[ JATAYU-QMS Processing Core (Node.js Edge / Rust Engine) ]
+[ MetShield-QMS Processing Core (Node.js Edge / Rust Engine) ]
                   │
                   ├──► [ TimescaleDB / PostGIS Persistent Sovereign Archive ]
                   ├──► [ Real-Time NWP Gating Feed (BUFR / NetCDF4 Output) ]
@@ -273,7 +273,7 @@ While the evaluation version runs on Vercel Serverless Edge Cloud for sub-millis
 ## 11. Authors & Institutional Credits
 
 - **Project Lead & Architecture**: Shivam Kumar Mehta ([@shivamkumarmehta64-sketch](https://github.com/shivamkumarmehta64-sketch))
-- **Team**: Project JATAYU Innovation Team
+- **Team**: MetShield AI Innovation Team (AEROTECH)
 - **Competition**: Smart India Hackathon (SIH 2026)
 - **Problem Statement**: SIH26073 (Automatic Weather Station Quality Management System)
 - **Nodal Ministry**: Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD)

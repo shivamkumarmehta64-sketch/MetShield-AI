@@ -25,7 +25,7 @@ import { VayuNationalDashboard } from '@/components/VayuNationalDashboard';
 import { GovHeatwaveDSSPanel } from '@/components/GovHeatwaveDSSPanel';
 import { startPoller, pausePoller } from '@/lib/vayuPoller';
 import { IMDStationProfile } from '@/lib/stationData';
-import { JatayuAICopilotModal } from '@/components/JatayuAICopilotModal';
+import { MetshieldAICopilotModal } from '@/components/MetshieldAICopilotModal';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
 import { StormVsFaultSimulator } from '@/components/StormVsFaultSimulator';
 import { AIEnginePipeline } from '@/components/AIEnginePipeline';
@@ -777,7 +777,7 @@ export default function GovernmentAWSManagementPortal() {
         state={activeStation.state}
         language={language}
       />
-      <JatayuAICopilotModal
+      <MetshieldAICopilotModal
         isOpen={isAICopilotOpen}
         onClose={() => setIsAICopilotOpen(false)}
         selectedStation={activeStation}

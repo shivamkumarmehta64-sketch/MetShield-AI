@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-## National Automatic Weather Station Quality Management System (JATAYU-QMS v5.0)
+## National Automatic Weather Station Quality Management System (MetShield-QMS v4.2)
 ### Problem Statement SIH26073 | Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD)
 **Author: Lead Product & Systems Architect | Version: 5.0 Production Candidate**
 
@@ -9,7 +9,7 @@
 
 | Field | Value |
 | :--- | :--- |
-| **Product Name** | **JATAYU-QMS** (*Joint Atmospheric Telemetry & Anomaly Unification - Quality Management System*) |
+| **Product Name** | **MetShield-QMS** (*Joint Atmospheric Telemetry & Anomaly Unification - Quality Management System*) |
 | **Target Release** | Version 5.0 (SIH 2026 Production Candidate & Ministry Deployment) |
 | **Sponsoring Agency** | Ministry of Earth Sciences (MoES) / India Meteorological Department (IMD) |
 | **Problem Statement ID** | **SIH26073** |
@@ -58,7 +58,7 @@ Build an **autonomous, zero-operating-cost (₹0), edge-delivered quality manage
 ### 3.3 Persona 3: Ananya Sen — NWP Numerical Data Assimilation Engineer (NCMRWF)
 - **Role**: Ingests observational surface telemetry into high-resolution WRF/GFS forecast models.
 - **Core Need**: Continuous, clean, gap-free observational matrices where missing or corrupted values are seamlessly imputed.
-- **Workflow**: Subscribes to JATAYU-QMS clean telemetry stream (`/api/telemetry`) $\to$ Ingests data streams tagged with WMO Quality Flags, utilizing reconstructed values (`imputed.wasCorrected = true`).
+- **Workflow**: Subscribes to MetShield-QMS clean telemetry stream (`/api/telemetry`) $\to$ Ingests data streams tagged with WMO Quality Flags, utilizing reconstructed values (`imputed.wasCorrected = true`).
 
 ### 3.4 Persona 4: SIH Hackathon Evaluation Jury
 - **Role**: Validates innovation, algorithmic accuracy, edge scalability, and cost efficiency.

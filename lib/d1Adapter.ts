@@ -1,5 +1,5 @@
 /**
- * Project JATAYU: Joint Atmospheric Telemetry & Anomaly Unification
+ * MetShield AI: Meteorological Edge Telemetry Shield
  * Cloudflare D1 Serverless SQLite Edge Adapter (100% Zero-Cost Persistence)
  *
  * Provides resilient, low-latency (<5ms) persistent storage across Cloudflare's
