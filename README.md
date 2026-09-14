@@ -226,8 +226,8 @@ npm test
 ### Installation & Execution
 ```bash
 # 1. Clone the repository
-git clone https://github.com/shivamkumarmehta64-sketch/AWS2026.git
-cd AWS2026
+git clone https://github.com/shivamkumarmehta64-sketch/MetShield-AI.git
+cd MetShield-AI
 
 # 2. Install dependencies
 npm install
