@@ -45,3 +45,21 @@ next-env.d.ts
 /dist/
 .vinext/
 .wrangler/
+
+# Reference mockups & design drafts
+ref_pages/
+
+# Video recordings & test dumps
+public/videos/
+public/*.mp4
+public/*.webm
+public/*.webp
+public/recorder.html
+public/walkthrough.html
+*.pptx
+
+# AI assistant & tooling artifacts
+.claude/
+AGENTS.md
+CLAUDE.md
+skills-lock.json

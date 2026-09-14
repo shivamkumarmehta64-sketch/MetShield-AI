@@ -39,7 +39,6 @@ function isOriginAllowed(originHeader: string | null): boolean {
     if (
       host === 'metshield-ai.vercel.app' ||
       host.endsWith('.vercel.app') ||
-      host === 'jatayu-qms.vercel.app' ||
       host.endsWith('.pages.dev')
     ) {
       return true;

@@ -6,7 +6,7 @@
 [![Next.js 16](https://img.shields.io/badge/Next.js-16.3.4-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-5.x_Strict-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![WMO-No. 8](https://img.shields.io/badge/Standard-WMO--No._8-002147)](https://library.wmo.int/records/item/41650-guide-to-instruments-and-methods-of-observation)
-[![Vitest Passing](https://img.shields.io/badge/Tests-14%2F14_Passed-success?logo=vitest)](https://vitest.dev/)
+[![Vitest Passing](https://img.shields.io/badge/Tests-17%2F17_Passed-success?logo=vitest)](https://vitest.dev/)
 [![ESLint Clean](https://img.shields.io/badge/ESLint-0_Errors_%2F_0_Warnings-emerald)](https://eslint.org/)
 [![Zero Cost](https://img.shields.io/badge/Operating_Cost-%E2%82%B90_Zero_Cost-brightgreen)](#7-complete-zero-cost-public-api-ecosystem)
 [![NIC GIGW](https://img.shields.io/badge/Compliance-GIGW_3.0_%26_WCAG_AAA-orange)](https://guidelines.india.gov.in/)
@@ -40,12 +40,15 @@ Surface automated weather sensors frequently encounter severe mechanical, electr
 
 | Letter | Representation | Meteorological & Architectural Function |
 | :---: | :--- | :--- |
-| **J** | **Joint** | Unified telemetry assimilation across MoES, IMD, State Disaster Management Authorities (SDMA), and regional radar centers. |
-| **A** | **Atmospheric** | High-precision thermodynamics surveillance: Ambient Temperature ($T$), Barometric Pressure ($P$), Relative Humidity ($RH$), Wind Speed ($W$), Wind Direction ($WD$), Solar Irradiance ($SR$), and Rainfall ($R$). |
+| **M** | **Meteorological** | Surface observation network coverage across MoES, IMD, State Disaster Management Authorities (SDMA), and regional radar centers. |
+| **E** | **Edge-Native** | Sub-millisecond on-device anomaly discrimination and processing without server dependencies (<5ms latency). |
 | **T** | **Telemetry &** | Dual-channel uplink ingestion: INSAT-3D UHF (402.75 MHz) Data Collection Platform (DCP) frames and 4G/5G encrypted REST telemetry. |
-| **A** | **Anomaly** | Microsecond discrimination between transducer failures and severe convective atmospheric phenomena. |
-| **Y** | **Yield /** | WMO-certified data purity maximizing assimilation efficiency into global and regional forecasting ensembles. |
-| **U** | **Unification** | End-to-end gating, digital audit ledger, NABL dispatch generation, and national GIS district grid synchronization. |
+| **S** | **Surveillance** | Continuous multi-parameter monitoring for physical range violations, Zahumenský step limits, and sensor drift. |
+| **H** | **Heuristic & ML** | Hybrid deterministic thermodynamic invariant rules coupled with an Edge ML Decision Tree Classifier. |
+| **I** | **Imputation** | WMO-compliant 5-step Gaussian Weighted Moving Average (WMA) and spatial K-Nearest Neighbors (KNN) reconstruction. |
+| **E** | **Explainable AI** | SHAP-compliant normalized parameter attribution and root-cause diagnostic telemetry tagging. |
+| **L** | **Ledger & Audit** | Cryptographically sealed HMAC-SHA256 telemetry verification and automated NABL maintenance dispatch logs. |
+| **D** | **Defense** | Zero-trust quarantine of corrupted transducer packets preventing contamination of Numerical Weather Prediction (NWP) models. |
 
 ---
 
@@ -199,21 +202,24 @@ The repository includes a comprehensive automated test suite powered by **Vitest
 npm test
 ```
 
-### Verified Test Cases (14/14 Passing in ~250ms):
+### Verified Test Cases (17/17 Passing in ~250ms):
 1. **FLAG_1_VERIFIED_GOOD**: Nominal observations pass without alarms.
 2. **FLAG_2_CONVECTIVE_STORM**: Coupled barometric drop + RH jump verified as genuine atmospheric weather (not a sensor fault).
 3. **FLAG_3_SUSPECT_DRIFT**: Monotonic pressure drift flags recalibration warning.
-4. **FLAG_4_CORRUPT_HARDWARE (Spike)**: Thermistor step spike to 54.8°C quarantined immediately.
+4. **FLAG_4_CORRUPT_HARDWARE (Spike)**: Thermistor step spike quarantined immediately.
 5. **FLAG_4_CORRUPT_HARDWARE (Frozen)**: Zero-variance reading across 6 ticks triggers stuck ADC flag.
 6. **FLAG_5_PACKET_LOSS**: Null sensor inputs initiate telemetry packet loss flag.
 7. **WMA Imputation Integrity**: Null raw sensor values yield valid, non-null imputed replacements.
-8. **Spatial KNN Cross-Validation**: Multiple anomalous neighbors classify event as `REGIONAL_WEATHER`; isolated anomaly classifies as `SINGLE_NODE_FAULT`.
-9. **XAI Attribution Summation**: SHAP/Zahumenský attribution weights sum to $100.0\% \pm 0.1\%$.
-10. **HMAC Security Seals**: Every telemetry packet includes a valid `0x...` HMAC-SHA256 signature.
-11. **Station Coordinates Bounds**: All 21 stations confirmed within India geographic bounding box ($6^\circ\text{N} - 38^\circ\text{N}$, $68^\circ\text{E} - 98^\circ\text{E}$).
-12. **Station ID Schema**: Conforms strictly to regex `^AWS-[A-Z]{3}-[0-9]{2}$`.
-13. **WMO Block Numbering**: Verified 5-digit WMO block numbers (Region II: Asia).
-14. **Station ID Uniqueness**: Zero collisions across all reference observatories.
+8. **Spatial KNN Cross-Validation (Regional Weather)**: Multiple anomalous neighbors classify event as `REGIONAL_WEATHER`.
+9. **Spatial KNN Cross-Validation (Single Node Fault)**: Isolated anomaly classifies as `SINGLE_NODE_FAULT`.
+10. **XAI Attribution Summation**: SHAP/Zahumenský attribution weights sum to $100.0\% \pm 0.1\%$.
+11. **HMAC Security Seals**: Every telemetry packet includes a valid `0x...` HMAC-SHA256 signature.
+12. **Barometric QNH Reduction**: Altimeter equation adjusts station pressure to MSL using hypsometric formula.
+13. **Cloudflare D1 Work Order Resolution**: Edge storage adapter registers and resolves maintenance work orders.
+14. **Station Coordinates Bounds**: All 21 stations confirmed within India geographic bounding box ($6^\circ\text{N} - 38^\circ\text{N}$, $68^\circ\text{E} - 98^\circ\text{E}$).
+15. **Station ID Schema**: Conforms strictly to regex `^AWS-[A-Z]{3}-[0-9]{2}$`.
+16. **WMO Block Numbering**: Verified 5-digit WMO block numbers (Region II: Asia).
+17. **Station ID Uniqueness**: Zero collisions across all reference observatories.
 
 ---
 
@@ -234,7 +240,7 @@ npm install
 
 # 3. Verify code quality & tests
 npm run lint    # 0 errors, 0 warnings
-npm test        # 14/14 tests pass
+npm test        # 17/17 tests pass
 
 # 4. Start development server
 npm run dev
