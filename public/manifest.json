@@ -1,13 +1,13 @@
 {
-  "name": "Metshield AI — Automated Weather Station Quality Management System",
-  "short_name": "Metshield AI",
-  "description": "Metshield AI — Real-time WMO Pub 8 sensor quality control, edge anomaly discrimination, and predictive hardware sensor streaming.",
+  "name": "MetShield AI",
+  "short_name": "MetShield",
+  "description": "Zero-cost edge AI telemetry monitoring for meteorological networks.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#0b1329",
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
   "icons": [
     {
       "src": "/metshield-logo.jpg",

@@ -43,8 +43,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-[#070d1e] text-[#f8fafc] font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+    <html lang="en" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased theme-console`}>
+      {/* Surfaces and ink come from the token system (app/tokens.css). Each route
+          opts into the dark field ramp with `.theme-field` when it needs it. */}
+      <body className="min-h-full flex flex-col bg-[var(--surface-base)] text-[var(--text-primary)] font-sans selection:bg-[var(--accent-subtle)] selection:text-[var(--text-primary)]">
         {children}
         {process.env.NODE_ENV === 'production' && (
           <Script

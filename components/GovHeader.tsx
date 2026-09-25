@@ -48,11 +48,11 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="font-bold text-cyan-400 text-[11px] sm:text-xs tracking-tight flex items-center gap-1">
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-              Metshield Telemetry QMS
+              MetShield AI
             </span>
             <span className="text-slate-600 hidden sm:inline">•</span>
             <span className="font-medium text-slate-300 truncate text-[11px] sm:text-xs">
-              Automated Weather Station Quality Management System (AWS-QMS)
+              Intelligent Weather Telemetry
             </span>
           </div>
 
@@ -131,7 +131,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
                   <span className="text-cyan-400 font-extrabold">AI</span>
                 </span>
                 <span className="bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-cyan-400/40">
-                  AWS-QMS
+                  Telemetry Engine
                 </span>
                 <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-emerald-400/40 hidden sm:inline">
                   WMO Pub 8 Compliant
@@ -139,8 +139,8 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
               </div>
               <p className="text-[11px] text-slate-300 hidden sm:block">
                 {language === 'hi'
-                  ? 'स्वचालित मौसम स्टेशन गुणवत्ता प्रबंधन प्रणाली • 24x7 इंटेलिजेंट वेदर टेलीमेट्री'
-                  : 'Automated Weather Station Quality Management System • 24x7 Intelligent Telemetry'}
+                  ? 'इंटेलिजेंट वेदर टेलीमेट्री'
+                  : 'Intelligent Weather Telemetry • Real-Time AI Diagnostics'}
               </p>
             </div>
           </div>

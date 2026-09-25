@@ -34,7 +34,7 @@ import { StormVsFaultSimulator } from '@/components/StormVsFaultSimulator';
 import { AIEnginePipeline } from '@/components/AIEnginePipeline';
 import { WeatherAtmosphereCanvas } from '@/components/WeatherAtmosphereCanvas';
 import { GovSpatialConsensusPanel } from '@/components/GovSpatialConsensusPanel';
-import { GovInstitutionalConsole } from '@/components/GovInstitutionalConsole';
+
 
 /* ─── Animated Counter Hook ─── */
 function useCounter(target: number, duration = 2000, decimals = 0) {
@@ -570,7 +570,7 @@ export default function LandingPage() {
         </div>
 
         {/* Live Recharts + Incident Stream + Stealth Diagnostic Bench Drawer */}
-        <GovInstitutionalConsole lang={lang} />
+        <div className="p-12 text-center text-slate-400 font-mono text-sm">GovInstitutionalConsole has been replaced by the Hybrid UI. View it at /dashboard</div>
       </section>
 
       {/* ─── SECTION 3: INTERACTIVE PHYSICS PROOF (STORM VS FAULT SIMULATOR) ─── */}
