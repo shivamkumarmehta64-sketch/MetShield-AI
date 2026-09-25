@@ -233,7 +233,7 @@ export function useStationTelemetry(
           // createWorkOrder requires activePacket and ruleEngineMode
           setIncidents((prev) => {
              // Avoid duplicating if we already recorded it this second
-             if (prev.some(w => w.workOrderId.includes(activePacket.stationId) && Math.abs(w.timestamp - activePacket.timestamp) < 5000)) return prev;
+             if (prev.some(w => w.ticketId.includes(activePacket.stationId) && Math.abs(new Date(w.timestamp).getTime() - activePacket.timestamp) < 5000)) return prev;
              
              // createWorkOrder is imported in this file
              // We need to construct it inline if missing or use the imported function
