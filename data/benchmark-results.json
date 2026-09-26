@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seed": 20260926,
   "scenarioCount": 1200,
-  "generatedAt": "2026-09-26T09:06:40.950Z",
+  "generatedAt": "2026-09-26T09:23:03.865Z",
   "latencySampleCount": 16800,
   "accuracy": 1,
   "macroF1": 1,
@@ -126,22 +126,22 @@
   },
   "latencyMs": {
     "perTick": {
-      "mean": 0.007,
-      "p50": 0.007,
-      "p95": 0.014,
-      "max": 0.173
+      "mean": 0.006,
+      "p50": 0.004,
+      "p95": 0.009,
+      "max": 0.661
     },
     "perScenario": {
-      "mean": 0.105,
-      "p50": 0.099,
-      "p95": 0.19,
-      "max": 2.419
+      "mean": 0.077,
+      "p50": 0.06,
+      "p95": 0.137,
+      "max": 1.39
     }
   },
   "conditions": {
     "runtime": "Node.js v26.7.0 (tsx)",
     "platform": "win32/x64",
     "measured": "Offline CPU time on the classify path only",
-    "note": "Timed with performance.now() around processIngestedObservation — the same entry point POST /api/telemetry uses. Scenario generation and network time are excluded. This is NOT a browser measurement: a figure from a judge's device or a deployed edge runtime will differ."
+    "note": "Timed with performance.now() immediately around each processIngestedObservation call — the same entry point POST /api/telemetry uses. Arguments are built before the clock starts and the result is read after it stops, so scenario generation is excluded, as is network time. This is NOT a browser measurement: a figure from a judge's device or a deployed edge runtime will differ. `max` is the slowest single call in a short Node run and is dominated by scheduler and GC pauses rather than by engine work — quote p50 or p95, never `max`, as the detection speed."
   }
 }

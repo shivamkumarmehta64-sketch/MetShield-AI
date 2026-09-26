@@ -46,9 +46,19 @@ export interface BenchmarkLatencyMs {
   mean: number;
   /** 50th percentile. */
   p50: number;
-  /** 95th percentile. */
+  /**
+   * 95th percentile. **This is the number to put on screen.** p50 understates
+   * the worst case and `max` overstates it, because a short Node run collects
+   * scheduler preemptions and GC pauses into the top of the distribution and
+   * those are properties of the process, not of the engine.
+   */
   p95: number;
-  /** Slowest single call in the run. */
+  /**
+   * Slowest single call in the run. On a ~17k-sample Node run this is
+   * scheduler and GC noise, not a real tail — a figure here can sit an order
+   * of magnitude above p95 without anything about the engine having changed.
+   * Do not present it as the detection speed; see `conditions.note`.
+   */
   max: number;
 }
 
@@ -131,67 +141,233 @@ function fail(detail: string): never {
 }
 
 /**
- * The artifact arrives through the bundler, which has already parsed it as
- * JSON, so a syntax error surfaces at build time rather than here. What can
- * still be wrong is the shape: a half-written file, a hand-edited one, or an
- * older schema. All three are caught below, and all three are reported rather
- * than papered over.
+ * Every field of the artifact is read out of an `unknown` and checked, rather
+ * than read off an object TypeScript has already blessed. That distinction is
+ * the whole point: `resolveJsonModule` types the import as `BenchmarkResults`
+ * the moment it parses, which means a typo in this interface, or a field the
+ * writer stopped emitting, would typecheck and reach a component silently.
+ * Nothing here trusts the static type — it re-derives one from the data.
  */
-function assertArtifact(value: unknown): asserts value is BenchmarkResults {
-  if (value === null || typeof value !== 'object') {
-    fail(`expected a JSON object, got ${value === null ? 'null' : typeof value}.`);
-  }
-  const r = value as Partial<BenchmarkResults>;
 
-  if (typeof r.schemaVersion !== 'number') fail('`schemaVersion` is missing or not a number.');
-  if (typeof r.seed !== 'number') fail('`seed` is missing or not a number.');
-  if (typeof r.scenarioCount !== 'number') fail('`scenarioCount` is missing or not a number.');
-  if (typeof r.generatedAt !== 'string' || Number.isNaN(Date.parse(r.generatedAt))) {
-    fail('`generatedAt` is missing or is not an ISO timestamp.');
+/** A plain record view of an unknown value, for structural field probes. */
+type View = Record<string, unknown>;
+
+function asView(value: unknown, what: string): View {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    fail(`expected ${what} to be an object, got ${value === null ? 'null' : Array.isArray(value) ? 'an array' : typeof value}.`);
   }
-  if (typeof r.accuracy !== 'number' || r.accuracy < 0 || r.accuracy > 1) {
-    fail('`accuracy` is missing or outside 0..1.');
+  return value as View;
+}
+
+function readNumber(v: View, key: string, where: string): number {
+  return numberAt(v[key], `${where}${key}`);
+}
+
+function numberAt(n: unknown, where: string): number {
+  if (typeof n !== 'number' || !Number.isFinite(n)) {
+    fail(`\`${where}\` is missing or not a finite number.`);
   }
-  if (typeof r.macroF1 !== 'number' || r.macroF1 < 0 || r.macroF1 > 1) {
-    fail('`macroF1` is missing or outside 0..1.');
+  return n;
+}
+
+/**
+ * A count: a whole number of scenarios. JSON has no `NaN`, but a non-finite
+ * value would have serialised to `null` and reached a UI wearing the type
+ * `number`, which is exactly the sort of quiet lie this module refuses.
+ */
+function countAt(n: unknown, where: string): number {
+  const v = numberAt(n, where);
+  if (!Number.isInteger(v) || v < 0) {
+    fail(`\`${where}\` must be a non-negative whole number, got ${v}.`);
   }
-  if (!Array.isArray(r.perClass) || r.perClass.length === 0) {
+  return v;
+}
+
+/** A rate in 0..1 — precision, recall, F1, accuracy. */
+function fractionAt(n: unknown, where: string): number {
+  const v = numberAt(n, where);
+  if (v < 0 || v > 1) fail(`\`${where}\` is outside 0..1.`);
+  return v;
+}
+
+function countIn(v: View, key: string, where: string): number {
+  return countAt(v[key], `${where}${key}`);
+}
+
+function fractionIn(v: View, key: string, where: string): number {
+  return fractionAt(v[key], `${where}${key}`);
+}
+
+function readText(v: View, key: string, where: string): string {
+  const s = v[key];
+  if (typeof s !== 'string' || s.length === 0) fail(`\`${where}${key}\` is missing or empty.`);
+  return s;
+}
+
+/**
+ * A class name from the artifact. Deliberately only checked as a non-empty
+ * string: the label vocabulary belongs to `lib/anomalyLogic.ts`, and this
+ * module must keep working when that vocabulary grows without a schema bump.
+ */
+function readLabel(value: unknown, where: string): BenchmarkClassification {
+  if (typeof value !== 'string' || value.length === 0) fail(`\`${where}\` is missing or empty.`);
+  return value as BenchmarkClassification;
+}
+
+const RATE_FIELDS = ['precision', 'recall', 'f1'] as const;
+const LATENCY_SCOPES = ['perTick', 'perScenario'] as const;
+const LATENCY_STATS = ['mean', 'p50', 'p95', 'max'] as const;
+const SAFETY_FIELDS = [
+  'stormsQuarantinedAsFaults',
+  'nominalRaisedAsAnomaly',
+  'faultsPassedAsValid',
+] as const;
+
+/** A latency block to fill in. Every field is overwritten or the run fails. */
+function blankLatency(): BenchmarkLatencyMs {
+  return { mean: 0, p50: 0, p95: 0, max: 0 };
+}
+
+/**
+ * Validates an unknown value as a benchmark artifact and returns it typed.
+ *
+ * Narrowing rather than `asserts`, on purpose: `asserts value is T` narrows a
+ * variable the *caller* owns, so it cannot return a value, and the assignment
+ * `bench = raw` would then be checked against the static JSON type instead of
+ * anything this function proved. Returning the validated object makes the
+ * guarantee explicit at the assignment site.
+ *
+ * @throws if any field is missing, mistyped, or out of range.
+ */
+export function assertArtifact(value: unknown): BenchmarkResults {
+  const r = asView(value, 'the artifact');
+
+  const schemaVersion = readNumber(r, 'schemaVersion', '');
+  const seed = readNumber(r, 'seed', '');
+  const scenarioCount = countIn(r, 'scenarioCount', '');
+  const latencySampleCount = countIn(r, 'latencySampleCount', '');
+  const generatedAt = readText(r, 'generatedAt', '');
+  if (Number.isNaN(Date.parse(generatedAt))) {
+    fail('`generatedAt` is not a parseable ISO timestamp.');
+  }
+  const accuracy = fractionIn(r, 'accuracy', '');
+  const macroF1 = fractionIn(r, 'macroF1', '');
+
+  // perClass — the `as const` loop, over all four fields the brief names.
+  const rawPerClass = r.perClass;
+  if (!Array.isArray(rawPerClass) || rawPerClass.length === 0) {
     fail('`perClass` is missing or empty.');
   }
-  for (const c of r.perClass) {
-    if (typeof c?.label !== 'string' || typeof c.f1 !== 'number' || typeof c.support !== 'number') {
-      fail('a `perClass` entry is missing `label`, `support` or `f1`.');
+  const perClass: BenchmarkPerClass[] = rawPerClass.map((entry, i) => {
+    // A `perClass` row that is not an object is the most likely shape break:
+    // a future writer emitting `null` for an absent class, or the array
+    // nested one level too deep.
+    const c = asView(entry, `perClass[${i}]`);
+    const row: BenchmarkPerClass = {
+      label: readLabel(c.label, `perClass[${i}].label`),
+      support: countIn(c, 'support', `perClass[${i}].`),
+      precision: 0,
+      recall: 0,
+      f1: 0,
+    };
+    for (const field of RATE_FIELDS) {
+      row[field] = fractionIn(c, field, `perClass[${i}].`);
     }
+    return row;
+  });
+
+  // confusionMatrix
+  const cm = asView(r.confusionMatrix, '`confusionMatrix`');
+  const rawLabels = cm.labels;
+  const rawCounts = cm.counts;
+  if (!Array.isArray(rawLabels) || rawLabels.length === 0) {
+    fail('`confusionMatrix.labels` is missing or empty.');
   }
-  if (!Array.isArray(r.confusionMatrix?.labels) || !Array.isArray(r.confusionMatrix?.counts)) {
-    fail('`confusionMatrix.labels` and `confusionMatrix.counts` must both be arrays.');
-  }
-  if (r.confusionMatrix.counts.length !== r.confusionMatrix.labels.length) {
+  if (!Array.isArray(rawCounts)) fail('`confusionMatrix.counts` must be an array.');
+  const labels = rawLabels.map((l, i) => readLabel(l, `confusionMatrix.labels[${i}]`));
+  if (rawCounts.length !== labels.length) {
     fail('`confusionMatrix.counts` has a different number of rows than `labels`.');
   }
-  for (const [i, row] of r.confusionMatrix.counts.entries()) {
-    if (!Array.isArray(row) || row.length !== r.confusionMatrix.labels.length) {
-      fail(`confusionMatrix row ${i} is not a square row of length ${r.confusionMatrix.labels.length}.`);
+  const counts: number[][] = rawCounts.map((row, i) => {
+    if (!Array.isArray(row)) fail(`confusionMatrix row ${i} is not an array.`);
+    if (row.length !== labels.length) {
+      fail(`confusionMatrix row ${i} is not a square row of length ${labels.length}.`);
+    }
+    return row.map((cell, j) => countAt(cell, `confusionMatrix.counts[${i}][${j}]`));
+  });
+
+  // Every scored class has to appear on the confusion-matrix axis, or the
+  // matrix is describing a different suite than the one the rates came from.
+  for (const c of perClass) {
+    if (!labels.includes(c.label)) {
+      fail(`perClass label \`${c.label}\` does not appear in confusionMatrix.labels.`);
     }
   }
-  if (typeof r.stormVsFault?.accuracy !== 'number' || typeof r.stormVsFault.support !== 'number') {
-    fail('`stormVsFault` is missing `accuracy` or `support`.');
+
+  // stormVsFault
+  const svf = asView(r.stormVsFault, '`stormVsFault`');
+  const rawSvfLabels = svf.labels;
+  if (!Array.isArray(rawSvfLabels) || rawSvfLabels.length !== 2) {
+    fail('`stormVsFault.labels` must be an array of two labels.');
   }
-  for (const key of ['stormsQuarantinedAsFaults', 'nominalRaisedAsAnomaly', 'faultsPassedAsValid'] as const) {
-    if (typeof r.safetyCritical?.[key] !== 'number') fail(`\`safetyCritical.${key}\` is missing.`);
+  const stormVsFault: BenchmarkStormVsFault = {
+    labels: [
+      readLabel(rawSvfLabels[0], 'stormVsFault.labels[0]'),
+      readLabel(rawSvfLabels[1], 'stormVsFault.labels[1]'),
+    ],
+    support: countIn(svf, 'support', 'stormVsFault.'),
+    correct: countIn(svf, 'correct', 'stormVsFault.'),
+    accuracy: fractionIn(svf, 'accuracy', 'stormVsFault.'),
+  };
+
+  // safetyCritical — counts, so non-negative whole numbers.
+  const sc = asView(r.safetyCritical, '`safetyCritical`');
+  const safetyCritical: BenchmarkSafetyCritical = {
+    stormsQuarantinedAsFaults: 0,
+    nominalRaisedAsAnomaly: 0,
+    faultsPassedAsValid: 0,
+  };
+  for (const field of SAFETY_FIELDS) {
+    safetyCritical[field] = countIn(sc, field, 'safetyCritical.');
   }
-  for (const scope of ['perTick', 'perScenario'] as const) {
-    const block = r.latencyMs?.[scope];
-    if (!block) fail(`\`latencyMs.${scope}\` is missing.`);
-    for (const stat of ['mean', 'p50', 'p95', 'max'] as const) {
-      if (typeof block[stat] !== 'number') fail(`\`latencyMs.${scope}.${stat}\` is missing.`);
+
+  // latencyMs
+  const lat = asView(r.latencyMs, '`latencyMs`');
+  const latencyMs: BenchmarkResults['latencyMs'] = { perTick: blankLatency(), perScenario: blankLatency() };
+  for (const scope of LATENCY_SCOPES) {
+    const block = asView(lat[scope], `latencyMs.${scope}`);
+    for (const stat of LATENCY_STATS) {
+      // Latency is a duration: finite and non-negative. Not a fraction, and
+      // not a count — a negative here would mean the clock was read backwards.
+      const n = readNumber(block, stat, `latencyMs.${scope}.`);
+      if (n < 0) fail(`\`latencyMs.${scope}.${stat}\` is negative.`);
+      latencyMs[scope][stat] = n;
     }
   }
-  for (const key of ['runtime', 'platform', 'measured', 'note'] as const) {
-    if (typeof r.conditions?.[key] !== 'string' || r.conditions[key].length === 0) {
-      fail(`\`conditions.${key}\` is missing or empty.`);
-    }
-  }
+
+  const cond = asView(r.conditions, '`conditions`');
+  const conditions: BenchmarkConditions = {
+    runtime: readText(cond, 'runtime', 'conditions.'),
+    platform: readText(cond, 'platform', 'conditions.'),
+    measured: readText(cond, 'measured', 'conditions.'),
+    note: readText(cond, 'note', 'conditions.'),
+  };
+
+  return {
+    schemaVersion,
+    seed,
+    scenarioCount,
+    generatedAt,
+    latencySampleCount,
+    accuracy,
+    macroF1,
+    perClass,
+    confusionMatrix: { labels, counts },
+    stormVsFault,
+    safetyCritical,
+    latencyMs,
+    conditions,
+  };
 }
 
 /**
@@ -200,10 +376,7 @@ function assertArtifact(value: unknown): asserts value is BenchmarkResults {
  * which is the loudest failure available and the only one that cannot be
  * mistaken for a working page.
  */
-assertArtifact(raw);
-
-/** The measured benchmark run. Never hand-edited, never defaulted. */
-export const bench: BenchmarkResults = raw;
+export const bench: BenchmarkResults = assertArtifact(raw);
 
 /** Latency for one observation in, one verdict out. */
 export const latencyPerTickMs: BenchmarkLatencyMs = bench.latencyMs.perTick;

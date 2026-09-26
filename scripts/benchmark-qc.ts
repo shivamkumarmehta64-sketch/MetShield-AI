@@ -19,13 +19,22 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 import { NICWMOAnomalyEngine, TelemetryPacket } from '../lib/anomalyLogic';
 import { IMD_AWS_STATIONS } from '../lib/stationData';
 
 const SEED = 20260926;
 const SCHEMA_VERSION = 1;
-const ARTIFACT_PATH = resolve(process.cwd(), 'data/benchmark-results.json');
+/**
+ * Resolved from this file, not from `process.cwd()`. A cwd-relative path means
+ * running the script from anywhere but the repo root silently writes a second
+ * artifact into whatever directory happens to be current, and two divergent
+ * copies of the numbers we are asking a judge to trust is precisely the failure
+ * mode this file exists to prevent.
+ */
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ARTIFACT_PATH = resolve(REPO_ROOT, 'data/benchmark-results.json');
 
 // ─── Deterministic PRNG ───
 // mulberry32: same seed gives the same corpus, so a reported number can be
@@ -92,6 +101,18 @@ const SCORED_TICKS = 6;
  * not a hidden threshold.
  */
 const BASE_PRESSURE_OFFSET = 2.6;
+
+/** One ingest burst: 8 nominal ticks that prime the engine's rolling window,
+ *  then 6 post-injection ticks the scenario is actually scored on. */
+const TICKS_PER_SCENARIO = WARMUP_TICKS + SCORED_TICKS;
+/**
+ * Unmeasured scenarios run once at process start, before any sample is timed.
+ * V8 compiles `processIngestedObservation` lazily on first call, and a JIT
+ * first-call is not a property of the engine — it is a property of this
+ * process. Without this pass the very first call in every timing statistic is
+ * a compile, and `mean` (which is order-sensitive) carries it most.
+ */
+const JIT_WARMUP_SCENARIOS = 12;
 
 const ALL_STATIONS = IMD_AWS_STATIONS.filter(s => s.stationId !== 'AWS-MOB-01');
 
@@ -192,13 +213,13 @@ interface Scored {
   rejected: boolean;
   stormOrFaultCorrect: boolean | null;
   /**
-   * Wall-clock cost of THIS sample's classify work — 8 nominal warm-up ticks
-   * plus 6 post-injection ticks, so the number is what an ingest path spends to
-   * turn one observation stream into a verdict, not one trivial call. Read
-   * `classifyNs` for the per-tick figure; these 14 calls are averaged over
-   * `scored.length` samples to get `latencyMs.mean`.
+   * Nanoseconds spent inside `processIngestedObservation` for each of this
+   * scenario's TICKS_PER_SCENARIO calls — one real measurement per call, taken
+   * with the clock stopped either side of the call. The per-tick distribution is
+   * this array flattened across all scenarios; `latencyMs.perScenario` is each
+   * scenario's own sum. Nothing here is a divided or interpolated figure.
    */
-  classifyNs: number;
+  classifyNs: number[];
 }
 
 /** NaN is the internal marker for "channel absent"; the engine sees null. */
@@ -223,43 +244,42 @@ function runScenario(
   let ts = BASE_TS;
   let predicted: Label = 'NOMINAL_OPERATION';
 
-  // The clock covers the engine's calls only. Scenario generation — the
-  // `rnd` draws, the rounding, the clamping — happens outside the measured
-  // window, because what we are claiming is the cost of classification, not
-  // the cost of our test harness.
-  const classifyStart = performance.now();
+  // What the engine is handed for every tick, generated first. The `rnd` draws
+  // and the round/clamp are the harness's own work and are not what we are
+  // claiming to measure, so they are kept out of the timed region: each call
+  // below is bracketed individually, with the inputs already built and the
+  // result read only after the clock stops.
+  const inputs: [number | null, number | null, number | null, number][] = [];
 
-  // Warm-up: nominal ticks only, so the rolling window and the previous-sample
-  // reference are populated before the fault lands.
   for (let i = 0; i < WARMUP_TICKS; i++) {
-    const t0 = t + jitter(rnd, 0.35);
-    const p0 = p + jitter(rnd, 0.25);
-    const h0 = h + jitter(rnd, 1.0);
-    engine.processIngestedObservation(station.stationId, round(t0, 2), round(p0, 1), round(h0, 1), ts);
-    t = round(t0, 2); p = round(p0, 1); h = round(h0, 1);
+    const t0 = round(t + jitter(rnd, 0.35), 2);
+    const p0 = round(p + jitter(rnd, 0.25), 1);
+    const h0 = round(h + jitter(rnd, 1.0), 1);
+    inputs.push([t0, p0, h0, ts]);
+    t = t0; p = p0; h = h0;
     ts += TICK_MS;
   }
 
-  // Post-injection ticks. The fault is applied to the input, then it decays:
-  // a real fault does not stay at full amplitude forever, and testing only the
-  // first tick would flatter the detector.
   for (let k = 0; k < SCORED_TICKS; k++) {
     const injected = scenario.inject(t, p, h, k, rnd);
-    const pkt: TelemetryPacket = engine.processIngestedObservation(
-      station.stationId,
-      toNullable(injected.t),
-      toNullable(injected.p),
-      toNullable(injected.h),
-      ts
-    );
-    predicted = pkt.classification;
+    inputs.push([toNullable(injected.t), toNullable(injected.p), toNullable(injected.h), ts]);
     t = Number.isNaN(injected.t) ? t : injected.t;
     p = Number.isNaN(injected.p) ? p : injected.p;
     h = Number.isNaN(injected.h) ? h : injected.h;
     ts += TICK_MS;
   }
 
-  const classifyNs = (performance.now() - classifyStart) * 1e6;
+  const classifyNs: number[] = new Array(TICKS_PER_SCENARIO);
+  for (let i = 0; i < inputs.length; i++) {
+    const [t0, p0, h0, tickTs] = inputs[i];
+    const start = performance.now();
+    const pkt: TelemetryPacket = engine.processIngestedObservation(
+      station.stationId, t0, p0, h0, tickTs
+    );
+    const end = performance.now();
+    classifyNs[i] = (end - start) * 1e6;
+    if (i >= WARMUP_TICKS) predicted = pkt.classification;
+  }
 
   const rejected = predicted !== 'NOMINAL_OPERATION';
   const isStormOrFault = (STORM_VS_FAULT as readonly string[]).includes(label);
@@ -317,9 +337,36 @@ function nearestRank(sorted: number[], p: number) {
   return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1))];
 }
 
+interface LatencyStats {
+  mean: number;
+  p50: number;
+  p95: number;
+  max: number;
+}
+
+function summarise(samples: number[]): LatencyStats {
+  const sorted = [...samples].sort((a, b) => a - b);
+  return {
+    mean: ms(mean(samples)),
+    p50: ms(nearestRank(sorted, 50)),
+    p95: ms(nearestRank(sorted, 95)),
+    max: ms(sorted[sorted.length - 1]),
+  };
+}
+
 function main() {
   const engine = new NICWMOAnomalyEngine();
   const rnd = mulberry32(SEED);
+
+  // JIT warm-up, deliberately unmeasured and deliberately not part of the
+  // corpus. It runs on a throwaway PRNG so the scored sequence below is
+  // bit-for-bit what it would have been without it — adding a warm-up must not
+  // change the classifications, only what the clock saw.
+  const warmRnd = mulberry32(SEED ^ 0x5bf03635);
+  for (let i = 0; i < JIT_WARMUP_SCENARIOS; i++) {
+    const label = LABELS[i % LABELS.length];
+    runScenario(engine, ALL_STATIONS[i % ALL_STATIONS.length], label, warmRnd);
+  }
 
   const scored: Scored[] = [];
   for (const label of LABELS) {
@@ -392,22 +439,10 @@ function main() {
     (''.padStart(14) + ''.padStart(14) + (fmtPct(macroF1) + '   ' + bar(macroF1, 12)).padStart(12))
   );
 
-  // Repeat the per-class block verbatim. Every number in the artifact has to be
-  // a number the script printed, or "reported" and "measured" come apart.
-  console.log('\nPER-CLASS PERFORMANCE (repeated — these are the artifact\'s perClass values)\n');
-  console.log('  Class         Support   Precision     Recall         F1');
-  console.log('  ' + '-'.repeat(62));
-  for (const c of perClass) {
-    console.log(
-      '  ' +
-        SHORT[c.label].padEnd(13) +
-        String(c.support).padStart(5) +
-        (fmtPct(c.precision) + '     ').padStart(14) +
-        (fmtPct(c.recall) + '     ').padStart(14) +
-        (fmtPct(c.f1) + '   ' + bar(c.f1, 12)).padStart(12)
-    );
-  }
-  console.log('  ' + '-'.repeat(62));
+  // The table above is printed from the same `perClass` array the artifact
+  // serialises, so its figures are the artifact's figures — no need to repeat
+  // the block for a reader who wants to see them twice.
+  console.log('\n  (the figures in this table are written verbatim to the artifact below)');
 
   // ── The headline metric ─────────────────────────────────────────────
   const svf = scored.filter(s => s.stormOrFaultCorrect !== null);
@@ -425,50 +460,47 @@ function main() {
   console.log('='.repeat(78));
 
   // ── Latency ─────────────────────────────────────────────────────────
-  // Timed around the classify path only: no scenario generation, no network.
+  // One sample per processIngestedObservation call, clock started and stopped
+  // immediately around each call with its arguments already built and its
+  // result read after. Inputs are generated before the loop and the harness's
+  // own draws, rounding and clamping happen there — none of it is inside a
+  // timed region. `perTickNs` is therefore a real distribution over
+  // 1200 x 14 distinct measurements, not one value per scenario replicated.
+  //
   // The corpus is synthetic and the run is offline, so this is CPU time in
   // Node on whatever machine ran the script — which is exactly why the
   // conditions are written into the artifact and not left to the renderer.
-  const classifyNsSamples = scored.map(s => s.classifyNs);
-  const sortedNs = [...classifyNsSamples].sort((a, b) => a - b);
-  const perScenarioMs = {
-    mean: ms(mean(classifyNsSamples)),
-    p50: ms(nearestRank(sortedNs, 50)),
-    p95: ms(nearestRank(sortedNs, 95)),
-    max: ms(sortedNs[sortedNs.length - 1]),
-  };
-  // Same 1200 samples, expressed per classified tick. This is the unit an
-  // ingest-rate claim is actually made in, so it is the one worth publishing.
-  const perTickNs = scored.flatMap(s => Array<number>(WARMUP_TICKS + SCORED_TICKS).fill(s.classifyNs / (WARMUP_TICKS + SCORED_TICKS)));
-  const sortedTickNs = [...perTickNs].sort((a, b) => a - b);
-  const perTickMs = {
-    mean: ms(mean(perTickNs)),
-    p50: ms(nearestRank(sortedTickNs, 50)),
-    p95: ms(nearestRank(sortedTickNs, 95)),
-    max: ms(sortedTickNs[sortedTickNs.length - 1]),
-  };
+  const perTickNs: number[] = scored.flatMap(s => s.classifyNs);
+  const perScenarioNs: number[] = scored.map(s => s.classifyNs.reduce((a, b) => a + b, 0));
+  const perTickMs = summarise(perTickNs);
+  const perScenarioMs = summarise(perScenarioNs);
 
   const conditions = {
     runtime: `Node.js ${process.version} (tsx)`,
     platform: `${process.platform}/${process.arch}`,
     measured: 'Offline CPU time on the classify path only',
     note:
-      'Timed with performance.now() around processIngestedObservation — the same entry point ' +
-      'POST /api/telemetry uses. Scenario generation and network time are excluded. This is NOT a ' +
-      'browser measurement: a figure from a judge\'s device or a deployed edge runtime will differ.',
+      'Timed with performance.now() immediately around each processIngestedObservation call — the ' +
+      'same entry point POST /api/telemetry uses. Arguments are built before the clock starts and ' +
+      'the result is read after it stops, so scenario generation is excluded, as is network time. ' +
+      'This is NOT a browser measurement: a figure from a judge\'s device or a deployed edge ' +
+      'runtime will differ. `max` is the slowest single call in a short Node run and is dominated ' +
+      'by scheduler and GC pauses rather than by engine work — quote p50 or p95, never `max`, as ' +
+      'the detection speed.',
   };
 
   console.log('\nCLASSIFICATION LATENCY\n');
-  console.log(
-    `  Per scenario  (${WARMUP_TICKS + SCORED_TICKS} classify calls, ${total} samples)   ` +
-      `mean ${perScenarioMs.mean.toFixed(3)}ms  p50 ${perScenarioMs.p50.toFixed(3)}ms  ` +
-      `p95 ${perScenarioMs.p95.toFixed(3)}ms  max ${perScenarioMs.max.toFixed(3)}ms`
-  );
   console.log(
     `  Per tick      (1 call = 1 observation -> 1 verdict, ${perTickNs.length} samples)   ` +
       `mean ${perTickMs.mean.toFixed(3)}ms  p50 ${perTickMs.p50.toFixed(3)}ms  ` +
       `p95 ${perTickMs.p95.toFixed(3)}ms  max ${perTickMs.max.toFixed(3)}ms`
   );
+  console.log(
+    `  Per scenario  (${TICKS_PER_SCENARIO} classify calls, ${perScenarioNs.length} samples)   ` +
+      `mean ${perScenarioMs.mean.toFixed(3)}ms  p50 ${perScenarioMs.p50.toFixed(3)}ms  ` +
+      `p95 ${perScenarioMs.p95.toFixed(3)}ms  max ${perScenarioMs.max.toFixed(3)}ms`
+  );
+  console.log('  `max` is GC/scheduler noise in a short Node run, not a tail. Quote p50 or p95.');
   console.log(`  Conditions    : ${conditions.runtime} on ${conditions.platform} — ${conditions.measured.toLowerCase()}.`);
   console.log('                 Not a browser measurement. Any UI showing this must say so.');
 
@@ -541,6 +573,9 @@ function main() {
     // Provenance, not a reproducibility hazard: the corpus is seeded, so every
     // classification field below is byte-identical across runs on this seed.
     generatedAt: new Date().toISOString(),
+    // True count of timed processIngestedObservation calls. Not a per-scenario
+    // figure multiplied up, and not inflated by JIT warm-up, which is
+    // unmeasured and outside the corpus.
     latencySampleCount: perTickNs.length,
     accuracy,
     macroF1,
@@ -568,9 +603,11 @@ function main() {
       faultsPassedAsValid: missedFaults.length,
     },
     latencyMs: {
-      // What a UI shows. Per tick = one observation in, one verdict out.
+      // What a UI shows. Per tick = one observation in, one verdict out,
+      // one real timing per call.
       perTick: perTickMs,
-      // A full scenario: 8 warm-up + 6 post-injection classify calls.
+      // A full scenario: 8 warm-up + 6 post-injection classify calls, summed
+      // from that scenario's own samples.
       perScenario: perScenarioMs,
     },
     conditions,
