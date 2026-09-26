@@ -12,7 +12,7 @@ export function MetricTile({
   value: string | number;
   unit?: string;
   trend?: { direction: 'up' | 'down' | 'flat', value: string };
-  status?: 'nominal' | 'watch' | 'serious' | 'critical';
+  status?: 'nominal' | 'watch' | 'serious' | 'critical' | 'lost';
   icon?: React.ReactNode;
 }) {
   const statusColor = `var(--status-${status})`;

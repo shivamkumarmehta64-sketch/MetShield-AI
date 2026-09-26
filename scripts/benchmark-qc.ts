@@ -1,0 +1,417 @@
+/**
+ * MetShield AI — SIH26073 Anomaly-Injection Benchmark
+ * ====================================================
+ * The problem statement says evaluation happens "in anomaly injected data".
+ * This harness generates a labelled anomaly-injected corpus and measures the
+ * QC engine against it, so the accuracy claim on the pitch slide is a measured
+ * number rather than an assertion.
+ *
+ * What it does NOT do: it feeds the engine `processIngestedObservation`, the
+ * same entry point `app/api/telemetry/route.ts` uses for real telemetry. It does
+ * not call `generatePacket`, so the bench triggers in `lib/anomalyLogic.ts` are
+ * never used to manufacture the answer — the fault is in the input, and the
+ * engine has to find it.
+ *
+ * Run:  npx tsx scripts/benchmark-qc.ts
+ * Exit: 0 always. Read the number, do not trust a green shell.
+ */
+
+import { NICWMOAnomalyEngine, TelemetryPacket } from '../lib/anomalyLogic';
+import { IMD_AWS_STATIONS } from '../lib/stationData';
+
+// ─── Deterministic PRNG ───
+// mulberry32: same seed gives the same corpus, so a reported number can be
+// reproduced by anyone who re-runs the script. An unreproducible accuracy
+// figure is no better than the invented ones this harness replaces.
+function mulberry32(seed: number) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+type Label = TelemetryPacket['classification'];
+
+const LABELS: Label[] = [
+  'NOMINAL_OPERATION',
+  'GENUINE_CONVECTIVE_EVENT',
+  'SENSOR_SPIKE',
+  'FROZEN_VALUE',
+  'CALIBRATION_DRIFT',
+  'TELEMETRY_PACKET_LOSS',
+];
+
+const SHORT: Record<Label, string> = {
+  NOMINAL_OPERATION: 'Nominal',
+  GENUINE_CONVECTIVE_EVENT: 'Storm',
+  SENSOR_SPIKE: 'Spike',
+  FROZEN_VALUE: 'Freeze',
+  CALIBRATION_DRIFT: 'Drift',
+  TELEMETRY_PACKET_LOSS: 'Loss',
+};
+
+// The judge-facing distinction. Storm and Spike both look like "a big number
+// moved"; the whole thesis is that the engine separates them. This pair is
+// scored on its own below.
+const STORM_VS_FAULT = ['GENUINE_CONVECTIVE_EVENT', 'SENSOR_SPIKE'] as const;
+
+const TICK_MS = 2500;
+const SEED = 20260926;
+const SAMPLES_PER_CLASS = 200;
+/** Baseline ticks to push before injecting, so RoC has a history to compare against. */
+const WARMUP_TICKS = 8;
+/** Post-injection ticks scored per sample. A real fault does not stay at full
+ *  amplitude forever, and testing only the first tick would flatter the detector. */
+const SCORED_TICKS = 6;
+/**
+ * The drift scenario needs an accumulated offset large enough to cross the
+ * engine's `Math.abs(driftOffset) > 2.0` tolerance, but `processIngestedObservation`
+ * never writes to the engine's drift register — only `triggerBarometerDrift` does.
+ * Without this the injected drift is a slow pressure ramp with no memory of
+ * itself, and no detector can recover the cumulative offset from the level alone.
+ * See "ENGINE DEFECT: drift has no station-side memory" in the findings — this
+ * constant is the harness compensating, and the value is a labelled quantity,
+ * not a hidden threshold.
+ */
+const BASE_PRESSURE_OFFSET = 2.6;
+
+const ALL_STATIONS = IMD_AWS_STATIONS.filter(s => s.stationId !== 'AWS-MOB-01');
+
+interface Scenario {
+  /** Drives one post-warmup reading. Called on the tick the fault appears. */
+  inject(
+    t: number, p: number, h: number, tick: number, rnd: () => number
+  ): { t: number; p: number; h: number };
+}
+
+const SCENARIOS: Record<Label, Scenario> = {
+  // Baseline reading, no perturbation. All three channels carry sensor noise —
+  // a "nominal" stream that returns a byte-identical triple would be a frozen
+  // probe, and the engine is right to call it one.
+  NOMINAL_OPERATION: {
+    inject: (t, p, h, _tick, rnd) => ({
+      t: round(clamp(t + jitter(rnd, 0.35), -10, 55), 2),
+      p: round(clamp(p + jitter(rnd, 0.25), 920, 1050), 1),
+      h: round(clamp(h + jitter(rnd, 1.2), 5, 100), 1),
+    }),
+  },
+
+  // Coupled barometric plunge + humidity saturation + evaporative cooling.
+  // All three move together: that coupling is what marks it as real weather.
+  GENUINE_CONVECTIVE_EVENT: {
+    inject: (t, p, h, tick, rnd) => ({
+      t: round(clamp(t - (2.0 + rnd() * 2.5) - tick * 0.15, -10, 55), 2),
+      p: round(clamp(p - (2.8 + rnd() * 1.2) - tick * 0.3, 920, 1050), 1),
+      h: round(clamp(h + (16 + rnd() * 6) + tick * 1.0, 5, 100), 1),
+    }),
+  },
+
+  // Thermistor open-circuit: instantaneous jump to full-scale, with pressure
+  // and humidity untouched. The absence of coupling is the tell.
+  SENSOR_SPIKE: {
+    inject: (t, p, h, tick, rnd) => ({
+      t: round(clamp(t + 20 + rnd() * 16 + tick * 0.4, -10, 55), 2),
+      p: round(clamp(p + jitter(rnd, 0.4), 920, 1050), 1),
+      h: round(clamp(h + jitter(rnd, 1.5), 5, 100), 1),
+    }),
+  },
+
+  // Stuck ADC: the value latches on first contact and then repeats verbatim.
+  // The hold is seeded from whatever the last nominal tick carried, so a freeze
+  // that begins at 31.8 °C stays at 31.8 °C — which is the only way to detect
+  // it. A fixed 33.4215 °C is a different value from the baseline and gets
+  // caught as a step, not a freeze, which measures the wrong failure.
+  FROZEN_VALUE: {
+    inject: (t, p, h, _tick, _rnd) => ({ t, p, h }),
+  },
+
+  // Monotonic zero-point walk, applied as a per-tick offset to the baseline
+  // rather than compounded onto the previous reading. Compounding walks the
+  // value off the bottom of the pressure range, where the clamp silently pins
+  // it at 920 hPa and the series flatlines into a freeze. The real defect is a
+  // fixed offset the sensor keeps re-reading as truth.
+  CALIBRATION_DRIFT: {
+    inject: (t, p, h, tick, rnd) => ({
+      t: round(clamp(t + jitter(rnd, 0.4), -10, 55), 2),
+      p: round(clamp(p + BASE_PRESSURE_OFFSET - tick * 0.45 + jitter(rnd, 0.1), 920, 1050), 1),
+      h: round(clamp(h + jitter(rnd, 1.0), 5, 100), 1),
+    }),
+  },
+
+  // RF fade: the packet arrives, the payload does not.
+  TELEMETRY_PACKET_LOSS: {
+    inject: () => ({ t: NaN, p: NaN, h: NaN }),
+  },
+};
+
+function round(v: number, dp: number) {
+  const f = Math.pow(10, dp);
+  return Math.round(v * f) / f;
+}
+function clamp(v: number, lo: number, hi: number) {
+  return Math.min(hi, Math.max(lo, v));
+}
+function jitter(rnd: () => number, amplitude: number) {
+  return (rnd() - 0.5) * 2 * amplitude;
+}
+
+interface Sample {
+  stationId: string;
+  t: number | null;
+  p: number | null;
+  h: number | null;
+  tick: number;
+  ts: number;
+}
+
+interface Scored {
+  actual: Label;
+  predicted: Label;
+  // Whether the packet was at least rejected rather than trusted. A false
+  // alarm is a serious QC failure, but confusing drift with packet loss is a
+  // different kind of wrong: both quarantine the observation and both open a
+  // work order, so the field technician still gets dispatched correctly.
+  rejected: boolean;
+  stormOrFaultCorrect: boolean | null;
+}
+
+/** NaN is the internal marker for "channel absent"; the engine sees null. */
+function toNullable(v: number): number | null {
+  return Number.isNaN(v) ? null : v;
+}
+
+function runScenario(
+  engine: NICWMOAnomalyEngine,
+  station: { stationId: string; baseline: { tempMean: number; pressureMean: number; humidityMean: number } },
+  label: Label,
+  rnd: () => number
+): Scored {
+  const scenario = SCENARIOS[label];
+  // Fresh engine per sample: no drift offset, no frozen cache, no injection
+  // residue leaking from the previous sample into this one.
+  engine.resetToNominal(station.stationId);
+
+  let t = station.baseline.tempMean;
+  let p = station.baseline.pressureMean;
+  let h = station.baseline.humidityMean;
+  let ts = Date.now();
+  let predicted: Label = 'NOMINAL_OPERATION';
+
+  // Warm-up: nominal ticks only, so the rolling window and the previous-sample
+  // reference are populated before the fault lands.
+  for (let i = 0; i < WARMUP_TICKS; i++) {
+    const t0 = t + jitter(rnd, 0.35);
+    const p0 = p + jitter(rnd, 0.25);
+    const h0 = h + jitter(rnd, 1.0);
+    engine.processIngestedObservation(station.stationId, round(t0, 2), round(p0, 1), round(h0, 1), ts);
+    t = round(t0, 2); p = round(p0, 1); h = round(h0, 1);
+    ts += TICK_MS;
+  }
+
+  // Post-injection ticks. The fault is applied to the input, then it decays:
+  // a real fault does not stay at full amplitude forever, and testing only the
+  // first tick would flatter the detector.
+  for (let k = 0; k < SCORED_TICKS; k++) {
+    const injected = scenario.inject(t, p, h, k, rnd);
+    const pkt: TelemetryPacket = engine.processIngestedObservation(
+      station.stationId,
+      toNullable(injected.t),
+      toNullable(injected.p),
+      toNullable(injected.h),
+      ts
+    );
+    predicted = pkt.classification;
+    t = Number.isNaN(injected.t) ? t : injected.t;
+    p = Number.isNaN(injected.p) ? p : injected.p;
+    h = Number.isNaN(injected.h) ? h : injected.h;
+    ts += TICK_MS;
+  }
+
+  const rejected = predicted !== 'NOMINAL_OPERATION';
+  const isStormOrFault = (STORM_VS_FAULT as readonly string[]).includes(label);
+  const predictedIsStormOrFault = (STORM_VS_FAULT as readonly string[]).includes(predicted);
+
+  return {
+    actual: label,
+    predicted,
+    rejected,
+    stormOrFaultCorrect: isStormOrFault
+      ? predicted === label
+      : predictedIsStormOrFault
+        ? false
+        : null,
+  };
+}
+
+function confusion(): Map<string, Map<string, number>> {
+  const m = new Map<string, Map<string, number>>();
+  for (const a of LABELS) {
+    const row = new Map<string, number>();
+    for (const p of LABELS) row.set(p, 0);
+    m.set(a, row);
+  }
+  return m;
+}
+
+function fmtPct(x: number) {
+  return (x * 100).toFixed(1) + '%';
+}
+
+function bar(frac: number, width = 20) {
+  const filled = Math.round(frac * width);
+  return '█'.repeat(filled) + '░'.repeat(width - filled);
+}
+
+function main() {
+  const engine = new NICWMOAnomalyEngine();
+  const rnd = mulberry32(SEED);
+
+  const scored: Scored[] = [];
+  for (const label of LABELS) {
+    for (let i = 0; i < SAMPLES_PER_CLASS; i++) {
+      const station = ALL_STATIONS[(i + LABELS.indexOf(label) * 7) % ALL_STATIONS.length];
+      scored.push(runScenario(engine, station, label, rnd));
+    }
+  }
+
+  const total = scored.length;
+  const matrix = confusion();
+  for (const s of scored) {
+    matrix.get(s.actual)!.set(s.predicted, matrix.get(s.actual)!.get(s.predicted)! + 1);
+  }
+
+  // ── Header ──────────────────────────────────────────────────────────
+  console.log('='.repeat(78));
+  console.log('METSHIELD AI — ANOMALY-INJECTION BENCHMARK (SIH26073)');
+  console.log('='.repeat(78));
+  console.log(`Corpus      : ${total} scenarios (${SAMPLES_PER_CLASS} per class x ${LABELS.length} classes)`);
+  console.log(`Ingest path : processIngestedObservation  (same entry point as POST /api/telemetry)`);
+  console.log(`Faults in   : the input stream. Bench triggers in anomalyLogic.ts are NOT used.`);
+  console.log(`Seed        : ${SEED} (deterministic — this number reproduces)`);
+  console.log(`Tick rate   : ${TICK_MS}ms`);
+  console.log('='.repeat(78));
+
+  // ── Per-class metrics ───────────────────────────────────────────────
+  console.log('\nPER-CLASS PERFORMANCE\n');
+  console.log('  Class         Support   Precision     Recall         F1');
+  console.log('  ' + '-'.repeat(62));
+
+  let macroF1 = 0;
+  let correct = 0;
+  const perClass: { label: Label; f1: number; recall: number }[] = [];
+
+  for (const label of LABELS) {
+    const row = matrix.get(label)!;
+    const support = [...row.values()].reduce((a, b) => a + b, 0);
+
+    let tp = 0;
+    for (const p of LABELS) {
+      if (p !== label) continue;
+      tp += row.get(p)!;
+    }
+    const predictedCount = LABELS.reduce((acc, p) => acc + matrix.get(p)!.get(label)!, 0);
+    const precision = predictedCount === 0 ? 0 : tp / predictedCount;
+    const recall = support === 0 ? 0 : tp / support;
+    const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+
+    correct += tp;
+    macroF1 += f1;
+    perClass.push({ label, f1, recall });
+
+    console.log(
+      '  ' +
+        SHORT[label].padEnd(13) +
+        String(support).padStart(5) +
+        (fmtPct(precision) + '     ').padStart(14) +
+        (fmtPct(recall) + '     ').padStart(14) +
+        (fmtPct(f1) + '   ' + bar(f1, 12)).padStart(12)
+    );
+  }
+
+  const accuracy = correct / total;
+  macroF1 /= LABELS.length;
+
+  console.log('  ' + '-'.repeat(62));
+  console.log(
+    '  ' + 'MACRO'.padEnd(13) + String(total).padStart(5) +
+    (''.padStart(14) + ''.padStart(14) + (fmtPct(macroF1) + '   ' + bar(macroF1, 12)).padStart(12))
+  );
+
+  // ── The headline metric ─────────────────────────────────────────────
+  const svf = scored.filter(s => s.stormOrFaultCorrect !== null);
+  const svfCorrect = svf.filter(s => s.stormOrFaultCorrect).length;
+  const svfAcc = svf.length === 0 ? 0 : svfCorrect / svf.length;
+
+  console.log('\n' + '='.repeat(78));
+  console.log('HEADLINE METRICS');
+  console.log('='.repeat(78));
+  console.log(`  Overall accuracy      ${fmtPct(accuracy).padStart(8)}   (${correct}/${total})`);
+  console.log(`  Macro F1              ${fmtPct(macroF1).padStart(8)}   (mean of per-class F1)`);
+  console.log(
+    `  Storm vs Fault        ${fmtPct(svfAcc).padStart(8)}   (${svfCorrect}/${svf.length})  <- the thesis`
+  );
+  console.log('='.repeat(78));
+
+  // ── Safety-critical failure modes ───────────────────────────────────
+  // Two failure modes matter far more than a point of accuracy, and both are
+  // the kind of thing that ends a real deployment.
+  const stormMissed = scored.filter(s => s.actual === 'GENUINE_CONVECTIVE_EVENT' && s.predicted !== 'GENUINE_CONVECTIVE_EVENT');
+  const falseAlarms = scored.filter(s => s.actual === 'NOMINAL_OPERATION' && s.rejected);
+  const missedFaults = scored.filter(
+    s => s.actual !== 'GENUINE_CONVECTIVE_EVENT' && s.actual !== 'NOMINAL_OPERATION' && !s.rejected
+  );
+
+  console.log('\nSAFETY-CRITICAL FAILURE MODES\n');
+  console.log(`  Real storms quarantined as faults   ${String(stormMissed.length).padStart(4)}  (dangerous: suppresses a real warning)`);
+  console.log(`  Nominal data raised as anomaly      ${String(falseAlarms.length).padStart(4)}  (dangerous: trains operators to ignore alerts)`);
+  console.log(`  Real faults passed as valid          ${String(missedFaults.length).padStart(4)}  (dangerous: corrupts NWP assimilation)`);
+  console.log('');
+
+  // ── Confusion matrix ────────────────────────────────────────────────
+  console.log('CONFUSION MATRIX (rows = injected, columns = engine verdict)\n');
+  const colW = 9;
+  console.log('  ' + ''.padEnd(14) + LABELS.map(l => SHORT[l].slice(0, 8).padStart(colW)).join(''));
+  for (const label of LABELS) {
+    const row = matrix.get(label)!;
+    const cells = LABELS.map(p => {
+      const v = row.get(p)!;
+      const s = String(v);
+      // Bold the diagonal so the eye lands on correct classifications first.
+      return (v > 0 ? (p === label ? `[${s}]` : s) : '.').padStart(colW);
+    });
+    console.log('  ' + SHORT[label].padEnd(14) + cells.join(''));
+  }
+  console.log('\n  [n] = correct classification, on the diagonal.');
+
+  // ── Interpretation ──────────────────────────────────────────────────
+  console.log('\n' + '='.repeat(78));
+  console.log('READING THESE NUMBERS');
+  console.log('='.repeat(78));
+
+  const weak = perClass.filter(c => c.f1 < 0.7).sort((a, b) => a.f1 - b.f1);
+  if (weak.length === 0) {
+    console.log('  All classes clear F1 >= 0.70.');
+  } else {
+    console.log('  Weakest classes (F1 < 0.70), fix these first:');
+    for (const w of weak) {
+      console.log(`    - ${SHORT[w.label].padEnd(8)} F1 ${fmtPct(w.f1).padStart(7)}  recall ${fmtPct(w.recall)}`);
+    }
+  }
+  if (svfAcc < 0.9) {
+    console.log(
+      `\n  WARNING: storm-vs-fault is ${fmtPct(svfAcc)}. This is the core claim.\n` +
+      '  Diagnose the Storm<->Spike confusion cells in the matrix above.'
+    );
+  }
+  console.log('');
+  console.log('  Threshold source of truth: lib/anomalyLogic.ts evaluate() — storm is');
+  console.log('  dP <= -2.5 AND dRH >= +15 AND dT <= -1.5, with a 4-tick rolling window.');
+  console.log('');
+  console.log('  Report these numbers. Do not restate a figure the script did not print.');
+  console.log('');
+}
+
+main();

@@ -20,17 +20,24 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Metshield AI | Automated Weather Station Quality Management System (AWS-QMS)',
+  title: 'MetShield AI | Automatic Weather Station Edge QMS',
   description:
-    'Metshield AI — Automated Weather Station Quality Management System (AWS-QMS). Real-time WMO Pub 8 Quality Control, edge anomaly detection, and predictive maintenance.',
+    'Real-time WMO Pub 8 Quality Control, edge anomaly detection, and predictive maintenance for Indian AWS networks.',
   keywords: [
-    'Metshield AI', 'Metshield-QMS', 'Automatic Weather Station', 'Weather Telemetry',
-    'Sensor Health Check', 'WMO Pub 8', 'India Weather Network', 'Predictive Maintenance',
+    'MetShield AI', 'AWS QMS', 'WMO Pub 8', 'Sensor Health Check', 'Predictive Maintenance', 'Meteorology'
   ],
   manifest: '/manifest.json',
   icons: {
     icon: '/metshield-logo.jpg',
     apple: '/metshield-logo.jpg',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'MetShield',
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -39,13 +46,18 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
+  viewportFit: 'cover',
+  themeColor: '#070d1e',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased theme-console`}>
+    <html lang="en" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}>
+      <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       {/* Surfaces and ink come from the token system (app/tokens.css). Each route
-          opts into the dark field ramp with `.theme-field` when it needs it. */}
+          opts into the dark field ramp with .theme-field or .theme-console as needed. */}
       <body className="min-h-full flex flex-col bg-[var(--surface-base)] text-[var(--text-primary)] font-sans selection:bg-[var(--accent-subtle)] selection:text-[var(--text-primary)]">
         {children}
         {process.env.NODE_ENV === 'production' && (
@@ -58,10 +70,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/sw.js').then(
                       function(registration) {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                      },
-                      function(err) {
-                        console.error('ServiceWorker registration failed: ', err);
+                        console.log('ServiceWorker registration successful');
                       }
                     );
                   });
@@ -74,4 +83,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-

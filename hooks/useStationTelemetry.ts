@@ -91,9 +91,9 @@ export function useStationTelemetry(
       const stBaseP = currentStation.baseline.pressureMean;
       const stBaseRH = currentStation.baseline.humidityMean;
 
-      // Handle bench injection first
-      if (mode === 'simulation' || mode === 'live') { // Keep bench active in both modes for offline testing
-        if (benchInjectionMode === 'SPIKE_TEMP') {
+      // Bench injection stays live in both modes — it is how the offline demo
+      // reproduces a fault without a reachable server.
+      if (benchInjectionMode === 'SPIKE_TEMP') {
           nextT = Math.round((stBaseT + 14.2) * 10) / 10;
           nextP = stBaseP + Math.round((Math.random() - 0.5) * 0.2 * 10) / 10;
           nextRH = stBaseRH + Math.round((Math.random() - 0.5) * 0.8 * 10) / 10;
@@ -118,11 +118,6 @@ export function useStationTelemetry(
             nextP = Math.round((stBaseP + (Math.random() - 0.5) * 0.3) * 10) / 10;
           }
         }
-      } else {
-          nextT = stBaseT;
-          nextRH = stBaseRH;
-          nextP = stBaseP;
-      }
 
       let activePacket: TelemetryPacket;
 
@@ -230,15 +225,11 @@ export function useStationTelemetry(
         setIngestionCount((prev) => prev + 1);
 
         if (activePacket.classification !== 'NOMINAL_OPERATION') {
-          // createWorkOrder requires activePacket and ruleEngineMode
           setIncidents((prev) => {
-             // Avoid duplicating if we already recorded it this second
+             // The field node auto-streams every 2.5s, so the same fault arrives
+             // repeatedly. Only open a work order on the first occurrence.
              if (prev.some(w => w.ticketId.includes(activePacket.stationId) && Math.abs(new Date(w.timestamp).getTime() - activePacket.timestamp) < 5000)) return prev;
-             
-             // createWorkOrder is imported in this file
-             // We need to construct it inline if missing or use the imported function
-             // Fortunately createWorkOrder is imported from '../lib/anomalyLogic'
-             // The second param is a string, e.g. 'SIM-INC'
+
              const wo = createWorkOrder(activePacket, 'MOB-SYNC');
              return [wo, ...prev.slice(0, 19)];
           });

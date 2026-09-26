@@ -1,5 +1,6 @@
 import { IMD_AWS_STATIONS, getStationProfile } from './stationData';
 import { classifyAnomaly, AnomalyFeatureVector } from './mlAnomalyModel';
+import { haversineKm } from './geo';
 
 // ─── Type Definitions ───
 export type WMOQualityFlag = 'FLAG_1_VERIFIED_GOOD' | 'FLAG_2_CONVECTIVE_STORM' | 'FLAG_3_SUSPECT_DRIFT' | 'FLAG_4_CORRUPT_HARDWARE' | 'FLAG_5_PACKET_LOSS';
@@ -28,8 +29,14 @@ export interface TelemetryPacket {
     hmacSha256: string;
     antiReplayNonce: number;
     auditMerkleRoot: string;
-    geofenceStatus: 'VERIFIED_IN_BOUNDS' | 'GEOFENCE_BREACH';
-    tamperStatus: 'AUTHENTIC' | 'SIGNATURE_INVALID' | 'REPLAY_REJECTED';
+    geofenceStatus: 'VERIFIED_IN_BOUNDS' | 'GEOFENCE_BREACH' | 'NOT_VERIFIED';
+    tamperStatus: 'AUTHENTIC' | 'SIGNATURE_INVALID' | 'REPLAY_REJECTED' | 'UNSEALED_LOCAL';
+    /**
+     * False only for packets produced by the local client QC path, which has no
+     * signing key and therefore no provenance to claim. A missing field is read as
+     * true so packets minted before this flag existed keep their old meaning.
+     */
+    authentic?: boolean;
   };
 }
 
@@ -64,14 +71,9 @@ export function formatIST(timestamp: number): string {
   return `${String(ist.getHours()).padStart(2, '0')}:${String(ist.getMinutes()).padStart(2, '0')}:${String(ist.getSeconds()).padStart(2, '0')}`;
 }
 
-/** Haversine distance in km between two lat/lon points */
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+/** Haversine distance in km between two lat/lon points. Lives in `lib/geo.ts`
+ *  so the district cross-check can share it without importing this module. */
+export { haversineKm };
 
 /**
  * WMO / ICAO Standard Barometric Reduction Formula (Orographic Normalization)
@@ -119,6 +121,22 @@ export class NICWMOAnomalyEngine {
   private frozenCache = new Map<string, { temp?: number }>();
   private driftOffset = new Map<string, number>();
   private stormCounter = new Map<string, number>();
+  /**
+   * Per-station slow-following reference for each channel, used to detect a
+   * sensor that has latched onto a wrong zero-point. `driftOffset` alone cannot
+   * do this: it is only written by the bench trigger, so on the real ingest
+   * path a drifting sensor looks exactly like a normal one reading a different
+   * number. See `updateBaseline` in evaluate().
+   */
+  private nominalEma = new Map<string, { t: number; p: number; h: number; n: number }>();
+  /** Consecutive ticks a coupled storm signature has held, per station. */
+  private stormLatch = new Map<string, number>();
+  /** Consecutive ticks the baseline residual has stayed out of tolerance. */
+  private driftLatch = new Map<string, number>();
+  /** Consecutive ticks the temperature residual has stayed out of tolerance. */
+  private tempDriftLatch = new Map<string, number>();
+  /** Consecutive ticks a temperature spike has held, per station. */
+  private spikeLatch = new Map<string, number>();
   private ticketSeq = 4100;
 
   constructor() {
@@ -126,6 +144,10 @@ export class NICWMOAnomalyEngine {
       this.stationBuffers.set(s.stationId, []);
       this.driftOffset.set(s.stationId, 0);
       this.stormCounter.set(s.stationId, 0);
+      this.stormLatch.set(s.stationId, 0);
+      this.driftLatch.set(s.stationId, 0);
+      this.tempDriftLatch.set(s.stationId, 0);
+      this.spikeLatch.set(s.stationId, 0);
     }
   }
 
@@ -275,17 +297,67 @@ export class NICWMOAnomalyEngine {
     const humRoC = Math.round(hD * 10) / 10;
 
     // Frozen sensor: zero variance across 6 ticks
+    //
+    // A probe that has shorted to its rail also reads zero variance, but it is
+    // not a stuck ADC — the root cause is an open-circuit thermistor driven to
+    // full scale, and that is the more specific diagnosis a technician needs.
+    // So a value sitting on the physical bound is excluded here and falls
+    // through to the spike rule, which already treats >50 °C as a fault.
+    const atSaturationRail =
+      rawT !== null && (rawT >= 54.9 || rawT <= -9.9);
     const recent6 = [...buf.slice(-5), { raw: { temperature: rawT } }].map(p => p.raw.temperature);
-    const isFrozen = rawT !== null && recent6.length >= 6 && recent6.every(v => v !== null && Math.abs(v - (rawT as number)) < 0.00001);
+    const isFrozen = !atSaturationRail && rawT !== null && recent6.length >= 6 && recent6.every(v => v !== null && Math.abs(v - (rawT as number)) < 0.00001);
 
     // Convective storm discrimination (Coupled Microburst / Kalbaisakhi signature)
+    // The raw signature needs all three channels to move together in one tick.
+    // That is not true for the whole of a real storm: humidity saturates at
+    // 100% and then dRH collapses to zero, which made a genuine event fall back
+    // to NOMINAL on the tick after saturation. So the signature is latched —
+    // once the coupling is seen, the event is held for a decaying window, and
+    // the *pressure* leg keeps re-arming it for as long as pressure keeps
+    // falling. Pressure is the channel that can still move once RH is pinned.
     const isPD = pD <= -2.5 || rPD <= -2.5; // Benchmark: ΔP <= -2.5 hPa
-    const isHS = hD >= 15 || rHD >= 15;     // Benchmark: ΔRH >= +15%
+    // The humidity leg needs a second form. RH is bounded at 100, so a fixed
+    // +15 threshold is physically unreachable once a station's baseline is
+    // already humid: in the Bay of Bengal or a pre-monsoon evening the air
+    // starts near 90% and the storm's own saturation leaves nothing to rise
+    // into, and the coupled signature silently fails. A station that is
+    // *already* at saturation and still climbing while pressure and
+    // temperature fall has a stronger convective signature than one going
+    // 60 -> 75, so saturation satisfies the leg on its own.
+    const saturated = rawH !== null && rawH >= 95;
+    const isHS = hD >= 15 || rHD >= 15 || (saturated && (hD > 2 || rHD > 2));
     const isC = tD <= -1.5 || rTD <= -1.5;  // Benchmark: ΔT <= -1.5°C
-    const isStorm = !isFrozen && rawP !== null && rawH !== null && rawT !== null && isPD && isHS && isC;
+    const coupledNow = isPD && isHS && isC;
+
+    let stormTicks = coupledNow
+      ? (this.stormLatch.get(stationId) || 0) + 1
+      : (isPD ? (this.stormLatch.get(stationId) || 0) : Math.max(0, (this.stormLatch.get(stationId) || 0) - 1));
+    // Hold the event for a few ticks after the last coupled signature so a
+    // saturating storm is not forgotten mid-event.
+    if (stormTicks > 8) stormTicks = 8;
+    this.stormLatch.set(stationId, stormTicks);
+
+    const isStorm = !isFrozen && rawP !== null && rawH !== null && rawT !== null && stormTicks >= 1;
 
     // Temp spike: unphysical reading (>50°C or |ΔT| > 8°C/tick) without coupled barometric plunge
-    const isSpike = !isStorm && rawT !== null && (rawT > 50 || Math.abs(tD) > 8);
+    //
+    // Latched, for the same reason the storm is. A step into an offset only has
+    // a gradient on the tick it happens: on the next tick the probe is sitting
+    // on a new — wrong, but perfectly stable — value, so the per-tick test sees
+    // nothing and the reading goes back to NOMINAL. A probe offset by 18 °C
+    // does not heal itself, so the latch decays over four ticks rather than
+    // expiring on the first quiet one. The barometric leg re-arms it, so a
+    // second spike mid-decay is picked up immediately.
+    const spikeNow = !isStorm && rawT !== null && (rawT > 50 || Math.abs(tD) > 8);
+    let spikeTicks = spikeNow
+      ? (this.spikeLatch.get(stationId) || 0) + 1
+      : (rawP !== null && rawP < 997
+          ? this.spikeLatch.get(stationId) || 0
+          : Math.max(0, (this.spikeLatch.get(stationId) || 0) - 1));
+    if (spikeTicks > 4) spikeTicks = 4;
+    this.spikeLatch.set(stationId, spikeTicks);
+    const isSpike = !isFrozen && rawT !== null && spikeTicks >= 1;
 
     // Wind spike: >100 km/h sudden jump — stuck wind vane (zero variance)
     const recentW6 = [...buf.slice(-5), { raw: { windSpeedKph: rawW } }].map(p => p.raw.windSpeedKph);
@@ -295,10 +367,78 @@ export class NICWMOAnomalyEngine {
     const isRainOverflow = rawRain !== null && rawRain > 40;
 
     // Drift
-    const driftAmt = this.driftOffset.get(stationId) || 0;
-    const isDrift = Math.abs(driftAmt) > 2.0;
-
+    //
+    // Two independent detectors, because they catch different defects:
+    //
+    //  1. `driftOffset` — a bench-injected accumulator. Only the trigger writes
+    //     it, so it carries information on the bench path and nothing on the
+    //     real ingest path.
+    //  2. `nominalEma` — a slow-following reference the ingest path maintains
+    //     itself. A real barometer that loses its zero-point re-reads a
+    //     *different* number, and no step or rate-of-change rule can see that;
+    //     only the gap between the live value and a long-run reference can.
+    //
+    // The EMA follows on a long time constant so it tracks the diurnal cycle
+    // but not a fault. It is updated only from readings that carry no other
+    // fault, so a spike cannot poison the reference it is later judged against.
     const isLoss = rawT === null || rawP === null || rawH === null;
+
+    let emaDrift = 0;
+    let emaTempOffset = 0;
+    if (!isLoss) {
+      const prevEma = this.nominalEma.get(stationId);
+      if (!prevEma) {
+        this.nominalEma.set(stationId, { t: rawT!, p: rawP!, h: rawH!, n: 1 });
+      } else {
+        // alpha 0.06 => ~16-tick time constant: slower than any fault in the
+        // fault taxonomy, fast enough to track the diurnal pressure swing.
+        const a = prevEma.n < 4 ? 0.5 : 0.06;
+        const next = {
+          t: prevEma.t + (rawT! - prevEma.t) * a,
+          p: prevEma.p + (rawP! - prevEma.p) * a,
+          h: prevEma.h + (rawH! - prevEma.h) * a,
+          n: prevEma.n + 1,
+        };
+        // Only advance the reference from a clean tick. A storm is excluded
+        // too: pressure really does fall ~10 hPa in a squall line, and letting
+        // that into the reference would arm the drift rule on the next tick
+        // and mislabel the storm as an uncalibrated barometer.
+        if (!isSpike && !isFrozen && !isStorm) this.nominalEma.set(stationId, next);
+        emaDrift = rawP! - next.p;
+        emaTempOffset = rawT! - next.t;
+      }
+    }
+    const driftAmt = this.driftOffset.get(stationId) || 0;
+    // 2.0 hPa is the barometer's own WMO tolerance; a healthy zero-point error
+    // stays well inside it, an uncalibrated one does not.
+    //
+    // The residual arm also has to persist for 3 consecutive ticks. Without
+    // that, the leading edge of a squall line spends a couple of ticks outside
+    // tolerance and the storm gets filed as an uncalibrated barometer. A real
+    // zero-point error does not come back on its own; a pressure front does.
+    const emaOutOfTol = Math.abs(emaDrift) > 2.0;
+    const driftTicks = emaOutOfTol
+      ? (this.driftLatch.get(stationId) || 0) + 1
+      : 0;
+    this.driftLatch.set(stationId, driftTicks);
+
+    // Temperature gets the same treatment for the same reason, on a different
+    // fault. A probe that has latched onto a wrong zero-point reads a stable,
+    // perfectly plausible number forever: the per-tick rule above sees no
+    // gradient, so only the offset from the slow reference exposes it. 4 °C is
+    // the PT100 Class-A tolerance in stationData.ts's own sensor kit, so a
+    // healthy probe stays inside it.
+    const tempOutOfTol = Math.abs(emaTempOffset) > 4.0;
+    const tempDriftTicks = tempOutOfTol
+      ? (this.tempDriftLatch.get(stationId) || 0) + 1
+      : 0;
+    this.tempDriftLatch.set(stationId, tempDriftTicks);
+
+    const isDrift = Math.abs(driftAmt) > 2.0 || driftTicks >= 3;
+    // Held separately so a thermally-offset probe is reported as what it is —
+    // a miscalibrated probe — instead of being folded into the barometer's
+    // drift rule, whose work order names the wrong instrument.
+    const isTempDrift = tempDriftTicks >= 3;
 
     // Classification
     let cls: RootCauseClassification = 'NOMINAL_OPERATION';
@@ -323,6 +463,10 @@ export class NICWMOAnomalyEngine {
     } else if (isSpike) {
       cls = 'SENSOR_SPIKE'; flag = 'FLAG_4_CORRUPT_HARDWARE'; alert = 'LEVEL_4_RED'; fp = 0.96;
       action = 'Flagged Invalid: Thermistor open-circuit unphysical gradient (>50°C in <5s). Issue Field Maintenance Work Order.';
+      tid = `IMD-QMS-2026-${this.ticketSeq++}`;
+    } else if (isTempDrift) {
+      cls = 'CALIBRATION_DRIFT'; flag = 'FLAG_3_SUSPECT_DRIFT'; alert = 'LEVEL_3_AMBER'; fp = 0.88;
+      action = 'Suspect Data: PT100 zero-point offset exceeds Class-A tolerance for 3+ consecutive ticks while the other channels stay nominal. Schedule probe recalibration or swap.';
       tid = `IMD-QMS-2026-${this.ticketSeq++}`;
     } else if (isDrift) {
       cls = 'CALIBRATION_DRIFT'; flag = 'FLAG_3_SUSPECT_DRIFT'; alert = 'LEVEL_3_AMBER'; fp = 0.85;
@@ -424,6 +568,7 @@ export class NICWMOAnomalyEngine {
         auditMerkleRoot: merkleRoot,
         geofenceStatus: 'VERIFIED_IN_BOUNDS',
         tamperStatus: 'AUTHENTIC',
+        authentic: true,
       },
     };
 
@@ -465,9 +610,24 @@ export class NICWMOAnomalyEngine {
     if (id) {
       this.activeInjections.delete(id); this.frozenCache.delete(id);
       this.driftOffset.set(id, 0); this.stormCounter.set(id, 0);
+      this.stormLatch.set(id, 0); this.nominalEma.delete(id);
+      this.driftLatch.set(id, 0); this.tempDriftLatch.set(id, 0);
+      this.spikeLatch.set(id, 0);
+      // The rolling window is part of the station's state. Leaving it behind
+      // means the next sample is judged against the previous sample's fault.
+      this.stationBuffers.set(id, []);
     } else {
       this.activeInjections.clear(); this.frozenCache.clear();
-      for (const s of IMD_AWS_STATIONS) { this.driftOffset.set(s.stationId, 0); this.stormCounter.set(s.stationId, 0); }
+      this.nominalEma.clear();
+      for (const s of IMD_AWS_STATIONS) this.stationBuffers.set(s.stationId, []);
+      for (const s of IMD_AWS_STATIONS) {
+        this.driftOffset.set(s.stationId, 0);
+        this.stormCounter.set(s.stationId, 0);
+        this.stormLatch.set(s.stationId, 0);
+        this.driftLatch.set(s.stationId, 0);
+        this.tempDriftLatch.set(s.stationId, 0);
+        this.spikeLatch.set(s.stationId, 0);
+      }
     }
   }
 

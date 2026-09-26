@@ -84,6 +84,12 @@
   --status-critical-ink: #b02a2a;
   --status-critical-bg: #fbeaea;
 
+  /* Outside the severity ramp: the node is transmitting, the data is missing.
+     Violet so it never reads as one of the four severities. */
+  --status-lost: #7c3aed;
+  --status-lost-ink: #5b21b6;
+  --status-lost-bg: #ede9fe;
+
   --focus-ring: var(--accent);
   --shadow-raised: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.04);
   --shadow-overlay: 0 10px 30px -10px rgb(15 23 42 / 0.25);
@@ -134,6 +140,10 @@
   --status-critical-ink: #f08a8a;
   --status-critical-bg: #2d1114;
 
+  --status-lost: #a78bfa;
+  --status-lost-ink: #c4b5fd;
+  --status-lost-bg: #1e1633;
+
   --focus-ring: var(--accent);
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-overlay: 0 10px 30px -10px rgb(0 0 0 / 0.7);
@@ -181,8 +191,8 @@ body.high-contrast :where(header, nav, main, aside, table, th, td, section, arti
    reference it, including GovHeader's control rows. */
 .min-touch,
 .touch-target {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 48px;
+  min-width: 48px;
 }
 
 .tnum {

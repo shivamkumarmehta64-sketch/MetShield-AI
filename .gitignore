@@ -63,3 +63,9 @@ public/walkthrough.html
 AGENTS.md
 CLAUDE.md
 skills-lock.json
+
+# Browser-automation scratch output
+.playwright-mcp/
+
+# Superpowers plan scratch (ledger, briefs, review packages)
+/.superpowers/

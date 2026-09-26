@@ -27,13 +27,17 @@ export function normalizeClientVerdict(
   else if (verdict.severity === 'AMBER_PROBE_FREEZE') alertLevel = 'LEVEL_3_AMBER';
   else if (verdict.severity === 'RED_HARDWARE_FAULT') alertLevel = 'LEVEL_4_RED';
 
-  // Construct a dummy security seal since client simulations don't have real crypto
+  // Client-side QC has no crypto, no geofence and no ML model behind it. The seal is
+  // marked `UNSEALED_LOCAL` / `NOT_VERIFIED` rather than forged, so nothing downstream
+  // can read a simulated packet as a signed one. `authentic` is the single bit the
+  // console uses to distinguish a server-verified packet from a bench-injected one.
   const securitySeal: TelemetryPacket['securitySeal'] = {
-    hmacSha256: 'sim_00000000000000000000000000000000000000000000',
-    antiReplayNonce: Math.floor(Math.random() * 1000000),
-    auditMerkleRoot: 'sim_root_0000000000000000000000000000000',
-    geofenceStatus: 'VERIFIED_IN_BOUNDS',
-    tamperStatus: 'AUTHENTIC'
+    hmacSha256: '',
+    antiReplayNonce: 0,
+    auditMerkleRoot: '',
+    geofenceStatus: 'NOT_VERIFIED',
+    tamperStatus: 'UNSEALED_LOCAL',
+    authentic: false
   };
 
   return {
@@ -78,9 +82,13 @@ export function normalizeClientVerdict(
       primaryParameter: verdict.xai.primaryParameter,
       diagnosticNote: verdict.xai.diagnosticExplanation
     },
+    // No ML model runs on this path — `classifyAnomaly` is server-side only. Emitting a
+    // fabricated confidence here would make the console's "ML agrees with rules" readout
+    // assert a second opinion that was never computed. Confidence 0 is the honest value
+    // for "no model ran"; `agreesWithRules: true` records that the rules engine stood alone.
     mlPrediction: {
-      mlClassification: verdict.classification,
-      mlConfidence: 0.99,
+      mlClassification: 'NOT_EVALUATED',
+      mlConfidence: 0,
       agreesWithRules: true
     },
     operationalAction: verdict.recommendedAction,

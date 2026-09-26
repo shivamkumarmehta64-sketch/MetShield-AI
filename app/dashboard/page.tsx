@@ -5,7 +5,7 @@ import { AppShell } from '@/components/shell/AppShell';
 import { GovHeader } from '@/components/GovHeader';
 import { useStationTelemetry } from '@/hooks/useStationTelemetry';
 import { IMD_AWS_STATIONS, getStationProfile } from '@/lib/stationData';
-import { Wrench, Map, Brain, Cpu, Activity, LayoutGrid } from 'lucide-react';
+import { Wrench, Map, Brain, Cpu, Activity, LayoutGrid, Compass } from 'lucide-react';
 import { ModuleNav } from '@/components/ui/ModuleNav';
 import { Card } from '@/components/ui/Card';
 import { ActiveModalType, GovInfoModals } from '@/components/GovInfoModals';
@@ -28,10 +28,12 @@ import { GovLiveIndiaAutoTester } from '@/components/GovLiveIndiaAutoTester';
 import { GovIndiaDistrictSearch } from '@/components/GovIndiaDistrictSearch';
 import { GovPredictiveMaintenancePanel } from '@/components/GovPredictiveMaintenancePanel';
 import { GovNetworkStrip } from '@/components/GovNetworkStrip';
+import { GovSpatialConsensusPanel } from '@/components/GovSpatialConsensusPanel';
 
 const SECONDARY_MODULES = [
   { id: 'vayu', label: 'National Vayu', icon: <Map /> },
   { id: 'heatwave', label: 'Heatwave DSS', icon: <Activity /> },
+  { id: 'crosscheck', label: 'Spatial Cross-Check', icon: <Compass /> },
   { id: 'stitch', label: 'Google Stitch AI', icon: <Brain /> },
   { id: 'autoTester', label: 'Auto Tester', icon: <Cpu /> },
   { id: 'districtSearch', label: 'District Explorer', icon: <Map /> },
@@ -98,7 +100,7 @@ export default function DashboardPage() {
             anomalyTally={{ critical: 0, convective: 0, drift: 0 }}
             language={language}
           />
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 w-full md:w-auto overflow-hidden">
             <button
               onClick={() => setActiveModule('primary')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold min-touch transition-colors ${
@@ -179,6 +181,7 @@ export default function DashboardPage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {activeModule === 'vayu' && <VayuNationalDashboard onSelectDistrict={(id) => console.log('Vayu dist', id)} />}
             {activeModule === 'heatwave' && <GovHeatwaveDSSPanel selectedDistrictId={null} onSelectDistrict={() => {}} language={language} />}
+            {activeModule === 'crosscheck' && <GovSpatialConsensusPanel stationId={selectedStationId} />}
             {activeModule === 'stitch' && <GoogleStitchAIToolsSuite />}
             {activeModule === 'autoTester' && <GovLiveIndiaAutoTester language={language} onOpenMobileQR={() => setShowMobileQR(true)} />}
             {activeModule === 'districtSearch' && <GovIndiaDistrictSearch onSelectStationProfile={() => {}} selectedStationId="" language={language} />}

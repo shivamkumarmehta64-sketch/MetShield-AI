@@ -1,7 +1,7 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 
-export function TelemetryChart({
+export function TelemetryChart<T extends object>({
   data,
   dataKey,
   color,
@@ -9,8 +9,10 @@ export function TelemetryChart({
   domain = ['auto', 'auto'],
   height = 120
 }: {
-  data: any[];
-  dataKey: string;
+  data: T[];
+  // Constrained to T's own keys so `chartMetric`-style unions stay checked
+  // against the point shape instead of degrading to a bare `string`.
+  dataKey: Extract<keyof T, string>;
   color: string;
   unit: string;
   domain?: [number | string, number | string];
