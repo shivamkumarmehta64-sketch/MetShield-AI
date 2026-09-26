@@ -108,7 +108,7 @@ export interface MapNode {
   [key: string]: unknown;
 }
 
-interface MapProps {
+export interface MapProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   nodes: any[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -118,6 +118,7 @@ interface MapProps {
   activeLayer: 'QC' | 'THERMAL' | 'RADAR';
   basemap?: BasemapStyle;
   viewTarget?: { center: [number, number]; zoom: number; key: string } | null;
+  minHeight?: number | string;
 }
 
 export default function LeafletMap({
@@ -126,7 +127,8 @@ export default function LeafletMap({
   onNodeClick,
   activeLayer,
   basemap = 'DARK',
-  viewTarget = null
+  viewTarget = null,
+  minHeight = '440px'
 }: MapProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const activeNodeData = activeNode as any;
@@ -137,7 +139,7 @@ export default function LeafletMap({
     <MapContainer
       center={[22.5, 79.5]} // Geographical Center of India
       zoom={4}
-      style={{ height: '100%', width: '100%', minHeight: '440px', zIndex: 0 }}
+      style={{ height: '100%', width: '100%', minHeight, zIndex: 0 }}
       zoomControl={true}
     >
       <TileLayer

@@ -25,7 +25,10 @@ import dynamic from 'next/dynamic';
 const DynamicLeafletMap = dynamic(() => import('./LeafletMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[460px] flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-2">
+    <div
+      className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-2"
+      style={{ minHeight: '460px' }}
+    >
       <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
       <span className="text-xs font-mono">Initializing High-Resolution GIS Basemap...</span>
     </div>
@@ -39,6 +42,7 @@ interface Props {
   onSelectCustomDistrict?: (districtProfile: IMDStationProfile) => void;
   customStations?: Record<string, IMDStationProfile>;
   language?: 'en' | 'hi';
+  minHeight?: number | string;
 }
 
 const FLAG_COLORS: Record<WMOQualityFlag | 'UNKNOWN', { fill: string; ring: string; label: string }> = {
@@ -105,7 +109,8 @@ export const GovNetworkMap = React.memo<Props>(function GovNetworkMap({
   onSelectStation,
   onSelectCustomDistrict,
   customStations = {},
-  language = 'en'
+  language = 'en',
+  minHeight
 }) {
   const [selectedRmc, setSelectedRmc] = useState<RmcFilter>('ALL');
   const [activeLayer, setActiveLayer] = useState<MapLayer>('QC');
@@ -467,7 +472,10 @@ export const GovNetworkMap = React.memo<Props>(function GovNetworkMap({
       </div>
 
       {/* Map Canvas Area */}
-      <div className="relative bg-slate-100 p-1 sm:p-2 flex-1 min-h-[460px] h-[60vh] lg:h-[740px]">
+      <div
+        className={`relative bg-slate-100 p-1 sm:p-2 flex-1 ${minHeight ? 'h-full w-full' : 'min-h-[460px] h-[60vh] lg:h-[740px]'}`}
+        style={minHeight ? { minHeight } : undefined}
+      >
         {/* Floating Top Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5 pointer-events-none">
           <div className="bg-white/95 backdrop-blur-md border border-slate-300 px-2.5 py-1 rounded shadow-md text-[11px] font-mono text-slate-800">
@@ -501,7 +509,10 @@ export const GovNetworkMap = React.memo<Props>(function GovNetworkMap({
         </div>
 
         {/* Dynamic Leaflet GIS Map */}
-        <div className="w-full h-full min-h-[460px] h-[60vh] lg:h-[740px] rounded overflow-hidden border border-slate-300 shadow-xs">
+        <div
+          className={`w-full h-full rounded overflow-hidden border border-slate-300 shadow-xs ${minHeight ? '' : 'min-h-[460px] h-[60vh] lg:h-[740px]'}`}
+          style={minHeight ? { minHeight } : undefined}
+        >
           <DynamicLeafletMap
             nodes={filteredNodes}
             activeNode={activeNode}
@@ -509,6 +520,7 @@ export const GovNetworkMap = React.memo<Props>(function GovNetworkMap({
             activeLayer={activeLayer}
             basemap={activeBasemap}
             viewTarget={viewTarget}
+            minHeight={minHeight}
           />
         </div>
       </div>
