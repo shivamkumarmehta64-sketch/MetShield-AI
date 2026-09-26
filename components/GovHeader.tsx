@@ -42,24 +42,24 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
       <div className="h-[3px] w-full bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-600" />
 
       {/* Top Utility Bar */}
-      <div className="bg-[#070d1e] border-b border-slate-800/80 text-slate-300">
+      <div className="bg-[var(--surface-sunken)] border-b border-slate-800/80 text-slate-300">
         <div className="max-w-[1750px] mx-auto px-3 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between text-xs">
           {/* System Status Tag */}
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="font-bold text-cyan-400 text-[11px] sm:text-xs tracking-tight flex items-center gap-1">
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-              Metshield Telemetry QMS
+              MetShield AI
             </span>
             <span className="text-slate-600 hidden sm:inline">•</span>
             <span className="font-medium text-slate-300 truncate text-[11px] sm:text-xs">
-              Automated Weather Station Quality Management System (AWS-QMS)
+              Intelligent Weather Telemetry
             </span>
           </div>
 
           {/* Accessibility & Utility Controls */}
           <div className="flex items-center gap-2 shrink-0">
             {/* Font Size Adjusters */}
-            <div className="hidden sm:flex items-center bg-[#0e1730] border border-slate-700/80 rounded px-1.5 py-0.5 space-x-1">
+            <div className="hidden sm:flex items-center bg-[var(--surface-raised)] border border-slate-700/80 rounded px-1.5 py-0.5 space-x-1">
               <span className="text-[10px] text-slate-400 mr-1">Font:</span>
               {[-1, 0, 1].map(level => (
                 <button
@@ -80,7 +80,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
               onClick={onToggleContrast}
               title="Toggle High Contrast"
               className={`p-1 sm:px-2 sm:py-0.5 rounded border text-[10px] transition-all flex items-center gap-1 ${
-                isHighContrast ? 'bg-yellow-400 text-slate-950 border-yellow-500 font-bold' : 'bg-[#0e1730] text-slate-300 border-slate-700 hover:bg-slate-800'
+                isHighContrast ? 'bg-yellow-400 text-slate-950 border-yellow-500 font-bold' : 'bg-[var(--surface-raised)] text-slate-300 border-slate-700 hover:bg-slate-800'
               }`}
             >
               <Eye className="w-3 h-3 text-cyan-400" />
@@ -90,7 +90,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
             {/* Language Toggle */}
             <button
               onClick={onToggleLanguage}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-slate-700 bg-[#0e1730] text-cyan-300 font-bold text-[10px] hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-1 px-2 py-0.5 rounded border border-slate-700 bg-[var(--surface-raised)] text-cyan-300 font-bold text-[10px] hover:bg-slate-800 transition-colors"
               title="Switch Language"
             >
               <Globe className="w-3 h-3 text-cyan-400" />
@@ -98,7 +98,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
             </button>
 
             {/* Live IST Clock */}
-            <div className="hidden md:flex items-center gap-1.5 font-mono text-[11px] bg-[#0e1730] text-slate-200 border border-slate-700/80 px-2 py-0.5 rounded font-semibold">
+            <div className="hidden md:flex items-center gap-1.5 font-mono text-[11px] bg-[var(--surface-raised)] text-slate-200 border border-slate-700/80 px-2 py-0.5 rounded font-semibold">
               <Clock className="w-3 h-3 text-emerald-400" />
               <span suppressHydrationWarning>{istTime || 'IST'}</span>
             </div>
@@ -106,7 +106,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
             {/* Mobile Drawer Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(prev => !prev)}
-              className="xl:hidden p-1.5 rounded bg-[#0e1730] border border-slate-700 text-slate-200 hover:text-white touch-target flex items-center justify-center"
+              className="xl:hidden p-1.5 rounded bg-[var(--surface-raised)] border border-slate-700 text-slate-200 hover:text-white touch-target flex items-center justify-center"
               aria-label="Toggle Navigation Menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5 text-cyan-400" /> : <Menu className="w-5 h-5 text-cyan-400" />}
@@ -116,7 +116,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
       </div>
 
       {/* Main Metshield AI Header Masthead */}
-      <div className="bg-[#0b1329] text-white">
+      <div className="bg-[var(--surface-base)] text-[var(--text-primary)]">
         <div className="max-w-[1750px] mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-4">
           {/* Identity & Logo */}
           <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
                   <span className="text-cyan-400 font-extrabold">AI</span>
                 </span>
                 <span className="bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-cyan-400/40">
-                  AWS-QMS
+                  Telemetry Engine
                 </span>
                 <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-emerald-400/40 hidden sm:inline">
                   WMO Pub 8 Compliant
@@ -139,8 +139,8 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
               </div>
               <p className="text-[11px] text-slate-300 hidden sm:block">
                 {language === 'hi'
-                  ? 'स्वचालित मौसम स्टेशन गुणवत्ता प्रबंधन प्रणाली • 24x7 इंटेलिजेंट वेदर टेलीमेट्री'
-                  : 'Automated Weather Station Quality Management System • 24x7 Intelligent Telemetry'}
+                  ? 'इंटेलिजेंट वेदर टेलीमेट्री'
+                  : 'Intelligent Weather Telemetry • Real-Time AI Diagnostics'}
               </p>
             </div>
           </div>
@@ -181,7 +181,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
                 <span>{language === 'hi' ? 'मोबाइल नोड (QR)' : 'Mobile Node (QR)'}</span>
               </button>
             )}
-            <div className="px-3 py-1 bg-[#070d1e] border border-slate-800 rounded-lg text-right">
+            <div className="px-3 py-1 bg-[var(--surface-sunken)] border border-slate-800 rounded-lg text-right">
               <div className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
                 {isLiveApiMode ? 'Live Weather Feed' : 'Telemetry Simulator'}
               </div>
@@ -195,7 +195,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
       </div>
 
       {/* Main Navigation Bar */}
-      <nav aria-label="Portal Navigation" className="bg-[#070d1e] border-t border-b border-slate-800 text-white">
+      <nav aria-label="Portal Navigation" className="bg-[var(--surface-sunken)] border-t border-b border-slate-800 text-white">
         <div className="max-w-[1750px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between overflow-x-auto scrollbar-none py-1.5 text-xs font-semibold">
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Link
@@ -253,13 +253,13 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
 
       {/* Mobile Drawer Dropdown */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden bg-[#070d1e] border-b border-slate-800 p-4 space-y-3 animate-fadeIn">
+        <div className="xl:hidden bg-[var(--surface-sunken)] border-b border-slate-800 p-4 space-y-3 animate-fadeIn">
           <div className="grid grid-cols-2 gap-2 text-xs font-bold pb-3 border-b border-slate-800">
             <Link
               href="/"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`p-3 rounded-lg flex items-center gap-2 border touch-target ${
-                pathname === '/' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[#0e1730] text-slate-200 border-slate-800'
+                pathname === '/' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[var(--surface-raised)] text-slate-200 border-slate-800'
               }`}
             >
               <Home className="w-4 h-4 text-cyan-400" />
@@ -269,7 +269,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
               href="/dashboard"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`p-3 rounded-lg flex items-center gap-2 border touch-target ${
-                pathname === '/dashboard' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[#0e1730] text-slate-200 border-slate-800'
+                pathname === '/dashboard' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[var(--surface-raised)] text-slate-200 border-slate-800'
               }`}
             >
               <Activity className="w-4 h-4 text-emerald-400" />
@@ -279,7 +279,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
               href="/mobile"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`p-3 rounded-lg flex items-center gap-2 border touch-target ${
-                pathname === '/mobile' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[#0e1730] text-slate-200 border-slate-800'
+                pathname === '/mobile' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[var(--surface-raised)] text-slate-200 border-slate-800'
               }`}
             >
               <Smartphone className="w-4 h-4 text-sky-400" />
@@ -289,7 +289,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
               href="/audit-report"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`p-3 rounded-lg flex items-center gap-2 border touch-target ${
-                pathname === '/audit-report' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[#0e1730] text-slate-200 border-slate-800'
+                pathname === '/audit-report' ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold' : 'bg-[var(--surface-raised)] text-slate-200 border-slate-800'
               }`}
             >
               <FileCheck className="w-4 h-4 text-purple-400" />
@@ -307,7 +307,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
               <button
                 key={item.modal}
                 onClick={() => { onOpenModal(item.modal); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-2 p-2.5 bg-[#0e1730] rounded-lg border border-slate-800 text-slate-200 font-medium hover:bg-slate-800 cursor-pointer touch-target"
+                className="flex items-center gap-2 p-2.5 bg-[var(--surface-raised)] rounded-lg border border-slate-800 text-slate-200 font-medium hover:bg-slate-800 cursor-pointer touch-target"
               >
                 {item.icon}
                 <span>{item.label}</span>
@@ -319,7 +319,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
             {onOpenDatasetReplay && (
               <button
                 onClick={() => { onOpenDatasetReplay(); setIsMobileMenuOpen(false); }}
-                className="flex-1 py-2.5 bg-[#0e1730] border border-slate-800 rounded-lg text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 cursor-pointer touch-target"
+                className="flex-1 py-2.5 bg-[var(--surface-raised)] border border-slate-800 rounded-lg text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 cursor-pointer touch-target"
               >
                 <FileText className="w-4 h-4 text-cyan-400" />
                 <span>Replay Telemetry</span>

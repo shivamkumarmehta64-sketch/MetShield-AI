@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Usb, Activity, AlertTriangle, Link as LinkIcon, Unlink } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Usb, AlertTriangle, Link as LinkIcon, Unlink } from 'lucide-react';
 
 export function WebSerialConnector() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [port, setPort] = useState<any>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -15,6 +16,7 @@ export function WebSerialConnector() {
         setError('WebSerial API not supported in this browser.');
         return;
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const selectedPort = await (navigator as any).serial.requestPort();
       await selectedPort.open({ baudRate: 9600 });
       setPort(selectedPort);
@@ -22,8 +24,8 @@ export function WebSerialConnector() {
       setError(null);
       addLog('Successfully connected to physical node COM port.');
       readLoop(selectedPort);
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect to serial port');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to connect to serial port');
     }
   };
 
@@ -34,8 +36,8 @@ export function WebSerialConnector() {
         setPort(null);
         setIsConnected(false);
         addLog('Disconnected from COM port.');
-      } catch (err: any) {
-        setError('Error closing port: ' + err.message);
+      } catch (err: unknown) {
+        setError('Error closing port: ' + (err as Error).message);
       }
     }
   };
@@ -48,9 +50,10 @@ export function WebSerialConnector() {
     });
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const readLoop = async (activePort: any) => {
     const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = activePort.readable.pipeTo(textDecoder.writable);
+    activePort.readable.pipeTo(textDecoder.writable);
     const reader = textDecoder.readable.getReader();
     try {
       while (true) {
@@ -60,7 +63,7 @@ export function WebSerialConnector() {
           addLog(`RX: ${value.trim()}`);
         }
       }
-    } catch (error) {
+    } catch {
       addLog(`Serial Read Error`);
     } finally {
       reader.releaseLock();

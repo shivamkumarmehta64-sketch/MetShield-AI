@@ -94,8 +94,15 @@ export async function initializeD1Schema(db?: D1Database | null): Promise<boolea
 export async function persistTelemetryToEdge(
   packet: TelemetryPacket,
   db?: D1Database | null
-): Promise<{ persisted: boolean; storage: 'D1_EDGE_SQLITE' | 'IN_MEMORY_FALLBACK' }> {
+): Promise<{ persisted: boolean; storage: 'D1_EDGE_SQLITE' | 'IN_MEMORY_FALLBACK' | 'REJECTED_UNSEALED' }> {
   const targetDb = db || resolveD1Binding();
+
+  // A client-simulated packet carries an UNSEALED_LOCAL seal and no signing key.
+  // Writing it into the audit ledger would assert provenance the packet does not
+  // have, so bench-injected packets are refused before any storage is touched.
+  if (packet.securitySeal.tamperStatus === 'UNSEALED_LOCAL' || !packet.securitySeal.hmacSha256) {
+    return { persisted: false, storage: 'REJECTED_UNSEALED' };
+  }
 
   // Always keep in-memory fallback up to date
   fallbackTelemetryLog.unshift(packet);

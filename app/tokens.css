@@ -1,0 +1,219 @@
+/**
+ * MetShield AI — design tokens
+ *
+ * One semantic token set, two themes. The severity ramp (nominal → watch → serious
+ * → critical) is the load-bearing part: the same four roles carry the same meaning
+ * on the light ops console and the dark field node, so an operator who learns the
+ * colours at the desk reads them the same on the phone.
+ *
+ * Every value here is computed, not picked:
+ *   - Series palette: validated with the dataviz six checks under `--pairs all`
+ *     against the real surfaces (#f8fafc / #070d1e). Worst CVD ΔE 9.2 light /
+ *     9.4 dark; worst normal-vision ΔE 24.0 light / 20.9 dark (hard gate is 15).
+ *   - Light-mode aqua sits at 2.69:1, so `--chart-hum` REQUIRES the relief channel:
+ *     a visible direct label or the table view. Never render it unlabelled.
+ *   - Status marks: `--status-watch` (1.83:1) and `--status-serious` (2.64:1) are
+ *     sub-3:1 on the light surface by design. Icon + label is the mitigation and
+ *     StatusBadge is not allowed to ship colour alone.
+ *   - Text inks: all ≥ 4.5:1 (body) and ≥ 7:1 (primary).
+ *
+ * Theming is data-attribute driven, not a media query: `.theme-field` is set on the
+ * field-node document so the whole ramp flips in one attribute, and so the console
+ * can render an embedded field preview without a second document.
+ */
+
+@import "tailwindcss";
+
+/* Tailwind exposes `--font-sans` / `--font-mono` from the layout's next/font
+   variables. Registering them in the theme layer means `font-sans` / `font-mono`
+   resolve against whichever document is active, including the field node. */
+@theme inline {
+  --font-sans: var(--font-sans), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+}
+
+:root,
+.theme-console {
+  color-scheme: light;
+
+  /* Surfaces — slate plane, white cards, one sunken well for chart plots. */
+  --surface-base: #f8fafc;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f1f5f9;
+  --surface-overlay: #ffffff;
+  --surface-chrome: #ffffff;
+
+  --border-subtle: rgb(15 23 42 / 0.10);
+  --border-strong: rgb(15 23 42 / 0.22);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-inverse: #f8fafc;
+
+  --accent: #1a5fd0;
+  --accent-hover: #174da8;
+  --accent-subtle: #e6effc;
+
+  /* Chart chrome */
+  --chart-grid: #e2e8f0;
+  --chart-axis: #cbd5e1;
+  --chart-tick-ink: #64748b;
+
+  /* Series identity — fixed order, never cycled. */
+  --chart-temp: #2a78d6;
+  --chart-press: #eb6834;
+  --chart-hum: #1baf7a;
+
+  /* Severity: mark colour (≥3:1 or relief-required) and text ink (≥4.5:1). */
+  --status-nominal: #0ca30c;
+  --status-nominal-ink: #006300;
+  --status-nominal-bg: #e8f6e8;
+
+  --status-watch: #fab219;
+  --status-watch-ink: #8a5a00;
+  --status-watch-bg: #fdf3dd;
+
+  --status-serious: #ec835a;
+  --status-serious-ink: #a34a1e;
+  --status-serious-bg: #fdeee6;
+
+  --status-critical: #d03b3b;
+  --status-critical-ink: #b02a2a;
+  --status-critical-bg: #fbeaea;
+
+  /* Outside the severity ramp: the node is transmitting, the data is missing.
+     Violet so it never reads as one of the four severities. */
+  --status-lost: #7c3aed;
+  --status-lost-ink: #5b21b6;
+  --status-lost-bg: #ede9fe;
+
+  --focus-ring: var(--accent);
+  --shadow-raised: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.04);
+  --shadow-overlay: 0 10px 30px -10px rgb(15 23 42 / 0.25);
+}
+
+.theme-field {
+  color-scheme: dark;
+
+  --surface-base: #070d1e;
+  --surface-raised: #101a33;
+  --surface-sunken: #0a1226;
+  --surface-overlay: #16213d;
+  --surface-chrome: #0c1428;
+
+  --border-subtle: rgb(255 255 255 / 0.10);
+  --border-strong: rgb(255 255 255 / 0.20);
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #a8b6cc;
+  --text-muted: #7d8ba3;
+  --text-inverse: #0f172a;
+
+  --accent: #5aa2f7;
+  --accent-hover: #8bc0ff;
+  --accent-subtle: #16233d;
+
+  --chart-grid: #1b2a4a;
+  --chart-axis: #2c3c5e;
+  --chart-tick-ink: #7d8ba3;
+
+  --chart-temp: #3987e5;
+  --chart-press: #d95926;
+  --chart-hum: #199e70;
+
+  --status-nominal: #0ca30c;
+  --status-nominal-ink: #3fae3f;
+  --status-nominal-bg: #0d2410;
+
+  --status-watch: #fab219;
+  --status-watch-ink: #fab219;
+  --status-watch-bg: #2b2008;
+
+  --status-serious: #ec835a;
+  --status-serious-ink: #f0a07e;
+  --status-serious-bg: #2e1a10;
+
+  --status-critical: #d03b3b;
+  --status-critical-ink: #f08a8a;
+  --status-critical-bg: #2d1114;
+
+  --status-lost: #a78bfa;
+  --status-lost-ink: #c4b5fd;
+  --status-lost-bg: #1e1633;
+
+  --focus-ring: var(--accent);
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-overlay: 0 10px 30px -10px rgb(0 0 0 / 0.7);
+}
+
+/* High-contrast override. Re-pointed at the dark ramp so it is a real variant of
+   the field theme rather than the old black/yellow that fought the token system. */
+body.high-contrast {
+  background-color: var(--surface-base) !important;
+  color: var(--text-primary) !important;
+}
+
+body.high-contrast * {
+  border-color: var(--border-strong) !important;
+}
+
+body.high-contrast :where(header, nav, main, aside, table, th, td, section, article) {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Utilities ────────────────────────────────────────────────────────────── */
+
+/* Referenced by TelemetryMetricCards and the metric rail; was never defined. */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Referenced by the field node's bottom action bar; was never defined. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* 44px minimum for field devices (WCAG 2.5.5 / platform HIG). `.min-touch` is the
+   name new code should use; `.touch-target` is kept because 16 call sites already
+   reference it, including GovHeader's control rows. */
+.min-touch,
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Visible keyboard focus everywhere. `:focus-visible` so it never fires on mouse. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

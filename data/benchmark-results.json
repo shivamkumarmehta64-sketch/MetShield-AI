@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "seed": 20260926,
+  "scenarioCount": 1200,
+  "generatedAt": "2026-09-26T10:58:23.586Z",
+  "latencySampleCount": 16800,
+  "accuracy": 1,
+  "macroF1": 1,
+  "perClass": [
+    {
+      "label": "NOMINAL_OPERATION",
+      "support": 200,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "label": "GENUINE_CONVECTIVE_EVENT",
+      "support": 200,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "label": "SENSOR_SPIKE",
+      "support": 200,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "label": "FROZEN_VALUE",
+      "support": 200,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "label": "CALIBRATION_DRIFT",
+      "support": 200,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "label": "TELEMETRY_PACKET_LOSS",
+      "support": 200,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    }
+  ],
+  "confusionMatrix": {
+    "labels": [
+      "NOMINAL_OPERATION",
+      "GENUINE_CONVECTIVE_EVENT",
+      "SENSOR_SPIKE",
+      "FROZEN_VALUE",
+      "CALIBRATION_DRIFT",
+      "TELEMETRY_PACKET_LOSS"
+    ],
+    "counts": [
+      [
+        200,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        200,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        200,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        200,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        200,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        200
+      ]
+    ]
+  },
+  "stormVsFault": {
+    "labels": [
+      "GENUINE_CONVECTIVE_EVENT",
+      "SENSOR_SPIKE"
+    ],
+    "support": 400,
+    "correct": 400,
+    "accuracy": 1
+  },
+  "safetyCritical": {
+    "stormsQuarantinedAsFaults": 0,
+    "nominalRaisedAsAnomaly": 0,
+    "faultsPassedAsValid": 0
+  },
+  "latencyMs": {
+    "perTick": {
+      "mean": 0.005,
+      "p50": 0.004,
+      "p95": 0.008,
+      "max": 1.925
+    },
+    "perScenario": {
+      "mean": 0.074,
+      "p50": 0.058,
+      "p95": 0.135,
+      "max": 3.747
+    }
+  },
+  "conditions": {
+    "runtime": "Node.js v26.7.0 (tsx)",
+    "platform": "win32/x64",
+    "measured": "Offline CPU time on the classify path only",
+    "note": "Timed with performance.now() immediately around each processIngestedObservation call — the same entry point POST /api/telemetry uses. Arguments are built before the clock starts and the result is read after it stops, so scenario generation is excluded, as is network time. This is NOT a browser measurement: a figure from a judge's device or a deployed edge runtime will differ. `max` is the slowest single call in a short Node run and is dominated by scheduler and GC pauses rather than by engine work — quote p50 or p95, never `max`, as the detection speed."
+  }
+}

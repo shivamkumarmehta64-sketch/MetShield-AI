@@ -53,13 +53,16 @@ function isOriginAllowed(originHeader: string | null): boolean {
 // Default baseline defensive security headers
 function attachSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  // Must match the CSP `frame-ancestors 'none'` in next.config.ts. When the two
+  // disagree browsers honour the weaker value, so SAMEORIGIN here would have
+  // silently allowed framing by the app's own origin.
+  response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-Metshield-Edge-Secured', 'true');
   return response;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const userAgent = request.headers.get('user-agent')?.toLowerCase() || '';
   const pathname = request.nextUrl.pathname;
 

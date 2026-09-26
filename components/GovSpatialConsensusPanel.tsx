@@ -1,382 +1,392 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Compass,
-  Radio,
   CheckCircle2,
   AlertTriangle,
   ShieldCheck,
-  ShieldAlert,
-  ShieldX,
   Download,
-  Share2,
-  Activity,
-  Layers,
-  ArrowRight,
-  Database,
-  Cpu,
+  Radio,
+  RefreshCw,
+  Cloud,
+  Satellite,
 } from 'lucide-react';
+import { IMD_AWS_STATIONS } from '@/lib/stationData';
+import { nicWmoEngineInstance } from '@/lib/anomalyLogic';
+import { crossCheckStation, type CrossCheckResult, type CrossCheckVerdict } from '@/lib/spatialCrossCheck';
 
-interface StationCohortNode {
-  id: string;
-  name: string;
-  district: string;
-  distanceKm: number;
-  temp: number;
-  pressure: number;
-  humidity: number;
-  deltaP: number;
-  status: 'NOMINAL' | 'STORM_CONSENSUS' | 'DIVERGENT_OUTLIER';
-}
+/**
+ * TIER 3 — INDEPENDENT ATMOSPHERIC CORROBORATION
+ *
+ * The previous version of this panel was a fiction. It displayed three regions
+ * with invented station IDs (AWS-4102 does not exist in `IMD_AWS_STATIONS`),
+ * hardcoded temperatures, and buttons labelled "Inject Sensor Drift" that
+ * swapped a string in a record and then printed a confident scientific verdict
+ * about it — including a "Mean ΔP: -2.76 hPa" computed from literals, and a
+ * claim that "5/5 spatial stations report simultaneous barometric plunge" when
+ * no station was ever consulted.
+ *
+ * This version runs the real thing: real stations from the registry, the real
+ * anomaly engine, and a real Open-Meteo observation for each station's district.
+ * The "inject" button is retained because the fault-arbitration demo is
+ * genuinely useful, but it now feeds an offset into the engine's real ingest
+ * path and reports what the independent source actually says about it.
+ */
 
-const REGIONAL_COHORTS: Record<string, { target: StationCohortNode; neighbors: StationCohortNode[] }> = {
-  PUNE: {
-    target: {
-      id: 'AWS-4102',
-      name: 'Pune Shivajinagar',
-      district: 'Pune, Maharashtra',
-      distanceKm: 0,
-      temp: 24.8,
-      pressure: 955.2,
-      humidity: 88,
-      deltaP: -2.8,
-      status: 'STORM_CONSENSUS',
-    },
-    neighbors: [
-      { id: 'AWS-4105', name: 'Pashan Observatory', district: 'Pune', distanceKm: 8.4, temp: 24.2, pressure: 954.9, humidity: 91, deltaP: -2.9, status: 'STORM_CONSENSUS' },
-      { id: 'AWS-4112', name: 'Talegaon Dabhade', district: 'Pune', distanceKm: 28.1, temp: 24.0, pressure: 955.8, humidity: 86, deltaP: -2.6, status: 'STORM_CONSENSUS' },
-      { id: 'AWS-4118', name: 'Lonavala Ghats', district: 'Pune', distanceKm: 52.0, temp: 22.5, pressure: 948.1, humidity: 94, deltaP: -3.1, status: 'STORM_CONSENSUS' },
-      { id: 'AWS-4122', name: 'Baramati Agromet', district: 'Pune', distanceKm: 68.5, temp: 25.4, pressure: 956.1, humidity: 82, deltaP: -2.4, status: 'STORM_CONSENSUS' },
-    ],
+const STATIONS = IMD_AWS_STATIONS.filter(s => s.stationId !== 'AWS-MOB-01');
+
+const VERDICT_STYLE: Record<
+  CrossCheckVerdict,
+  { label: string; card: string; chip: string; icon: React.ComponentType<{ className?: string }> }
+> = {
+  ATMOSPHERE_CONFIRMS: {
+    label: 'Atmosphere confirms',
+    card: 'bg-emerald-950/20 border-emerald-500/40',
+    chip: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    icon: CheckCircle2,
   },
-  DELHI: {
-    target: {
-      id: 'AWS-1101',
-      name: 'Safdarjung National Base',
-      district: 'New Delhi',
-      distanceKm: 0,
-      temp: 38.6,
-      pressure: 1002.1,
-      humidity: 42,
-      deltaP: -0.2,
-      status: 'NOMINAL',
-    },
-    neighbors: [
-      { id: 'AWS-1104', name: 'Lodhi Road Station', district: 'New Delhi', distanceKm: 4.2, temp: 38.8, pressure: 1002.3, humidity: 41, deltaP: -0.1, status: 'NOMINAL' },
-      { id: 'AWS-1109', name: 'Palam Airport AWS', district: 'South West Delhi', distanceKm: 12.8, temp: 39.1, pressure: 1001.9, humidity: 40, deltaP: -0.2, status: 'NOMINAL' },
-      { id: 'AWS-1115', name: 'Ayanagar Rural Node', district: 'South Delhi', distanceKm: 16.5, temp: 38.4, pressure: 1002.5, humidity: 44, deltaP: -0.3, status: 'NOMINAL' },
-      { id: 'AWS-1120', name: 'Narela Industrial Node', district: 'North Delhi', distanceKm: 29.4, temp: 38.9, pressure: 1002.0, humidity: 42, deltaP: -0.1, status: 'NOMINAL' },
-    ],
+  STATION_DIVERGES: {
+    label: 'Station diverges — probable fault',
+    card: 'bg-rose-950/20 border-rose-500/40',
+    chip: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+    icon: AlertTriangle,
   },
-  KOLKATA: {
-    target: {
-      id: 'AWS-7001',
-      name: 'Alipore Meteorological Office',
-      district: 'Kolkata, West Bengal',
-      distanceKm: 0,
-      temp: 21.3,
-      pressure: 1004.8,
-      humidity: 96,
-      deltaP: -4.8,
-      status: 'DIVERGENT_OUTLIER',
-    },
-    neighbors: [
-      { id: 'AWS-7004', name: 'Dum Dum Airport AWS', district: 'North 24 Parganas', distanceKm: 15.2, temp: 28.5, pressure: 1009.2, humidity: 74, deltaP: -0.4, status: 'NOMINAL' },
-      { id: 'AWS-7009', name: 'Howrah Terminal Node', district: 'Howrah', distanceKm: 6.8, temp: 28.8, pressure: 1009.5, humidity: 73, deltaP: -0.3, status: 'NOMINAL' },
-      { id: 'AWS-7014', name: 'Diamond Harbour AWS', district: 'South 24 Parganas', distanceKm: 42.0, temp: 29.0, pressure: 1009.1, humidity: 76, deltaP: -0.5, status: 'NOMINAL' },
-      { id: 'AWS-7019', name: 'Barasat Agromet Base', district: 'North 24 Parganas', distanceKm: 24.3, temp: 28.2, pressure: 1009.4, humidity: 75, deltaP: -0.4, status: 'NOMINAL' },
-    ],
+  INDEPENDENT_STORM_CORROBORATION: {
+    label: 'Independent storm corroboration',
+    card: 'bg-blue-950/20 border-blue-500/40',
+    chip: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+    icon: Cloud,
+  },
+  REGIONAL_EXTREME_UNCOUPLED: {
+    label: 'Pressure differs, not actionable',
+    card: 'bg-amber-950/15 border-amber-500/30',
+    chip: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    icon: Satellite,
+  },
+  INSUFFICIENT_DATA: {
+    label: 'No independent observation',
+    card: 'bg-slate-900/60 border-slate-700',
+    chip: 'bg-slate-700/40 text-slate-300 border-slate-600',
+    icon: Radio,
   },
 };
 
-export function GovSpatialConsensusPanel() {
-  const [selectedRegion, setSelectedRegion] = useState<'PUNE' | 'DELHI' | 'KOLKATA'>('PUNE');
-  const [injectedAnomaly, setInjectedAnomaly] = useState<'NONE' | 'OUTLIER_DRIFT' | 'REGIONAL_SQUALL'>('NONE');
-  const [isExporting, setIsExporting] = useState(false);
+function fmt(v: number | null | undefined, unit = '', dp = 1): string {
+  if (v === null || v === undefined || !Number.isFinite(v)) return '—';
+  return `${v.toFixed(dp)}${unit}`;
+}
 
-  const currentData = REGIONAL_COHORTS[selectedRegion];
+function BandChip({ band, label, delta }: { band: 'AGREE' | 'DIVERGE' | 'NO_DATA'; label: string; delta: number | null }) {
+  const tone =
+    band === 'AGREE'
+      ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
+      : band === 'DIVERGE'
+        ? 'text-rose-300 border-rose-500/30 bg-rose-500/10'
+        : 'text-slate-500 border-slate-700 bg-slate-800/50';
+  return (
+    <div className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border ${tone}`}>
+      <span className="text-[10px] font-mono uppercase tracking-wide">{label}</span>
+      <span className="text-[11px] font-mono font-bold">
+        {delta === null ? band : `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}`}
+      </span>
+    </div>
+  );
+}
 
-  // Dynamic consensus calculation based on injection
-  let targetDeltaP = currentData.target.deltaP;
-  let targetStatus = currentData.target.status;
-  let consensusConclusion = '';
-  let nwpDisposition: 'APPROVED' | 'QUARANTINED_AND_IMPUTED' = 'APPROVED';
+export function GovSpatialConsensusPanel({ stationId: initialStationId }: { stationId?: string } = {}) {
+  const [stationId, setStationId] = useState(
+    () => STATIONS.find(s => s.stationId === initialStationId)?.stationId ?? STATIONS[0]?.stationId ?? ''
+  );
+  const [result, setResult] = useState<CrossCheckResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [faultMode, setFaultMode] = useState(false);
+  const [auditTrail, setAuditTrail] = useState<string[]>([]);
 
-  if (injectedAnomaly === 'OUTLIER_DRIFT' || (selectedRegion === 'KOLKATA' && injectedAnomaly === 'NONE')) {
-    targetDeltaP = -4.8;
-    targetStatus = 'DIVERGENT_OUTLIER';
-    consensusConclusion = 'ISOLATED SENSOR DRIFT DETECTED: Target station deviates > 4.2σ from spatial cohort mean. Quarantined from NWP assimilation pipeline. Moving-average synthetic value imputed.';
-    nwpDisposition = 'QUARANTINED_AND_IMPUTED';
-  } else if (injectedAnomaly === 'REGIONAL_SQUALL' || (selectedRegion === 'PUNE' && injectedAnomaly === 'NONE')) {
-    targetDeltaP = -2.8;
-    targetStatus = 'STORM_CONSENSUS';
-    consensusConclusion = 'REGIONAL CONVECTIVE FRONT VALIDATED: 5/5 spatial stations report simultaneous barometric plunge (Mean ΔP: -2.76 hPa) and humidity surge. Confirmed natural event — NWP ingest approved!';
-    nwpDisposition = 'APPROVED';
-  } else {
-    targetDeltaP = -0.2;
-    targetStatus = 'NOMINAL';
-    consensusConclusion = 'SYNOPTIC HARMONY: All stations within 70km radius report nominal atmospheric gradients (< 0.5 hPa variation). Baseline telemetry cleared for ingestion.';
-    nwpDisposition = 'APPROVED';
-  }
+  const run = useCallback(async () => {
+    if (!stationId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      setResult(await crossCheckStation(stationId));
+    } catch (e) {
+      setResult(null);
+      setError(e instanceof Error ? e.message : 'Cross-check failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [stationId]);
 
-  // Mean neighbor delta P
-  const neighborMeanDeltaP = (
-    currentData.neighbors.reduce((sum, n) => sum + (injectedAnomaly === 'REGIONAL_SQUALL' ? -2.7 : n.deltaP), 0) /
-    currentData.neighbors.length
-  ).toFixed(2);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void run();
+  }, [run]);
 
-  const deviationDelta = Math.abs(targetDeltaP - parseFloat(neighborMeanDeltaP)).toFixed(2);
+  // The fault demo is a real injection into the engine's ingest path, not a
+  // change to what the panel displays. The cross-check then reads the live
+  // district and decides, so the verdict below is genuinely independent.
+  const toggleFault = useCallback(() => {
+    const next = !faultMode;
+    setFaultMode(next);
+    const station = IMD_AWS_STATIONS.find(s => s.stationId === stationId);
+    if (!station) return;
 
-  const handleExportNWP = () => {
-    setIsExporting(true);
-    const exportPayload = {
-      auditTimestamp: new Date().toISOString(),
-      wmoStandard: 'WMO-No. 8 § 4.3 Spatial KNN Consistency',
-      targetStation: currentData.target.id,
-      region: selectedRegion,
-      spatialCohortSize: currentData.neighbors.length + 1,
-      targetDeltaP,
-      neighborMeanDeltaP: parseFloat(neighborMeanDeltaP),
-      spatialDeviationDelta: parseFloat(deviationDelta),
-      verdict: targetStatus,
-      nwpDisposition,
-      imputedFallbackVal: nwpDisposition === 'QUARANTINED_AND_IMPUTED' ? { temp: 28.5, pressure: 1009.3, humidity: 74.5 } : null,
-      generatedBy: 'Metshield AI AWS-QMS v4.2 (Team 73869 AEROTECH)',
+    const b = station.baseline;
+    let ts = Date.now();
+    const push = (tOff: number) => {
+      nicWmoEngineInstance.processIngestedObservation(
+        stationId,
+        Math.round((b.tempMean + tOff + (Math.random() - 0.5) * 0.6) * 100) / 100,
+        Math.round((b.pressureMean + (Math.random() - 0.5) * 0.4) * 10) / 10,
+        Math.round((b.humidityMean + (Math.random() - 0.5) * 2) * 10) / 10,
+        ts
+      );
+      ts += 2500;
     };
+    for (let i = 0; i < 4; i++) push(0);
+    for (let i = 0; i < 3; i++) push(next ? 18 : 0);
 
-    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    setAuditTrail(a => [
+      ...a,
+      next
+        ? `Injected +18 °C thermistor offset into ${stationId} via processIngestedObservation.`
+        : `Cleared the injected offset on ${stationId}.`,
+    ]);
+  }, [faultMode, stationId]);
+
+  const exportAudit = useCallback(() => {
+    if (!result) return;
+    const buf = nicWmoEngineInstance.getBuffer(result.stationId);
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      standard: 'WMO-No. 8 — Guide to Meteorological Instruments and Observation',
+      module: 'TIER 3 — Independent Atmospheric Corroboration',
+      crossCheck: result,
+      // Recorded, never consulted. The cross-check verdicts on its own bands so
+      // that it stays an independent tiebreak; this column is the evidence that
+      // it reached that verdict *without* agreeing with the station-side engine.
+      engineVerdictAtCrossCheck: buf.length > 0 ? buf[buf.length - 1].classification : null,
+      faultInjected: faultMode,
+      auditTrail,
+      producedBy: 'MetShield AI AWS-QMS — Team AEROTECH, SIH26073',
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `METSHIELD_SPATIAL_NWP_GATING_${selectedRegion}_${Date.now()}.json`;
-    link.click();
-    setTimeout(() => setIsExporting(false), 800);
-  };
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `METSHIELD_CROSSCHECK_${result.stationId}_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [result, faultMode, auditTrail]);
+
+  const style = result ? VERDICT_STYLE[result.verdict] : VERDICT_STYLE.INSUFFICIENT_DATA;
+  const Icon = style.icon;
+
+  const stationRows = useMemo(
+    () => STATIONS.map(s => ({ id: s.stationId, label: `${s.stationId} — ${s.name}` })),
+    []
+  );
 
   return (
     <div className="bg-[#0b1329]/90 border border-slate-800 rounded-2xl p-5 sm:p-7 backdrop-blur-xl shadow-2xl">
-      {/* Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-5 border-b border-slate-800">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/70 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-semibold mb-2">
             <Compass className="w-3.5 h-3.5 text-cyan-400" />
-            <span>TIER 3: SPATIAL KNN COHORT CROSS-VALIDATION &amp; NWP GATING</span>
+            <span>TIER 3: INDEPENDENT ATMOSPHERIC CORROBORATION</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            Regional Consensus &amp; Atmospheric Outlier Discrimination
+            District Cross-Check &amp; Fault Arbitration
           </h3>
           <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mt-1">
-            Solves the localized fault dilemma: Compares the target AWS station against its 4 closest spatial cohort stations (KNN Haversine distance) to differentiate localized probe drifts from large-scale atmospheric fronts.
+            A station can only tell you that a reading is inconsistent with itself — a squall and a
+            lost barometer zero-point look identical from the inside. This check asks an outside
+            source: live Open-Meteo conditions at the station&rsquo;s own district, on mean sea-level
+            pressure so no elevation correction is needed. No network, no verdict.
           </p>
         </div>
 
-        {/* Region Selectors */}
-        <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto">
-          {(['PUNE', 'DELHI', 'KOLKATA'] as const).map(reg => (
-            <button
-              key={reg}
-              type="button"
-              onClick={() => {
-                setSelectedRegion(reg);
-                setInjectedAnomaly('NONE');
-              }}
-              className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all border text-center ${
-                selectedRegion === reg
-                  ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md shadow-cyan-500/20'
-                  : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-slate-500'
-              }`}
-            >
-              {reg === 'PUNE' && '🌧️ Pune Front (Kalbaisakhi)'}
-              {reg === 'DELHI' && '☀️ Delhi Basin (Nominal)'}
-              {reg === 'KOLKATA' && '⚠️ Kolkata (Probe Drift Outlier)'}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void run()}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Checking…' : 'Re-check'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={exportAudit}
+            disabled={!result}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-all disabled:opacity-40"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export audit</span>
+          </button>
         </div>
       </div>
 
-      {/* Cohort Grid & Spatial Map Display */}
+      {/* Station selector */}
+      <div className="mt-5 flex flex-col sm:flex-row gap-2">
+        <select
+          value={stationId}
+          onChange={e => {
+            setStationId(e.target.value);
+            setFaultMode(false);
+          }}
+          className="flex-1 px-3 py-2 rounded-lg bg-slate-900/80 text-slate-200 border border-slate-700 text-xs font-semibold"
+        >
+          {stationRows.map(r => (
+            <option key={r.id} value={r.id}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={toggleFault}
+          className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+            faultMode
+              ? 'bg-rose-900/50 text-rose-200 border-rose-700'
+              : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-slate-500'
+          }`}
+        >
+          {faultMode ? 'Fault injected — click to clear' : 'Inject +18 °C probe offset'}
+        </button>
+      </div>
+
+      {error && (
+        <p className="mt-3 text-xs text-rose-300 border border-rose-800/60 bg-rose-950/30 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-5">
-        {/* Left 5 Cols: Target Station Card & Spatial Consensus Metrics */}
-        <div className="lg:col-span-5 space-y-4">
-          <div
-            className={`p-4 rounded-xl border transition-all ${
-              targetStatus === 'DIVERGENT_OUTLIER'
-                ? 'bg-rose-950/20 border-rose-500/40 shadow-lg shadow-rose-950/20'
-                : targetStatus === 'STORM_CONSENSUS'
-                ? 'bg-blue-950/20 border-blue-500/40 shadow-lg shadow-blue-950/20'
-                : 'bg-emerald-950/20 border-emerald-500/40'
-            }`}
-          >
+        {/* Verdict + comparison */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className={`p-4 rounded-xl border transition-all ${style.card}`}>
             <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-[11px] font-mono uppercase font-bold text-slate-400">Target AWS Station</span>
-              <span
-                className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase border ${
-                  targetStatus === 'DIVERGENT_OUTLIER'
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                    : targetStatus === 'STORM_CONSENSUS'
-                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                }`}
-              >
-                {targetStatus}
+              <span className="text-[11px] font-mono uppercase font-bold text-slate-400">
+                Cross-check verdict
+              </span>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase border flex items-center gap-1 ${style.chip}`}>
+                <Icon className="w-3 h-3" />
+                {result?.verdict ?? '—'}
               </span>
             </div>
+            <div className="text-sm font-bold text-white mb-1">{style.label}</div>
 
-            <div className="text-lg font-bold text-white">{currentData.target.name}</div>
-            <div className="text-xs text-slate-400 mb-3">{currentData.target.district} • ID: {currentData.target.id}</div>
-
-            <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800">
-              <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
-                <div className="text-[10px] text-slate-400 uppercase">Temp</div>
-                <div className="text-sm font-bold font-mono text-white">{currentData.target.temp}°C</div>
-              </div>
-              <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
-                <div className="text-[10px] text-slate-400 uppercase">Pressure</div>
-                <div className="text-sm font-bold font-mono text-white">{currentData.target.pressure} hPa</div>
-              </div>
-              <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
-                <div className="text-[10px] text-slate-400 uppercase">Rate ΔP</div>
-                <div
-                  className={`text-sm font-bold font-mono ${
-                    targetDeltaP <= -2.5 ? 'text-blue-400' : 'text-emerald-400'
-                  }`}
-                >
-                  {targetDeltaP > 0 ? `+${targetDeltaP}` : targetDeltaP} hPa
+            {result ? (
+              <>
+                {/* Source vs station, side by side. */}
+                <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800/80 mt-3">
+                  <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                    <div className="text-[10px] text-slate-400 uppercase">Station</div>
+                    <div className="text-xs font-mono font-bold text-white mt-1">
+                      {fmt(result.station.temperature, '°C')}
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      {fmt(result.station.pressureMsl)} / {fmt(result.station.humidity, '%', 0)}
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                    <div className="text-[10px] text-slate-400 uppercase">
+                      {result.district.name}
+                    </div>
+                    <div className="text-xs font-mono font-bold text-white mt-1">
+                      {fmt(result.district.temperature, '°C')}
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      {fmt(result.district.pressureMsl)} / {fmt(result.district.humidity, '%', 0)}
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                    <div className="text-[10px] text-slate-400 uppercase">Separation</div>
+                    <div className="text-xs font-mono font-bold text-white mt-1">
+                      {result.district.distanceKm} km
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      {result.source === 'OPEN_METEO' ? 'Open-Meteo live' : 'no source'}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  <BandChip band={result.bands.temperature} label="ΔT" delta={result.deltas.temperature} />
+                  <BandChip band={result.bands.pressure} label="ΔP" delta={result.deltas.pressure} />
+                  <BandChip band={result.bands.humidity} label="ΔRH" delta={result.deltas.humidity} />
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-slate-400 pt-2">
+                {loading ? 'Fetching the live district observation…' : 'No result yet.'}
+              </p>
+            )}
           </div>
 
-          {/* Spatial Deviation Card */}
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400">Neighborhood Mean ΔP (4 AWS):</span>
-              <span className="font-mono font-bold text-white">{neighborMeanDeltaP} hPa</span>
+          <div className="p-4 rounded-xl bg-[#070d1e] border border-cyan-500/30 space-y-2">
+            <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Why</span>
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400">Spatial Deviation (|Target - Cohort|):</span>
-              <span
-                className={`font-mono font-bold ${
-                  parseFloat(deviationDelta) > 1.5 ? 'text-rose-400' : 'text-emerald-400'
-                }`}
-              >
-                {deviationDelta} hPa {parseFloat(deviationDelta) > 1.5 ? '(Outlier)' : '(In Consensus)'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
-              <span className="text-slate-400">NWP Ingestion Status:</span>
-              <span
-                className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] uppercase ${
-                  nwpDisposition === 'APPROVED'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                }`}
-              >
-                {nwpDisposition === 'APPROVED' ? 'Approved for WRF/GFS' : 'Quarantined & Imputed'}
-              </span>
-            </div>
-          </div>
-
-          {/* Interactive Scenario Controls */}
-          <div className="space-y-2">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              Inject Simulated Spatial Event
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setInjectedAnomaly('OUTLIER_DRIFT')}
-                className="px-2.5 py-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/40 text-rose-300 border border-rose-800/40 text-[11px] font-semibold text-left transition-colors"
-              >
-                ⚡ Inject Sensor Drift (-4.8 hPa)
-              </button>
-              <button
-                type="button"
-                onClick={() => setInjectedAnomaly('REGIONAL_SQUALL')}
-                className="px-2.5 py-2 rounded-lg bg-blue-950/40 hover:bg-blue-900/40 text-sky-300 border border-blue-800/40 text-[11px] font-semibold text-left transition-colors"
-              >
-                🌧️ Inject Regional Squall Front
-              </button>
-            </div>
+            <p className="text-xs text-slate-300 leading-relaxed font-mono">
+              {result?.rationale ??
+                'Run a check to see how the independent source compares to this station.'}
+            </p>
           </div>
         </div>
 
-        {/* Right 7 Cols: 4 Neighbor Stations List & Decision Engine Output */}
-        <div className="lg:col-span-7 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-slate-300 flex items-center gap-1.5">
-              <Radio className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Spatial Cohort (4 Nearest AWS Nodes within 70km)</span>
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">KNN Radius: 70 km</span>
-          </div>
-
-          <div className="space-y-2">
-            {currentData.neighbors.map(neighbor => {
-              const effectiveDelta = injectedAnomaly === 'REGIONAL_SQUALL' ? -2.7 : neighbor.deltaP;
-              return (
-                <div
-                  key={neighbor.id}
-                  className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-2">
-                      <span>{neighbor.name}</span>
-                      <span className="text-[10px] font-mono text-slate-400 font-normal">
-                        ({neighbor.distanceKm} km away)
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-400">{neighbor.district} • ID: {neighbor.id}</div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-[10px] text-slate-400 uppercase">Rate ΔP</div>
-                      <div
-                        className={`text-xs font-mono font-bold ${
-                          effectiveDelta <= -2.0 ? 'text-blue-400' : 'text-slate-300'
-                        }`}
-                      >
-                        {effectiveDelta > 0 ? `+${effectiveDelta}` : effectiveDelta} hPa
-                      </div>
-                    </div>
-                    <div className="w-2 h-2 rounded-full bg-emerald-400" title="Sensor Nominal" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Scientific Verdict Box */}
-          <div className="p-4 rounded-xl bg-[#070d1e] border border-cyan-500/30 space-y-2.5">
-            <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase">
-              <ShieldCheck className="w-4 h-4 text-cyan-400" />
-              <span>Spatial Cross-Validation Verdict (WMO-No. 8 § 4.3)</span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed font-mono">
-              {consensusConclusion}
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80">
-              <span className="text-[11px] text-slate-400">
-                Assimilation Feed:{' '}
-                <strong className={nwpDisposition === 'APPROVED' ? 'text-emerald-400' : 'text-amber-400'}>
-                  {nwpDisposition === 'APPROVED' ? 'Direct Observation Passed' : 'Synthetic Imputed Packet Substituted'}
-                </strong>
+        {/* Provenance + audit */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Source</span>
+              <span className="font-mono font-bold text-white">
+                {result?.source === 'OPEN_METEO' ? 'Open-Meteo (live)' : 'none'}
               </span>
-
-              <button
-                type="button"
-                onClick={handleExportNWP}
-                disabled={isExporting}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-all disabled:opacity-50"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>{isExporting ? 'Exporting...' : 'Export NWP Gating Feed (.json)'}</span>
-              </button>
             </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">District</span>
+              <span className="font-mono font-bold text-white text-right">
+                {result ? `${result.district.name}, ${result.district.state}` : '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Pressure basis</span>
+              <span className="font-mono font-bold text-white">MSL, both sides</span>
+            </div>
+            {result && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                <span className="text-slate-400">Observed</span>
+                <span className="font-mono text-slate-300">
+                  {new Date(result.observedAt).toLocaleTimeString('en-IN')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              Audit trail
+            </span>
+            {auditTrail.length === 0 ? (
+              <p className="text-[11px] text-slate-500">
+                No faults injected in this session. Every verdict above is a real comparison against
+                a live external observation.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {auditTrail.map((a, i) => (
+                  <li key={i} className="text-[11px] text-slate-400 font-mono">
+                    • {a}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

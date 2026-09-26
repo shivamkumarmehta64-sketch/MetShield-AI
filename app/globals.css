@@ -1,19 +1,8 @@
-@import "tailwindcss";
+/* MetShield AI global styles.
+   The token system lives in ./tokens.css — this file is the reset, the font
+   plumbing, and the handful of legacy utilities that are still referenced. */
 
-:root {
-  --background: #070d1e;
-  --foreground: #f8fafc;
-  --font-sans: var(--font-sans), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-  --metshield-navy: #070d1e;
-  --metshield-blue: #1a73e8;
-  --metshield-cyan: #24c1e0;
-  --metshield-purple: #a142f4;
-  --metshield-green: #34a853;
-  --metshield-accent: #38bdf8;
-  --gov-slate: #334155;
-  --white: #FFFFFF;
-}
+@import "./tokens.css";
 
 html {
   text-rendering: optimizeLegibility;
@@ -24,22 +13,21 @@ html {
 }
 
 body {
-  background-color: #070d1e;
-  color: #f8fafc;
+  background-color: var(--surface-base);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Google Stitch AI Design System Utilities */
+/* ── Google Stitch AI utilities ─────────────────────────────────────────────
+   Still used by GoogleStitchAIToolsSuite, which is re-homed in the Modules
+   panel. They hardcode the dark palette; the module is a dark surface. */
+
 .stitch-gradient-text {
   background: linear-gradient(135deg, #4285f4 0%, #a142f4 50%, #24c1e0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-.stitch-gradient-border {
-  border-image: linear-gradient(to right, #4285f4, #a142f4, #24c1e0) 1;
 }
 
 .stitch-card {
@@ -68,109 +56,9 @@ body {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 15px 35px -10px rgba(161, 66, 244, 0.4);
 }
 
-/* Mobile Touch Target Standardization (44px minimum for field devices) */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
+/* ── Landing page CTA shimmer ───────────────────────────────────────────────
+   Used by components/features/LandingPage.tsx. */
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0b1329;
-}
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
-
-/* High-concurrency & mobile performance optimizations */
-.content-visibility-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 450px;
-}
-
-.gpu-layer {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform, opacity;
-}
-
-.tabular-telemetry,
-.tabular-nums {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1, 'zero' 1, 'cv02' 1, 'cv03' 1;
-}
-
-/* Metshield Panels */
-.gov-panel, .metshield-panel {
-  background: #0e1730;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  border-radius: 1rem;
-}
-
-.gov-panel-header, .metshield-panel-header {
-  background-color: #0b1329;
-  color: var(--white);
-  border-bottom: 2px solid #1a73e8;
-}
-
-/* High contrast mode styles */
-body.high-contrast {
-  background-color: #000000 !important;
-  color: #ffff00 !important;
-}
-
-body.high-contrast * {
-  border-color: #ffff00 !important;
-}
-
-body.high-contrast header,
-body.high-contrast nav,
-body.high-contrast table,
-body.high-contrast th,
-body.high-contrast td,
-body.high-contrast div {
-  background-color: #000000 !important;
-  color: #ffff00 !important;
-}
-
-/* ─── Premium Winner-Grade Visual Accents & Typography (9.9 Polish) ─── */
-.text-balance {
-  text-wrap: balance;
-}
-
-.text-gradient-cyan {
-  background: linear-gradient(135deg, #38bdf8 0%, #22d3ee 50%, #818cf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.glow-box-cyan {
-  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25), 0 0 10px -2px rgba(56, 189, 248, 0.2);
-}
-
-.glow-box-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25), 0 0 10px -2px rgba(52, 211, 153, 0.2);
-}
-
-.glow-box-rose {
-  box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.25), 0 0 10px -2px rgba(251, 113, 133, 0.2);
-}
-
-.glow-border-cyan {
-  border-color: rgba(34, 211, 238, 0.4);
-}
-
-/* Subtle Shimmer Animation for Winner CTA buttons */
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
@@ -198,3 +86,53 @@ body.high-contrast div {
   animation: shimmer 3.5s infinite ease-in-out;
   pointer-events: none;
 }
+
+/* Scrollbars, themed off the tokens so they follow the surface. */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-sunken);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 450px;
+}
+
+.gpu-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+/* Telemetry figures. Kept under the original class name as well as the token
+   utility because existing panels reference both. */
+.tabular-telemetry,
+.tabular-nums {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'zero' 1, 'cv02' 1, 'cv03' 1;
+}
+
+/* ── Removed as dead ────────────────────────────────────────────────────────
+   .stitch-gradient-border  — 0 references
+   .gov-panel / .metshield-panel (and -header) — 0 references, dark-only, and
+                            superseded by the Card primitive's token surface
+   .text-gradient-cyan, .glow-box-*, .glow-border-cyan — 0 references
+   .text-balance          — 0 references
+   --metshield-* brand hexes — superseded by the semantic tokens above
+   .hide-scrollbar / .pb-safe / .pt-safe / .min-touch / .tnum — moved to
+                            tokens.css alongside the ramps they belong to
+*/

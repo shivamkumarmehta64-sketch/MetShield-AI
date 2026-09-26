@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { IMDStationProfile, IMD_AWS_STATIONS } from '@/lib/stationData';
 import { TelemetryPacket, WMOQualityFlag } from '@/lib/anomalyLogic';
@@ -12,6 +12,16 @@ import {
 import { GovPlainLanguageSensorCard } from './GovPlainLanguageSensorCard';
 
 
+
+/**
+ * "Has the client hydrated yet" as an external store.
+ *
+ * There is no external system to subscribe to — the value flips from `false` to `true`
+ * exactly once, at hydration. The subscription is therefore a no-op that React unsubscribes
+ * on unmount; what the hook buys is the correct *render-phase* value, with no state and no
+ * follow-up render.
+ */
+const subscribe = () => () => {};
 
 interface Props {
   selectedStation: IMDStationProfile;
@@ -60,8 +70,51 @@ const makeFallback = (s: IMDStationProfile): TelemetryPacket => ({
     auditMerkleRoot: '0x2e0418f4a19a7f9',
     geofenceStatus: 'VERIFIED_IN_BOUNDS',
     tamperStatus: 'AUTHENTIC',
+    authentic: true,
   },
 });
+
+/**
+ * Provenance cell. A packet produced by the local bench path is cryptographically
+ * unsealed, and labelling it "VERIFIED" would assert a signature it does not carry.
+ * Unsealed packets render in the neutral ink with a BENCH tag instead.
+ */
+function SealChip({ packet, isMissionControlVibe }: { packet: TelemetryPacket; isMissionControlVibe: boolean }) {
+  const seal = packet.securitySeal;
+  const sealed = seal?.tamperStatus === 'AUTHENTIC' && !!seal?.hmacSha256;
+
+  if (!sealed) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1 font-mono text-[9px] px-2 py-0.5 rounded border font-semibold ${
+          isMissionControlVibe
+            ? 'bg-slate-800/80 text-slate-300 border-slate-600/60'
+            : 'bg-slate-100 text-slate-600 border-slate-300'
+        }`}
+        title="No signing key on this path — packet was evaluated by the local bench engine and carries no cryptographic seal."
+      >
+        <Lock className="w-2.5 h-2.5 opacity-50 shrink-0" />
+        <span className="truncate max-w-[70px]">unsealed</span>
+        <span className="text-[8px] bg-current/20 px-1 rounded font-bold uppercase">BENCH</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-mono text-[9px] px-2 py-0.5 rounded border font-semibold ${
+        isMissionControlVibe
+          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+      }`}
+      title={`HMAC-SHA256: ${seal.hmacSha256} | Merkle: ${seal.auditMerkleRoot} | Nonce: #${seal.antiReplayNonce} | Geofence: ${seal.geofenceStatus}`}
+    >
+      <Lock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+      <span className="truncate max-w-[70px]">{seal.hmacSha256.slice(0, 8)}…</span>
+      <span className="text-[8px] bg-emerald-700/20 text-emerald-400 px-1 rounded font-bold uppercase">VERIFIED</span>
+    </span>
+  );
+}
 
 
 
@@ -160,15 +213,21 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
   selectedStation, onSelectStation, packets, language,
   isLiveApiMode = true, onToggleLiveApiMode, liveStatusInfo, isSyncingLive = false, onManualSync, onSimulateFault,
 }) {
-  const [mounted, setMounted] = useState(false);
+  // The console renders charts from a `liveChartData` computed during render, so the
+  // skeleton must be skipped during SSR too — not just on the first client render. That
+  // makes "not mounted yet" a render-phase question, not state, so the gate costs no
+  // extra render pass and does not desync from the markup that follows.
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
   const [isMissionControlVibe, setIsMissionControlVibe] = useState(false);
   const [viewMode, setViewMode] = useState<'plain' | 'technical'>('plain');
   const [timelineFilter, setTimelineFilter] = useState<'LIVE' | '1H' | '6H' | '24H'>('LIVE');
   const [isLinkSevered, setIsLinkSevered] = useState<boolean>(false);
   const [bufferedPackets, setBufferedPackets] = useState<number>(0);
   const [burstToast, setBurstToast] = useState<string | null>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   // Edge buffer accumulator when link is severed
   useEffect(() => {
@@ -630,15 +689,7 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
                       {pkt.raw.humidity !== null ? pkt.raw.humidity.toFixed(1) : <span className="text-red-400">NULL</span>}
                     </td>
                     <td suppressHydrationWarning className={`py-1.5 px-2.5 ${borderClass}`}>
-                      <span className={`inline-flex items-center gap-1 font-mono text-[9px] px-2 py-0.5 rounded border font-semibold ${
-                        isMissionControlVibe
-                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                      }`} title={`HMAC-SHA256: ${pkt.securitySeal?.hmacSha256 || '0x7f4a...'} | Merkle: ${pkt.securitySeal?.auditMerkleRoot || '0x9a2b...'} | Nonce: #${pkt.securitySeal?.antiReplayNonce || '0'}`}>
-                        <Lock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
-                        <span className="truncate max-w-[70px]">{pkt.securitySeal?.hmacSha256 ? pkt.securitySeal.hmacSha256.slice(0, 8) + '…' : '0x8f4a…'}</span>
-                        <span className="text-[8px] bg-emerald-700/20 text-emerald-400 px-1 rounded font-bold uppercase">VERIFIED</span>
-                      </span>
+                      <SealChip packet={pkt} isMissionControlVibe={isMissionControlVibe} />
                     </td>
                     <td suppressHydrationWarning className={`py-1.5 px-2.5 ${borderClass}`}>
                       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${f.bg} ${f.text} border`}>{f.icon} {f.label}</span>
