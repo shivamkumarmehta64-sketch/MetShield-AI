@@ -875,6 +875,107 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── SECTION 8: WORST-CASE SCENARIOS & FAILSAFES ─── */}
+      <section id="worst-case-scenarios" className="relative z-10 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
+        <div className="p-6 sm:p-9 rounded-3xl bg-[#091124] border border-rose-500/30 shadow-2xl relative overflow-hidden space-y-6">
+          <div className="max-w-3xl space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
+              <span>WORST-CASE SCENARIOS &amp; ENGINEERED DEFENSES</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+              Operational Continuity Under Extreme Hazards
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Project JATAYU is engineered to handle extreme operational hazards, communication dropouts, and atmospheric disruptions through dedicated fail-safes across each structural tier.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto touch-pan-x -webkit-overflow-scrolling-touch pb-1">
+            <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+              <thead>
+                <tr className="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/60 font-mono">
+                  <th className="p-3 w-1/4">Operational Hazard</th>
+                  <th className="p-3 w-1/3">Systemic Failure Mode</th>
+                  <th className="p-3 text-emerald-400 bg-emerald-950/20 border-x border-emerald-500/30 w-5/12">Engineered Mitigation Mechanism</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 text-slate-300 text-[11px]">
+                <tr>
+                  <td className="p-3 font-semibold text-rose-400">Severe Cyclogenesis Landfall</td>
+                  <td className="p-3 text-slate-400">Traditional threshold QC misclassifies rapid pressure drops as sensor failure, silencing early warnings.</td>
+                  <td className="p-3 text-emerald-300 bg-emerald-950/10 border-x border-emerald-500/30">
+                    <strong className="text-emerald-400">Tier-3 Thermodynamic Invariant:</strong> Validates coupled dynamics (ΔP ≤ -2.5 hPa + ΔRH ≥ +15%), classifying as Blue Status.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-rose-400">Prolonged Comms Blackout (72h+)</td>
+                  <td className="p-3 text-slate-400">Cellular GPRS or INSAT-3D DCP satellite uplink drops due to severed links or power outages.</td>
+                  <td className="p-3 text-emerald-300 bg-emerald-950/10 border-x border-emerald-500/30">
+                    <strong className="text-emerald-400">Store-and-Forward FIFO Ring Buffer:</strong> Edge microcontrollers buffer up to 72 hours locally in circular flash storage.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-rose-400">Thermistor Open-Circuit</td>
+                  <td className="p-3 text-slate-400">Missing/corrupted readings enter NWP models, triggering mathematical divergence.</td>
+                  <td className="p-3 text-emerald-300 bg-emerald-950/10 border-x border-emerald-500/30">
+                    <strong className="text-emerald-400">Gapless Self-Healing Imputation:</strong> Instantly synthesizes 5-step Gaussian WMA replacement values.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-rose-400">Monotonic Calibration Drift</td>
+                  <td className="p-3 text-slate-400">Gradual transducer aging skews readings (-0.4 hPa/hr) without crossing thresholds.</td>
+                  <td className="p-3 text-emerald-300 bg-emerald-950/10 border-x border-emerald-500/30">
+                    <strong className="text-emerald-400">Sliding Baseline Linear Regression:</strong> Multi-hour models monitor baseline drift over 24-sample windows.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-semibold text-rose-400">Client Memory Overflow</td>
+                  <td className="p-3 text-slate-400">Continuous 2.5s streaming causes browser memory leaks and tab freezes during live operational shifts.</td>
+                  <td className="p-3 text-emerald-300 bg-emerald-950/10 border-x border-emerald-500/30">
+                    <strong className="text-emerald-400">Bounded Sliding Array Queue:</strong> State strictly enforces prev.slice(-29) capping client memory.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-slate-800/80">
+            <div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Operational Continuity Pipeline</h3>
+              <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-[10px] sm:text-xs text-sky-300 overflow-x-auto">
+                <pre>{`[ Extreme Hazard: Cyclone / Link Drop / Open-Circuit ]
+                          │
+                          ▼
+            [ Edge Node Offline / Corrupted ]
+                          │
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+[ Communications Severed ]    [ Physical Transducer Blown ]
+  • Local 72h FIFO buffer       • Tier 1/2 catches step-jump
+  • Store-and-forward sync      • 5-step Gaussian WMA engages
+          │                               │
+          └───────────────┬───────────────┘
+                          ▼
+        [ Gapless Imputed Stream Forwarded ]
+                          │
+                          ▼
+        [ WRF/GFS Numerical Weather Prediction ]
+           (Zero Data Voids / Zero Crashes)`}</pre>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Key Defensive Message for Evaluators</h3>
+              <div className="bg-slate-900/50 border-l-4 border-emerald-500 p-4 rounded-r-lg text-sm text-slate-300 leading-relaxed italic relative">
+                <span className="text-4xl absolute -top-2 -left-3 text-slate-800">"</span>
+                Project JATAYU is designed for severe conditions. If communication drops, local 72-hour edge buffers cache telemetry until links recover. If a sensor fails physically, real-time Gaussian moving-average imputation reconstructs the missing stream so numerical prediction models do not diverge. Most critically, during extreme cyclonic landfalls, our thermodynamic coupling logic prevents false-alarm blinding by validating that barometric plunges correspond with humidity surges, passing authentic severe weather directly to forecasters.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── FOOTER ─── */}
       <footer className="relative z-10 border-t border-slate-800 bg-[#0b1329]/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] text-slate-400">
