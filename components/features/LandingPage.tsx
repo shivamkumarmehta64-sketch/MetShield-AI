@@ -717,68 +717,104 @@ export default function LandingPage() {
               <span className="text-[10px] text-slate-500 font-mono">4 Columns</span>
             </div>
             <div className="overflow-x-auto touch-pan-x -webkit-overflow-scrolling-touch pb-1">
-              <table className="w-full text-left text-xs border-collapse min-w-[560px]">
+              <table className="w-full text-left text-xs border-collapse min-w-[700px]">
               <thead>
                 <tr className="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/60 font-mono">
-                  <th className="p-3">Evaluation Dimension</th>
-                  <th className="p-3">Legacy Rule Engines</th>
-                  <th className="p-3">Commercial SCADA</th>
+                  <th className="p-3">Architectural Dimension</th>
+                  <th className="p-3">Typical SIH Competitors (e.g. NIMBUS)</th>
                   <th className="p-3 text-cyan-400 font-bold bg-cyan-950/30 border-x border-cyan-500/30">
-                    ★ Metshield AI (Team 73869)
+                    ★ Project JATAYU (Team AEROTECH)
                   </th>
+                  <th className="p-3 text-emerald-400">Strategic Advantage for MoES</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300 text-[11px]">
                 <tr>
-                  <td className="p-3 font-semibold text-white">Storm vs. Fault Discrimination</td>
-                  <td className="p-3 text-rose-400">Rejects storms as failures</td>
-                  <td className="p-3 text-slate-400">Manual review delay (hours)</td>
-                  <td className="p-3 text-emerald-400 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
-                    Coupled ΔP / ΔRH / ΔT (&lt; 5ms)
+                  <td className="p-3 font-semibold text-white">Physics vs. Pure Data Science</td>
+                  <td className="p-3 text-slate-400">Black-Box Outlier Models (Isolation Forests, SVMs)</td>
+                  <td className="p-3 text-cyan-300 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
+                    Thermodynamic Invariant Engine
                   </td>
+                  <td className="p-3 text-emerald-400">Eliminates severe storm false positives.</td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-semibold text-white">Operational Cloud Overhead</td>
-                  <td className="p-3 text-slate-400">On-premise legacy servers</td>
-                  <td className="p-3 text-rose-400">Expensive per-station licensing</td>
-                  <td className="p-3 text-emerald-400 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
-                    ₹0 Zero Cost (Client-Edge Ring Buffer)
+                  <td className="p-3 font-semibold text-white">Scope Discipline</td>
+                  <td className="p-3 text-slate-400">Scope Creep (8-10 parameters)</td>
+                  <td className="p-3 text-cyan-300 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
+                    Strict Tri-Parameter Ingestion (T, P, RH)
                   </td>
+                  <td className="p-3 text-emerald-400">100% adherence to MoES constraints.</td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-semibold text-white">Missing &amp; Corrupted Data Recovery</td>
-                  <td className="p-3 text-rose-400">Drops packets (data voids)</td>
-                  <td className="p-3 text-slate-400">Crude static mean filling</td>
-                  <td className="p-3 text-emerald-400 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
-                    Self-Healing WMA Imputation (Zero Void)
+                  <td className="p-3 font-semibold text-white">Inference Cost &amp; Latency</td>
+                  <td className="p-3 text-slate-400">Cloud-Dependent / Heavy GPU (500ms-2s latency)</td>
+                  <td className="p-3 text-cyan-300 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
+                    Sub-50ms Zero-Cost Edge Execution
                   </td>
+                  <td className="p-3 text-emerald-400">₹0 cost; fits high-frequency 2.5s cadences.</td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-semibold text-white">Spatial Neighborhood Validation</td>
-                  <td className="p-3 text-rose-400">No cross-station awareness</td>
-                  <td className="p-3 text-slate-400">Partial GIS overlays</td>
-                  <td className="p-3 text-emerald-400 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
-                    KNN Haversine Cohort Validation
+                  <td className="p-3 font-semibold text-white">Data Imputation &amp; Healing</td>
+                  <td className="p-3 text-slate-400">Data Dropping (Creates numerical voids)</td>
+                  <td className="p-3 text-cyan-300 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
+                    Self-Healing Imputation (5-step WMA)
                   </td>
+                  <td className="p-3 text-emerald-400">Keeps NWP models (WRF/GFS) unbroken.</td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-semibold text-white">Field Hardware Ingestion</td>
-                  <td className="p-3 text-slate-400">Fixed DCP transceivers only</td>
-                  <td className="p-3 text-slate-400">Proprietary vendor loggers</td>
-                  <td className="p-3 text-emerald-400 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
-                    Web Generic Sensor API (Phone Barometer)
+                  <td className="p-3 font-semibold text-white">Hardware Grounding</td>
+                  <td className="p-3 text-slate-400">100% Synthetic Data (Math.random / CSVs)</td>
+                  <td className="p-3 text-cyan-300 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
+                    Physical Sensor Bridge (Mobile Web API)
                   </td>
+                  <td className="p-3 text-emerald-400">Live hardware verification during pitch.</td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-semibold text-white">Compliance Standard</td>
-                  <td className="p-3 text-slate-400">Partial IMD guidelines</td>
-                  <td className="p-3 text-slate-400">Custom proprietary schemas</td>
-                  <td className="p-3 text-emerald-400 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
-                    100% WMO-No. 8 &amp; CAP 1.2 Compliant
+                  <td className="p-3 font-semibold text-white">User Experience &amp; Standards</td>
+                  <td className="p-3 text-slate-400">Hackathon Template UI (Cluttered developer views)</td>
+                  <td className="p-3 text-cyan-300 font-bold bg-cyan-950/20 border-x border-cyan-500/30">
+                    Institutional GIGW 3.0 / NIC Console
                   </td>
+                  <td className="p-3 text-emerald-400">Production-ready Indian Gov guidelines.</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          {/* Strategic Defense Against Competitors */}
+          <div className="pt-6 border-t border-slate-800/80">
+            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider text-center">Strategic Defenses Against Competitor Claims</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-[#080e22] border border-rose-500/20">
+                <div className="text-rose-400 font-bold text-[10px] uppercase mb-1 flex justify-between">
+                  <span>1. Spatial Mesh Density</span>
+                  <span>Competitor Risk</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mb-3 leading-snug">Competitors may rely heavily on multi-station correlation matrices (50+ nodes) for drift detection.</p>
+                <div className="text-emerald-400 font-bold text-[10px] uppercase mb-1">JATAYU Defense</div>
+                <p className="text-[11px] text-slate-300 leading-snug">We utilize Haversine KNN, but prioritize point-source thermodynamic invariants to avoid high spatial query latency.</p>
+              </div>
+              
+              <div className="p-4 rounded-xl bg-[#080e22] border border-amber-500/20">
+                <div className="text-amber-400 font-bold text-[10px] uppercase mb-1 flex justify-between">
+                  <span>2. Long-Term Drift Tracking</span>
+                  <span>Competitor Risk</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mb-3 leading-snug">Competitors might claim superior slow calibration drift detection using heavy Bayesian change-point models.</p>
+                <div className="text-emerald-400 font-bold text-[10px] uppercase mb-1">JATAYU Defense</div>
+                <p className="text-[11px] text-slate-300 leading-snug">We enforce rolling linear baseline regression across ring buffers to detect monotonic bias (e.g., -0.4 hPa/hr) without massive overhead.</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#080e22] border border-purple-500/20">
+                <div className="text-purple-400 font-bold text-[10px] uppercase mb-1 flex justify-between">
+                  <span>3. Gov Hosting Feasibility</span>
+                  <span>Competitor Risk</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mb-3 leading-snug">Evaluators asking why prototypes are on public cloud (Vercel) instead of sovereign national infrastructure.</p>
+                <div className="text-emerald-400 font-bold text-[10px] uppercase mb-1">JATAYU Defense</div>
+                <p className="text-[11px] text-slate-300 leading-snug">Vercel is solely for the live hackathon demonstrator. Our codebase runs containerized microservices ready for the NIC MeghRaj GI Cloud.</p>
+              </div>
+            </div>
           </div>
         </div>
 
