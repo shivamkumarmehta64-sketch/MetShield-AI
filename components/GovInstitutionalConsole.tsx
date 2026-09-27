@@ -313,52 +313,52 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
   }, [telemetryHistory, currentStation]);
 
   const handleExportCsv = useCallback(() => {
-    const recordsToExport: StoredFaultEvent[] = incidents.map(inc => ({
-      eventId: inc.id,
-      stationId: inc.stationId,
-      timestamp: new Date().toISOString(),
-      timeIST: inc.timestamp,
-      parameter: inc.classification,
-      rawVal: inc.rawValues.temp,
-      imputedVal: inc.imputedValues.temp,
-      classification: inc.classification,
-      severity:
-        inc.severity === 'BLUE_GENUINE_WEATHER'
-          ? 'GENUINE_WEATHER'
-          : inc.severity === 'RED_HARDWARE_FAULT'
-          ? 'CRITICAL'
-          : 'WARNING',
-      xaiAttribution: {
-        tempWeight: inc.xai.tempWeight,
-        pressWeight: inc.xai.pressWeight,
-        humWeight: inc.xai.humWeight,
-        explanation: inc.xai.explanation,
-      },
-      recommendedAction: inc.recommendedAction,
-    }));
+    const header = [
+      '# METSHIELD AI NAWS-QMS v4.2 | TEAM 73869 AEROTECH',
+      '# AUTOMATIC WEATHER STATION QUALITY MANAGEMENT SYSTEM',
+      `# AUDIT LOG GENERATED AT: ${new Date().toISOString()} (IST)`,
+      '# STANDARDS COMPLIANCE: WMO-No. 8 OPEN METEOROLOGICAL PROTOCOL',
+      '# =========================================================================',
+      'Station_ID,Timestamp_IST,Temp_C,Pres_hPa,RH_pct,WMO_QC_Flag,XAI_Reasoning,Imputed_Value'
+    ].join('\n');
 
-    if (recordsToExport.length === 0) {
-      recordsToExport.push({
-        eventId: `AUDIT-BASE-01`,
-        stationId: currentStation.id,
-        timestamp: new Date().toISOString(),
-        timeIST: getISTTime(),
-        parameter: 'ALL_CHANNELS',
-        rawVal: latestTelemetry.temp,
-        imputedVal: latestTelemetry.temp,
-        classification: 'NOMINAL_OPERATION',
-        severity: 'INFO',
-        xaiAttribution: {
-          tempWeight: 33,
-          pressWeight: 34,
-          humWeight: 33,
-          explanation: 'Routine operational audit snapshot. Signals nominal.',
-        },
-        recommendedAction: 'Maintain scheduled 10-minute NWP ingest cycle.',
-      });
+    let rows = incidents.map(inc => {
+      const wmoFlag = inc.severity === 'BLUE_GENUINE_WEATHER' ? 'FLAG_2_CONVECTIVE_STORM' 
+                     : inc.severity === 'RED_HARDWARE_FAULT' ? 'FLAG_4_CORRUPT_HARDWARE'
+                     : 'FLAG_3_SUSPECT_DRIFT';
+      
+      const imputed = inc.imputedValues.temp !== inc.rawValues.temp 
+        ? `${inc.imputedValues.temp.toFixed(1)} (Temp)` 
+        : inc.imputedValues.press !== inc.rawValues.press 
+          ? `${inc.imputedValues.press.toFixed(1)} (Press)` 
+          : 'N/A';
+
+      return [
+        `"${inc.stationId}"`,
+        `"${inc.timestamp}"`,
+        inc.rawValues.temp.toFixed(1),
+        inc.rawValues.press.toFixed(1),
+        inc.rawValues.hum.toFixed(1),
+        `"${wmoFlag}"`,
+        `"${inc.xai.explanation}"`,
+        `"${imputed}"`
+      ].join(',');
+    });
+
+    if (rows.length === 0) {
+      rows.push([
+        `"${currentStation.id}"`,
+        `"${getISTTime()}"`,
+        latestTelemetry.temp.toFixed(1),
+        latestTelemetry.press.toFixed(1),
+        latestTelemetry.hum.toFixed(1),
+        `"FLAG_1_VERIFIED_GOOD"`,
+        `"Routine operational audit snapshot. Signals nominal."`,
+        `"N/A"`
+      ].join(','));
     }
 
-    const csvContent = generateAuditCsvContent(recordsToExport);
+    const csvContent = `${header}\n${rows.join('\n')}`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -559,13 +559,22 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
 
                 {showTemp && (
-                  <Line yAxisId="left" type="monotone" dataKey="temperature" name="Temp (°C)" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                  <>
+                    <Line yAxisId="left" type="monotone" dataKey="temperature" name="Temp (°C)" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="imputedTemp" name="Imputed Temp" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+                  </>
                 )}
                 {showPress && (
-                  <Line yAxisId="right" type="monotone" dataKey="pressure" name="Pressure (hPa)" stroke="#38bdf8" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                  <>
+                    <Line yAxisId="right" type="monotone" dataKey="pressure" name="Pressure (hPa)" stroke="#38bdf8" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="imputedPress" name="Imputed Press" stroke="#38bdf8" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+                  </>
                 )}
                 {showHum && (
-                  <Line yAxisId="left" type="monotone" dataKey="humidity" name="Humidity (%)" stroke="#22d3ee" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                  <>
+                    <Line yAxisId="left" type="monotone" dataKey="humidity" name="Humidity (%)" stroke="#22d3ee" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="imputedHum" name="Imputed Hum" stroke="#22d3ee" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+                  </>
                 )}
               </LineChart>
             </ResponsiveContainer>

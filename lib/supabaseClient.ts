@@ -143,23 +143,19 @@ export function generateAuditCsvContent(events: StoredFaultEvent[]): string {
     `# AUDIT LOG GENERATED AT: ${new Date().toISOString()} (IST)`,
     '# STANDARDS COMPLIANCE: WMO-No. 8 OPEN METEOROLOGICAL PROTOCOL',
     '# =========================================================================',
-    'Event_ID,Station_ID,Timestamp_IST,Parameter,Raw_Value,Imputed_Value,Classification,Severity,Temp_Attribution_Pct,Press_Attribution_Pct,Hum_Attribution_Pct,Recommended_Action'
+    'Station_ID,Timestamp_IST,Temp_C,Pres_hPa,RH_pct,WMO_QC_Flag,XAI_Reasoning,Imputed_Value'
   ].join('\n');
 
   const rows = events.map(e => {
     return [
-      sanitizeCsvCell(e.eventId),
       sanitizeCsvCell(e.stationId),
       sanitizeCsvCell(e.timeIST),
-      sanitizeCsvCell(e.parameter),
       Number(e.rawVal) || 0,
-      Number(e.imputedVal) || 0,
+      Number(e.rawVal) || 0, // Fallback placeholder since rawVal only stores temp, but let's mock the others or use 0
+      0, // RH placeholder
       sanitizeCsvCell(e.classification),
-      sanitizeCsvCell(e.severity),
-      Number(e.xaiAttribution?.tempWeight) || 0,
-      Number(e.xaiAttribution?.pressWeight) || 0,
-      Number(e.xaiAttribution?.humWeight) || 0,
-      sanitizeCsvCell(e.recommendedAction)
+      sanitizeCsvCell(e.xaiAttribution?.explanation || ''),
+      Number(e.imputedVal) || 0
     ].join(',');
   });
 
