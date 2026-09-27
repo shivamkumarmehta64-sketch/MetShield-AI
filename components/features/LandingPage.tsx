@@ -976,6 +976,71 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── SECTION 9: MOBILE PWA FIELD JOURNEY ─── */}
+      <section id="mobile-pwa-journey" className="relative z-10 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
+        <div className="p-6 sm:p-9 rounded-3xl bg-gradient-to-br from-emerald-950/40 to-teal-950/40 border border-emerald-500/30 shadow-2xl relative overflow-hidden space-y-6">
+          <div className="max-w-3xl space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-semibold">
+              <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+              <span>FIELD TECHNICIAN &amp; MOBILE PWA JOURNEY</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+              Thumb-Driven Operations at the Edge
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Designed for single-hand, thumb-first control, the progressive web app (PWA) instantly turns any field technician's smartphone into an active weather node and diagnostic terminal.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3">
+              <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center border border-sky-500/20 text-sky-400 mb-2">
+                <span className="font-bold font-mono">1</span>
+              </div>
+              <h3 className="text-sm font-bold text-white">Instant Load &amp; Ambient Discovery</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Zero layout shifts or rubber-banding. Viewport locks cleanly with auto-zoom disabled. The single-column telemetry view focuses immediately on the local observatory without forcing desktop tables onto mobile screens.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl"></div>
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-400 mb-2">
+                <span className="font-bold font-mono">2</span>
+              </div>
+              <h3 className="text-sm font-bold text-white">Live Hardware Recognition</h3>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                LIVE MOBILE FEED
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Raising the phone registers real physical pressure drops (0.1–0.3 hPa) via the native <code className="text-emerald-300 font-mono">window.PressureSensor</code>. Device motion listeners validate mast buffeting proxies instantly.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3">
+              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-400 mb-2">
+                <span className="font-bold font-mono">3</span>
+              </div>
+              <h3 className="text-sm font-bold text-white">Thumb-Driven Map Friction</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Map containers explicitly disable single-finger drag to prevent vertical scroll hijacking. A single segmented mode toggle <code className="text-purple-300 font-mono">[ 🗺️ | 📋 ]</code> swaps to high-contrast station chips and slide-up telemetry bottom sheets.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-400 mb-2">
+                <span className="font-bold font-mono">4</span>
+              </div>
+              <h3 className="text-sm font-bold text-white">Single-Tap Auditing</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Field workers can instantly report physical anomalies with auto-filled 30-sample ring buffer snapshots. Tapping <strong className="text-slate-300">"Export QC Audit Log"</strong> pushes standard NIC-formatted CSVs directly to the phone's native file system.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── FOOTER ─── */}
       <footer className="relative z-10 border-t border-slate-800 bg-[#0b1329]/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] text-slate-400">
