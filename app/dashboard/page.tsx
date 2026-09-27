@@ -76,6 +76,7 @@ export default function GovernmentAWSManagementPortal() {
   const [isLiveApiMode, setIsLiveApiMode] = useState(true);
   const [liveObservation, setLiveObservation] = useState<LiveObservation | null>(null);
   const [isSyncingLive, setIsSyncingLive] = useState(false);
+  const [liveSyncError, setLiveSyncError] = useState<string | null>(null);
   const liveCacheRef = useRef<Record<string, LiveObservation>>({});
 
   // Telemetry state — pre-seeded with deterministic initial data
@@ -142,6 +143,7 @@ export default function GovernmentAWSManagementPortal() {
   const syncLiveWeather = useCallback(async (stationId: string) => {
     setIsSyncingLive(true);
     try {
+      setLiveSyncError(null);
       const profile = getStationProfile(stationId);
       const obs = await fetchLiveStationObservation(profile);
       if (obs) { setLiveObservation(obs); liveCacheRef.current[stationId] = obs; }
@@ -151,7 +153,9 @@ export default function GovernmentAWSManagementPortal() {
         liveCacheRef.current = { ...liveCacheRef.current, ...batch };
         if (batch[stationId]) setLiveObservation(batch[stationId]);
       }
-    } catch { /* Graceful fallback */ } finally { setIsSyncingLive(false); }
+    } catch (err) {
+      setLiveSyncError("Failed to reach live API");
+    } finally { setIsSyncingLive(false); }
   }, []);
 
   useEffect(() => {
@@ -416,7 +420,7 @@ export default function GovernmentAWSManagementPortal() {
     setSelectedStationId(profile.stationId);
   }, []);
 
-  const triggerAndTick = (fn: (id: string) => void, id: string) => { fn(id); if (isPaused) processNextTick(); };
+  const triggerAndTick = (fn: (id: string) => void, id: string) => { fn(id); processNextTick(); };
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-all duration-300 relative ${isMissionControl ? 'bg-slate-950 text-slate-100' : 'bg-[#F4F6F9] text-slate-900'}`}>
@@ -654,7 +658,7 @@ export default function GovernmentAWSManagementPortal() {
               <div className={`bg-white border border-slate-300 rounded-lg p-2 shadow-xs ${
                 mobileSubView === 'map' ? 'hidden xl:block' : 'block'
               }`}>
-                <GovObservationConsole
+                {activeStation ? <GovObservationConsole
                   selectedStation={activeStation} onSelectStation={setSelectedStationId}
                   packets={activeHistory} language={language}
                   isLiveApiMode={isLiveApiMode} onToggleLiveApiMode={() => setIsLiveApiMode(p => !p)}
@@ -669,7 +673,7 @@ export default function GovernmentAWSManagementPortal() {
                       case 'reset': triggerAndTick(() => nicWmoEngineInstance.resetToNominal(selectedStationId), selectedStationId); break;
                     }
                   }}
-                />
+                /> : <div className='p-8 text-center text-slate-500'>Station not found</div>}
               </div>
             </div>
           </div>

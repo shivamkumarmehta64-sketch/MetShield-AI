@@ -7,7 +7,7 @@ import { TelemetryPacket, WMOQualityFlag } from '@/lib/anomalyLogic';
 import {
   Building2, MapPin, Table, LineChart as ChartIcon, ShieldCheck, AlertCircle,
   BatteryMedium, CheckCircle2, Lock, Wifi, WifiOff, HardDrive, Clock,
-  RotateCw, Check, Zap, Cpu, UserCheck
+  RotateCw, Check, Zap, Cpu, UserCheck, Radio
 } from 'lucide-react';
 import { GovPlainLanguageSensorCard } from './GovPlainLanguageSensorCard';
 
@@ -196,7 +196,7 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
     }
   };
 
-  const active = useMemo(() => packets.length > 0 ? packets : [makeFallback(selectedStation)], [packets, selectedStation]);
+  const active = useMemo(() => packets, [packets]);
   const recent10 = useMemo(() => [...active].slice(-10).reverse(), [active]);
 
   const liveChartData: StationChartPoint[] = useMemo(() => active.slice(-29).map(p => ({
@@ -365,6 +365,18 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
         </div>
       )}
 
+      
+      {active.length === 0 ? (
+        <div className="p-12 text-center text-slate-500 border border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center min-h-[400px]">
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+            <Radio className="w-6 h-6 text-slate-400 animate-pulse" />
+          </div>
+          <h3 className="text-base font-bold text-slate-700">Awaiting Telemetry</h3>
+          <p className="text-sm mt-1">No observations received yet for {s.name}.</p>
+          {isLiveApiMode && <p className="text-xs mt-2 text-slate-400">Ensure the Live API is reachable.</p>}
+        </div>
+      ) : (
+        <>
       {/* Plain Language Sensor Health Inspector */}
       {viewMode === 'plain' && (
         <GovPlainLanguageSensorCard station={s} packet={active[active.length - 1]} language={language} onSimulateFault={onSimulateFault} />
@@ -777,6 +789,8 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 });

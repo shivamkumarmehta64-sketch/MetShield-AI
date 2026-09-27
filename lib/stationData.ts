@@ -89,6 +89,10 @@ function expand(s: StationDef): IMDStationProfile {
 
 export const IMD_AWS_STATIONS: IMDStationProfile[] = STATIONS.map(expand);
 
+export function findStationProfile(id: string): IMDStationProfile | undefined {
+  return IMD_AWS_STATIONS.find(s => s.stationId === id);
+}
+
 export const getStationProfile = (id: string): IMDStationProfile =>
   IMD_AWS_STATIONS.find((s) => s.stationId === id) || IMD_AWS_STATIONS[0];
 
