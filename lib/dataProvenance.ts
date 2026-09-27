@@ -100,6 +100,18 @@ export const DATA_SOURCES = {
     detail:
       'Hand-authored CSV in lib/datasetParser.ts with invented station ids. Usable as an engine test, not as ground truth.',
   },
+  xaiAttribution: {
+    label: 'Rule-based attribution weights',
+    provenance: 'DERIVED',
+    detail:
+      'Fixed per-tier weights (e.g. 80/10/10 on a physical-limit breach) normalised to 100%, combined with a named primary parameter. This is NOT SHAP and NOT model explainability — it is a deterministic weighting heuristic. Use this wording, not "SHAP attribution".',
+  },
+  voidImputation: {
+    label: 'Windowed-mean imputation',
+    provenance: 'DERIVED',
+    detail:
+      'A trailing mean over the observation window. The function is named calculateGaussianWMA but performs a flat mean rounded to 0.1 — there are no Gaussian weights. Do not call it a Gaussian WMA.',
+  },
 } as const satisfies Record<string, { label: string; provenance: Provenance; detail: string }>;
 
 export type DataSourceId = keyof typeof DATA_SOURCES;

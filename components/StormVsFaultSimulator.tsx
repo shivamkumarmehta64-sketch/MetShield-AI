@@ -24,7 +24,7 @@ interface TestCase {
   classification: 'QUARANTINED_FAULT' | 'APPROVED_GENUINE';
   faultType: string;
   confidence: number;
-  shapWeights: {
+  attributionWeights: {
     tempRoC: number;
     pressureCoupling: number;
     humidityCoupling: number;
@@ -54,7 +54,7 @@ const TEST_CASES: TestCase[] = [
     classification: 'QUARANTINED_FAULT',
     faultType: 'Hardware Sensor Spike (WMO Flag 4)',
     confidence: 97.4,
-    shapWeights: {
+    attributionWeights: {
       tempRoC: 62,
       pressureCoupling: 18,
       humidityCoupling: 12,
@@ -82,7 +82,7 @@ const TEST_CASES: TestCase[] = [
     classification: 'QUARANTINED_FAULT',
     faultType: 'ADC Bus Freeze / Frozen Sensor (WMO Flag 4)',
     confidence: 99.1,
-    shapWeights: {
+    attributionWeights: {
       tempRoC: 15,
       pressureCoupling: 35,
       humidityCoupling: 25,
@@ -110,7 +110,7 @@ const TEST_CASES: TestCase[] = [
     classification: 'QUARANTINED_FAULT',
     faultType: 'Barometric Sensor Drift (WMO Flag 3)',
     confidence: 94.2,
-    shapWeights: {
+    attributionWeights: {
       tempRoC: 10,
       pressureCoupling: 52,
       humidityCoupling: 18,
@@ -138,7 +138,7 @@ const TEST_CASES: TestCase[] = [
     classification: 'APPROVED_GENUINE',
     faultType: 'Verified Convective Storm Front (WMO Flag 2)',
     confidence: 98.6,
-    shapWeights: {
+    attributionWeights: {
       tempRoC: 28,
       pressureCoupling: 32,
       humidityCoupling: 25,
@@ -295,7 +295,7 @@ export function StormVsFaultSimulator() {
             </div>
           </div>
 
-          {/* Right Column: XAI Reasoning, SHAP Attribution & Imputation */}
+          {/* Right Column: XAI Reasoning, Rule-Based Attribution & Imputation */}
           <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-4 flex flex-col justify-between">
             {/* AI Natural Language Reasoning */}
             <div>
@@ -308,11 +308,11 @@ export function StormVsFaultSimulator() {
               </p>
             </div>
 
-            {/* SHAP Feature Contribution Breakdown Bars */}
+            {/* Attribution Contribution Breakdown */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
                 <span className="flex items-center gap-1">
-                  <BarChart2 className="w-3.5 h-3.5 text-cyan-400" /> SHAP Feature Blame Weight Attribution
+                  <BarChart2 className="w-3.5 h-3.5 text-cyan-400" /> Attribution Weight
                 </span>
                 <span className="font-mono text-[10px]">Total = 100%</span>
               </div>
@@ -321,12 +321,12 @@ export function StormVsFaultSimulator() {
                 <div>
                   <div className="flex justify-between text-slate-300 mb-0.5">
                     <span>Temp Rate-of-Change (RoC)</span>
-                    <span className="text-cyan-400 font-bold">{currentCase.shapWeights.tempRoC}%</span>
+                    <span className="text-cyan-400 font-bold">{currentCase.attributionWeights.tempRoC}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${currentCase.shapWeights.tempRoC}%` }}
+                      animate={{ width: `${currentCase.attributionWeights.tempRoC}%` }}
                       transition={{ duration: 0.4 }}
                       className="h-full bg-cyan-400 rounded-full"
                     />
@@ -336,12 +336,12 @@ export function StormVsFaultSimulator() {
                 <div>
                   <div className="flex justify-between text-slate-300 mb-0.5">
                     <span>Pressure Coupling Dynamics</span>
-                    <span className="text-sky-400 font-bold">{currentCase.shapWeights.pressureCoupling}%</span>
+                    <span className="text-sky-400 font-bold">{currentCase.attributionWeights.pressureCoupling}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${currentCase.shapWeights.pressureCoupling}%` }}
+                      animate={{ width: `${currentCase.attributionWeights.pressureCoupling}%` }}
                       transition={{ duration: 0.4, delay: 0.05 }}
                       className="h-full bg-sky-400 rounded-full"
                     />
@@ -351,12 +351,12 @@ export function StormVsFaultSimulator() {
                 <div>
                   <div className="flex justify-between text-slate-300 mb-0.5">
                     <span>Humidity Coupling Ratio</span>
-                    <span className="text-purple-400 font-bold">{currentCase.shapWeights.humidityCoupling}%</span>
+                    <span className="text-purple-400 font-bold">{currentCase.attributionWeights.humidityCoupling}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${currentCase.shapWeights.humidityCoupling}%` }}
+                      animate={{ width: `${currentCase.attributionWeights.humidityCoupling}%` }}
                       transition={{ duration: 0.4, delay: 0.1 }}
                       className="h-full bg-purple-400 rounded-full"
                     />

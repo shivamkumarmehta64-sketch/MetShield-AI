@@ -24,14 +24,14 @@ const STEPS = [
   {
     target: 'imputation-demo',
     title: 'Self-Healing Imputation & Quarantine',
-    content: "Watch Tier 1/2 QC isolate the corrupted thermal spike in red, while the 5-step Gaussian WMA draws a dashed self-healing line to keep downstream forecast models uninterrupted.",
+    content: "Watch Tier 1/2 QC isolate the corrupted thermal spike in red, while the 5-step windowed-mean imputation draws a dashed self-healing line to keep downstream forecast models uninterrupted.",
     position: 'bottom',
     action: 'trigger-spike',
   },
   {
     target: 'incident-panel',
     title: 'Incident Triage & Severe Storm Defense',
-    content: "Normalized SHAP attribution bars pinpoint failing probes for field crews, while coupled pressure-humidity shifts (storms) are tagged Blue to prevent false-alarm blinding.",
+    content: "Normalized attribution bars pinpoint failing probes for field crews, while coupled pressure-humidity shifts (storms) are tagged Blue to prevent false-alarm blinding.",
     position: 'left',
   },
 ];

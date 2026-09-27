@@ -2,7 +2,7 @@
  * districtEngine.ts
  * AGENT 1 — DISTRICT DATA ENGINE
  *
- * Manages the all-India 766 district index, priority background queueing,
+ * Manages the all-India district index (710 records), priority background queueing,
  * live Open-Meteo telemetry fetching with full parameters, and reactive hooks.
  */
 
@@ -41,7 +41,7 @@ export interface DistrictLiveState {
   provenance: Provenance;
 }
 
-// Global in-memory cache for all 766 districts
+// Global in-memory cache for every district in the registry
 const districtCache = new Map<string, DistrictLiveState>();
 
 // Priority queue for fetching
@@ -478,7 +478,7 @@ export function useDistrictData(districtId: string) {
 }
 
 /**
- * Hook to get all 766 districts with health status and severity
+ * Hook to get all registered districts with health status and severity
  */
 export function useAllDistricts() {
   const [, setTick] = useState(0);
@@ -535,7 +535,24 @@ export function getDistrictHistory(districtId: string, hours = 24): HistoricalRe
 }
 
 /**
- * Get quick count stats for all 766 districts
+ * Current health of a district, or 'LOADING' when it has never been fetched.
+ *
+ * Exposed so the background poller (lib/vayuPoller.ts) can adapt its fetch
+ * priority and back off offline nodes using real data. Previously the poller
+ * kept its own health map that nothing ever wrote, so its adaptive logic and
+ * retry cutoff were permanently inert.
+ */
+export function getDistrictHealth(districtId: string): DistrictHealthStatus {
+  return districtCache.get(districtId)?.health ?? 'LOADING';
+}
+
+/** Every district id the poller is expected to track. */
+export function getAllTrackedDistrictIds(): string[] {
+  return getInitialDistricts().map((d) => d.id);
+}
+
+/**
+ * Get quick count stats for all districts in the cache
  */
 export function getNationalStatsSummary() {
   let total = 0;

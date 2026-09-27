@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { IMD_AWS_STATIONS, getStationProfile } from '@/lib/stationData';
+import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 import { nicWmoEngineInstance, TelemetryPacket, WorkOrderTicket, createWorkOrder, getInitialSeededDataset } from '@/lib/anomalyLogic';
 import { fetchLiveStationObservation, fetchBatchLiveObservations, LiveObservation } from '@/lib/liveWeatherService';
 import { GovHeader } from '@/components/GovHeader';
@@ -486,7 +487,7 @@ export default function GovernmentAWSManagementPortal() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">National AWS Grid</span>
               <span className="text-[10px] bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded font-mono font-bold">
-                766 Districts
+                {DISTRICT_REGISTRY_COUNTS.total} District Records
               </span>
             </div>
             <div className="flex items-baseline justify-between">
@@ -578,7 +579,7 @@ export default function GovernmentAWSManagementPortal() {
           <div className="flex items-center space-x-1 py-2 shrink-0">
             {[
               { id: 'map', label: 'National GIS Observation Network', icon: <MapPin className="w-3.5 h-3.5" /> },
-              { id: 'analytics', label: '766 District Vayu Grid', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+              { id: 'analytics', label: `District Vayu Grid`, icon: <BarChart3 className="w-3.5 h-3.5" /> },
               { id: 'diagnostics', label: 'WMO QC & Maintenance Alerts', icon: <Activity className="w-3.5 h-3.5" /> },
               { id: 'simulator', label: 'Field Hardware Simulator', icon: <Cpu className="w-3.5 h-3.5" /> },
             ].map(tab => (
@@ -708,7 +709,7 @@ export default function GovernmentAWSManagementPortal() {
           </div>
         )}
 
-        {/* Tab 2: Vayu All-India 766 District Grid */}
+        {/* Tab 2: Vayu All-India District Grid */}
         {activeTab === 'analytics' && (
           <div className="space-y-5 pt-2">
             <GovIndiaDistrictSearch

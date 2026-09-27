@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     if (lowerQuery.includes('imputation') || lowerQuery.includes('heal')) {
       return NextResponse.json({
-        reply: `IMPUTATION LOGIC: When Tier 1/2 QC detects an anomaly, a 5-step Gaussian Weighted Moving Average (WMA) activates to calculate a replacement value, drawing a dashed line to prevent downstream forecast crashes.`,
+        reply: `IMPUTATION LOGIC: When Tier 1/2 QC detects an anomaly, a windowed mean over the observation window activates to calculate a replacement value, drawing a dashed line to prevent downstream forecast crashes. This is a flat trailing mean, not a Gaussian weighted moving average.`,
       });
     }
 

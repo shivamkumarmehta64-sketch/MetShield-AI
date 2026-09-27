@@ -77,7 +77,7 @@ export function AIEnginePipeline() {
           <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
             <div>
               <div className="text-[10px] font-mono font-bold text-amber-400 uppercase mb-1">Stage 4: XAI</div>
-              <div className="font-bold text-white mb-1">SHAP Attribution</div>
+              <div className="font-bold text-white mb-1">Rule-Based Attribution</div>
               <div className="text-[10px] text-slate-400">Parameter Blame Weight &amp; Physical Reasoning</div>
             </div>
             <div className="mt-2 text-[9px] font-mono text-amber-300 bg-amber-950/60 py-0.5 rounded">

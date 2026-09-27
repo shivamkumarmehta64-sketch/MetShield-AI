@@ -213,7 +213,7 @@ export const AWSNetworkMap = React.memo<Props>(function AWSNetworkMap({
           lat: d.lat,
           lon: d.lng,
           elevM: d.isCoastal ? 12 : 320,
-          rmc: 'All-India 766',
+          rmc: 'All-India district index',
           climate: d.isCoastal ? 'Coastal Marine' : 'Inland Continental',
           isCoreImd: false,
           isMobile: false,

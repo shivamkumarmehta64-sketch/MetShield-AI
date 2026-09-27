@@ -1,4 +1,13 @@
-// Curated registry of all 766 Districts across 28 States and 8 Union Territories of India
+// District registry for India: 710 records (593 real, 117 with adjusted
+// attributes).
+//
+// The exported name ALL_766_DISTRICTS is retained for compatibility with
+// existing imports, but the count is NOT 766. It was 766 until 55 fabricated
+// records — each named "<RealDistrict> Central", and each shadowing a real
+// district already present — were removed, along with a duplicate Kargil
+// entry that appeared under both "Jammu and Kashmir" and "Ladakh".
+// See lib/dataProvenance.ts DISTRICT_REGISTRY_COUNTS, which is asserted by
+// __tests__/districtDataset.test.ts.
 export interface IndiaDistrict {
   id: string;
   name: string;

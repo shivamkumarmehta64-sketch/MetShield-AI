@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAllDistricts, prioritizeStateDistricts } from '@/lib/districtEngine';
 import { evaluateIMDHeatwave } from '@/lib/heatwaveEngine';
+import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 import { BasemapStyle } from './LeafletMap';
 import {
   MapPin,
@@ -129,7 +130,7 @@ export const VayuDistrictMap: React.FC<Props> = ({
                   {language === 'hi' ? 'अखिल भारतीय 766 जिला स्वास्थ्य जीआईएस मानचित्र' : 'National 766 District Health GIS Map'}
                 </h2>
                 <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded">
-                  766 DISTRICTS INDEXED
+                  {DISTRICT_REGISTRY_COUNTS.total} DISTRICT RECORDS INDEXED
                 </span>
                 <span className="bg-sky-500/20 text-sky-400 border border-sky-500/30 text-[9px] font-mono px-1.5 py-0.5 rounded">
                   {activeBasemap} BASEMAP
@@ -148,7 +149,7 @@ export const VayuDistrictMap: React.FC<Props> = ({
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search 766 districts (e.g. Pune, Leh)..."
+              placeholder="Search districts (e.g. Pune, Leh)..."
               className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-900 text-white placeholder:text-slate-500 border border-slate-700 rounded-lg focus:outline-none focus:border-sky-400 transition-colors"
             />
             {searchQuery && (

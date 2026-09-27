@@ -22,7 +22,7 @@ import type { IndiaDistrict } from './india766Districts';
  * what to do, rather than inheriting a plausible-looking constant that quietly
  * misrepresents the site.
  *
- * Populating `elevation` on the 766 records is the real fix. This module makes
+ * Populating `elevation` on every registry record is the real fix. This module makes
  * the interim state explicit and safe rather than pretending 200 m is right.
  */
 

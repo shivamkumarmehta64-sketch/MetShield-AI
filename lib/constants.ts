@@ -162,7 +162,7 @@ export const OPERATIONAL_USE_CASES: OperationalUseCase[] = [
     imputed: { temp: '29.4°C', press: '1006.5 hPa', hum: '68.0%', method: 'Inverse Distance Weighting (IDW)' },
     operationalAction: 'Isolated station quarantined. Substituted cohort consensus into GFS/NCMRWF assimilation.',
     linkUrl: '/dashboard?tab=analytics',
-    linkText: 'Open 766 District GIS Grid'
+    linkText: 'Open District GIS Grid'
   },
   {
     id: 'mobile_node',

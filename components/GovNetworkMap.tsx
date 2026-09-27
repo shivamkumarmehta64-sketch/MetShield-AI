@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { TelemetryPacket, WMOQualityFlag } from '@/lib/anomalyLogic';
 import { IMD_AWS_STATIONS, IMDStationProfile } from '@/lib/stationData';
 import { ALL_INDIA_DISTRICTS, districtToStationProfile } from '@/lib/indiaDistrictCatalog';
+import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 import { ALL_766_DISTRICTS, IndiaDistrict } from '@/lib/india766Districts';
 import { BasemapStyle } from './LeafletMap';
 import {
@@ -196,7 +197,7 @@ export const GovNetworkMap = React.memo<Props>(function GovNetworkMap({
           lat: d.lat,
           lon: d.lng,
           elevM: d.isCoastal ? 12 : 320,
-          rmc: 'All-India 766',
+          rmc: 'All-India district index',
           climate: d.isCoastal ? 'Coastal Marine' : 'Inland Continental',
           isCoreImd: false,
           isMobile: false,
@@ -313,7 +314,7 @@ export const GovNetworkMap = React.memo<Props>(function GovNetworkMap({
                   {language === 'hi' ? 'अखिल भारतीय जिला वेधशाला जीआईएस मानचित्र' : 'All-India Meteorological GIS Command Portal'}
                 </h2>
                 <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide">
-                  {densityMode === 'ALL_766' ? '766 ALL-INDIA DISTRICTS' : '70+ BENCHMARK OBSERVATORIES'}
+                {densityMode === 'ALL_766' ? `${DISTRICT_REGISTRY_COUNTS.total} ALL-INDIA DISTRICT RECORDS` : '70+ BENCHMARK OBSERVATORIES'}
                 </span>
                 <span className="bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
                   {activeBasemap} BASEMAP

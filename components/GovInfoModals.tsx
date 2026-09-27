@@ -100,7 +100,7 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                       <tr>
                         <td className="p-2 font-semibold border-r border-slate-200 bg-slate-50">ML &amp; Data Science Inference</td>
                         <td className="p-2 border-r border-slate-200">Lightweight ONNX runtimes and client-side deterministic rule engines.</td>
-                        <td className="p-2 text-slate-700">Full PyTorch/SHAP pipeline cluster with GPU acceleration.</td>
+                        <td className="p-2 text-slate-700">No PyTorch or SHAP cluster in this build — attribution is a deterministic rule-based weighting.</td>
                       </tr>
                     </tbody>
                   </table>

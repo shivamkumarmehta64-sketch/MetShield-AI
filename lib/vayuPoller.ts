@@ -2,17 +2,23 @@
  * vayuPoller.ts
  * AGENT 6 — BACKGROUND POLLER + HEALTH ORCHESTRATOR
  *
- * Runs silent 30-second background loop with adaptive refresh rates,
- * triggers browser notifications on critical sensor anomalies,
- * and maintains continuous health status synchronization across all 766 districts.
+ * Runs a silent 30-second background loop with adaptive refresh rates and
+ * triggers browser notifications on critical sensor anomalies.
+ *
+ * The adaptive behaviour is driven by REAL district health read from
+ * districtEngine.getDistrictHealth(). It previously read two local Maps
+ * (previousDistrictHealth / offlineRetryCounts) that nothing ever wrote, so
+ * `lastHealth` was permanently 'LOADING' and `retries` permanently 0 — meaning
+ * the CRITICAL/DEGRADED priority boost and the "stop after 3 retries" cutoff
+ * never actually did anything, while appearing to.
  */
 
 import {
   enqueueDistrictFetch,
-  initializeDistrictEngine
+  initializeDistrictEngine,
+  getDistrictHealth,
 } from './districtEngine';
 import { ALL_766_DISTRICTS } from './india766Districts';
-import { DistrictHealthStatus } from './sensorFaultEngine';
 import { logVayuEvent } from './vayuEventLog';
 
 interface PollerState {
@@ -32,8 +38,17 @@ const pollerState: PollerState = {
 };
 
 let pollerIntervalId: NodeJS.Timeout | null = null;
-const previousDistrictHealth = new Map<string, DistrictHealthStatus>();
+
+/**
+ * Consecutive cycles in which a district has been OFFLINE.
+ *
+ * Reset as soon as the district reports anything other than OFFLINE, so a node
+ * that recovers is retried immediately rather than staying in backoff.
+ */
 const offlineRetryCounts = new Map<string, number>();
+
+/** Consecutive OFFLINE cycles before a node is dropped from the sweep. */
+const OFFLINE_RETRY_LIMIT = 3;
 
 // Request browser notification permission
 export async function requestNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
@@ -69,7 +84,9 @@ export function sendCriticalNotification(districtName: string, state: string, fa
   try {
     const notif = new Notification(`⚠ Vayu Alert — ${districtName}, ${state}`, {
       body: `${faultCode} — ${message}`,
-      icon: '/icon.png',
+      // Was '/icon.png', which does not exist in public/ — every critical
+      // notification rendered with a broken icon. This file is present.
+      icon: '/metshield-logo.jpg',
       tag: `vayu-crit-${districtName}`,
     });
 
@@ -94,18 +111,31 @@ async function runPollerCycle() {
 
   // Evaluate which districts are due for adaptive refresh
   for (const d of ALL_766_DISTRICTS) {
-    const lastHealth = previousDistrictHealth.get(d.id) || 'LOADING';
+    const health = getDistrictHealth(d.id);
 
-    if (lastHealth === 'OFFLINE') {
-      const retries = offlineRetryCounts.get(d.id) || 0;
-      if (retries >= 3) {
-        // Stop retrying offline node after 3 attempts
+    if (health === 'OFFLINE') {
+      const retries = (offlineRetryCounts.get(d.id) ?? 0) + 1;
+      offlineRetryCounts.set(d.id, retries);
+      if (retries > OFFLINE_RETRY_LIMIT) {
+        // Genuinely unreachable node: stop hammering the provider until it
+        // recovers on its own. Previously this branch was unreachable because
+        // the counter was never incremented.
         continue;
       }
+      // Offline but still under the limit: retry, at raised priority so a
+      // transient network fault is recovered quickly.
+      enqueueDistrictFetch(d.id, 60);
+      continue;
     }
 
-    // Schedule priority fetch if due
-    enqueueDistrictFetch(d.id, lastHealth === 'CRITICAL' ? 80 : (lastHealth === 'DEGRADED' ? 40 : 5));
+    // Node is reachable (or never fetched) — clear the backoff.
+    offlineRetryCounts.delete(d.id);
+
+    // Adaptive priority: nodes needing attention refresh sooner.
+    enqueueDistrictFetch(
+      d.id,
+      health === 'CRITICAL' ? 80 : health === 'DEGRADED' ? 40 : 5
+    );
   }
 }
 

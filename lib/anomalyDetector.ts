@@ -174,9 +174,17 @@ function detectMonotonicDrift(series: number[]): { cumulative: number; monotonic
 }
 
 /**
- * Calculates moving average of past uncorrupted historical values
+ * Windowed mean of the supplied history, rounded to 0.1, falling back to
+ * `fallback` when there is no history.
+ *
+ * RENAMED from `calculateGaussianWMA`. The name claimed Gaussian weighting but
+ * the implementation is a flat arithmetic mean — there are no Gaussian
+ * weights anywhere in this file. A function name that misdescribes its
+ * algorithm is a documentation bug that outlives any single comment, and this
+ * one was quoted as "5-step Gaussian WMA" across the UI, the docs, and the API
+ * assistant's canned reply.
  */
-function calculateGaussianWMA(history: number[], fallback: number): number {
+function windowedMean(history: number[], fallback: number): number {
   if (!history.length) return fallback;
   const sum = history.reduce((acc, val) => acc + val, 0);
   return Math.round((sum / history.length) * 10) / 10;
@@ -204,9 +212,9 @@ export function evaluate3ParamQC(
   const validPressHistory = history.map(h => h.pressure).filter(v => v >= WMO_LIMITS.PRESS_MIN && v <= WMO_LIMITS.PRESS_MAX);
   const validHumHistory = history.map(h => h.humidity).filter(v => v >= WMO_LIMITS.HUM_MIN && v <= WMO_LIMITS.HUM_MAX);
 
-  const imputedT = calculateGaussianWMA(validTempHistory, T);
-  const imputedP = calculateGaussianWMA(validPressHistory, P);
-  const imputedRH = calculateGaussianWMA(validHumHistory, RH);
+  const imputedT = windowedMean(validTempHistory, T);
+  const imputedP = windowedMean(validPressHistory, P);
+  const imputedRH = windowedMean(validHumHistory, RH);
 
   // -------------------------------------------------------------
   // TIER 1: Physical Climatological Limits (WMO-No. 8)

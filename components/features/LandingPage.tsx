@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 import { motion, useInView } from 'framer-motion';
 import {
   ArrowRight,
@@ -85,7 +86,7 @@ export default function LandingPage() {
   const stations = useCounter(1350, 2200);
   const qcScore = useCounter(99.4, 2400, 1);
   const latency = useCounter(3.8, 1800, 1);
-  const districts = useCounter(766, 2000);
+  const districts = useCounter(DISTRICT_REGISTRY_COUNTS.total, 2000);
 
   const fontClass =
     fontSizeScale === 'sm' ? 'text-xs' : fontSizeScale === 'lg' ? 'text-base' : 'text-sm';
@@ -532,7 +533,7 @@ export default function LandingPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-400 font-bold">✓</span>
-                <span><strong>Transparent XAI:</strong> SHAP feature weights explain every alert to field engineers with natural language root causes.</span>
+                <span><strong>Transparent XAI:</strong> Rule-based attribution weights explain every alert to field engineers with natural language root causes.</span>
               </li>
             </ul>
           </div>
@@ -888,7 +889,7 @@ export default function LandingPage() {
                   <td className="p-3 font-semibold text-rose-400">Thermistor Open-Circuit</td>
                   <td className="p-3 text-slate-400">Missing/corrupted readings enter NWP models, triggering mathematical divergence.</td>
                   <td className="p-3 text-emerald-300 bg-emerald-950/10 border-x border-emerald-500/30">
-                    <strong className="text-emerald-400">Gapless Self-Healing Imputation:</strong> Instantly synthesizes 5-step Gaussian WMA replacement values.
+                    <strong className="text-emerald-400">Gapless Self-Healing Imputation:</strong> Instantly synthesizes 5-step windowed-mean replacement values.
                   </td>
                 </tr>
                 <tr>
@@ -922,7 +923,7 @@ export default function LandingPage() {
           ▼                               ▼
 [ Communications Severed ]    [ Physical Transducer Blown ]
   • Local 72h FIFO buffer       • Tier 1/2 catches step-jump
-  • Store-and-forward sync      • 5-step Gaussian WMA engages
+  • Store-and-forward sync      • 5-step windowed-mean imputation engages
           │                               │
           └───────────────┬───────────────┘
                           ▼
@@ -938,7 +939,7 @@ export default function LandingPage() {
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Key Defensive Message for Evaluators</h3>
               <div className="bg-slate-900/50 border-l-4 border-emerald-500 p-4 rounded-r-lg text-sm text-slate-300 leading-relaxed italic relative">
                 <span className="text-4xl absolute -top-2 -left-3 text-slate-800">&ldquo;</span>
-                Project JATAYU is designed for severe conditions. If communication drops, local 72-hour edge buffers cache telemetry until links recover. If a sensor fails physically, real-time Gaussian moving-average imputation reconstructs the missing stream so numerical prediction models do not diverge. Most critically, during extreme cyclonic landfalls, our thermodynamic coupling logic prevents false-alarm blinding by validating that barometric plunges correspond with humidity surges, passing authentic severe weather directly to forecasters.
+                Project JATAYU is designed for severe conditions. If communication drops, local 72-hour edge buffers cache telemetry until links recover. If a sensor fails physically, real-time windowed-mean imputation reconstructs the missing stream so numerical prediction models do not diverge. Most critically, during extreme cyclonic landfalls, our thermodynamic coupling logic prevents false-alarm blinding by validating that barometric plunges correspond with humidity surges, passing authentic severe weather directly to forecasters.
               </div>
             </div>
           </div>
