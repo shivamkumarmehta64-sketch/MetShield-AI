@@ -418,11 +418,7 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="text-sm sm:text-lg text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
-              Automated Weather Station Quality Management System (NAWS-MetShield v4.2)
-              <br />
-              <span className="text-cyan-400 font-semibold tracking-wide">
-                24x7 Intelligent Telemetry Validation &amp; Thermodynamic Anomaly Defense
-              </span>
+              National Automatic Weather Station Quality Management System — Real-time telemetry verification, storm discrimination &amp; self-healing data imputation for India&apos;s meteorological grid.
             </p>
             <div className="mt-3 inline-flex items-center gap-2 text-xs text-slate-400 font-mono bg-[#0e1730]/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-700/80 shadow-inner">
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />

@@ -410,8 +410,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         <div className="bg-[#0e1730]/95 border border-slate-800/90 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
-            <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors">
+            <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors flex items-center gap-1.5">
               {lang === 'en' ? 'Ambient Temperature' : 'तापमान'}
+              <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" title="Sensor: Class A PT100 RTD | Envelope: -10°C to 55°C" />
             </span>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black font-mono text-white tracking-tight">
@@ -439,8 +440,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         <div className="bg-[#0e1730]/95 border border-slate-800/90 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors">
+              <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors flex items-center gap-1.5">
                 {lang === 'en' ? 'Atmospheric Pressure' : 'दबाव'}
+                <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" title="Sensor: Vaisala PTB110 | Envelope: 920 to 1050 hPa" />
               </span>
               {mobileSensors.isHardwareActive ? (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 animate-pulse">
@@ -474,8 +476,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
 
         <div className="bg-[#0e1730]/95 border border-slate-800/90 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
-            <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors">
+            <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors flex items-center gap-1.5">
               {lang === 'en' ? 'Relative Humidity' : 'आर्द्रता'}
+              <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" title="Sensor: Humicap Polymer | Envelope: 5% to 100%" />
             </span>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black font-mono text-white tracking-tight">
