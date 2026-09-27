@@ -102,6 +102,13 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
 
   const [telemetryHistory, setTelemetryHistory] = useState<ChartPoint[]>([]);
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
+  
+  // Predictive Pausing: Stop feed scroll on hover
+  const [isFeedPaused, setIsFeedPaused] = useState(false);
+  const isFeedPausedRef = useRef(false);
+  useEffect(() => {
+    isFeedPausedRef.current = isFeedPaused;
+  }, [isFeedPaused]);
 
   const [showTemp, setShowTemp] = useState<boolean>(true);
   const [showPress, setShowPress] = useState<boolean>(true);
@@ -269,7 +276,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           status: qcResult.severity === 'BLUE_GENUINE_WEATHER' ? 'AUTO_CORRECTED' : 'PENDING',
         };
 
-        setIncidents(prev => [newIncident, ...prev.slice(0, 19)]);
+        if (!isFeedPausedRef.current) {
+          setIncidents(prev => [newIncident, ...prev.slice(0, 19)]);
+        }
 
         const faultToStore: StoredFaultEvent = {
           eventId,
@@ -594,11 +603,18 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         </div>
 
         {/* Right 35% Real-Time Incident Stream */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-4 flex flex-col shadow-sm" data-tour="incident-panel">
+        <div 
+          className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-4 flex flex-col shadow-sm" 
+          data-tour="incident-panel"
+          onMouseEnter={() => setIsFeedPaused(true)}
+          onMouseLeave={() => setIsFeedPaused(false)}
+        >
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
-              <h3 className="text-sm font-semibold text-slate-100">Live Incident & Anomaly Stream</h3>
+              <AlertTriangle className={`w-4 h-4 ${isFeedPaused ? 'text-rose-500 animate-pulse' : 'text-amber-400'}`} />
+              <h3 className="text-sm font-semibold text-slate-900">
+                {isFeedPaused ? 'Feed Paused (Hover)' : 'Live Incident & Anomaly Stream'}
+              </h3>
             </div>
             <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300">
               {incidents.length} Events
