@@ -172,7 +172,7 @@ export default function LandingPage() {
               <h1 className="text-sm sm:text-lg font-bold tracking-tight text-white flex items-center gap-1.5 sm:gap-2">
                 <span>METSHIELD AI</span>
                 <span className="text-[10px] sm:text-xs font-mono font-normal px-1.5 sm:px-2 py-0.5 rounded bg-blue-500/10 text-sky-300 border border-blue-500/30">
-                  NAWS-MetShield v4.2
+                  SIH26073 • MoES
                 </span>
               </h1>
             </div>
@@ -383,10 +383,17 @@ export default function LandingPage() {
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="flex items-center justify-center mb-5"
+            className="flex items-center justify-center mb-5 gap-6"
           >
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border border-cyan-400/40 bg-gradient-to-br from-cyan-950 via-[#0e1730] to-blue-950 shadow-2xl shadow-cyan-500/30 flex items-center justify-center group hover:scale-105 transition-transform duration-300">
-              <ShieldCheck className="w-9 h-9 sm:w-11 sm:h-11 text-cyan-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.6)]" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border border-cyan-400/40 bg-gradient-to-br from-cyan-950 via-[#0e1730] to-blue-950 shadow-2xl shadow-cyan-500/30 flex items-center justify-center group hover:scale-105 transition-transform duration-300 relative overflow-hidden">
+              <ShieldCheck className="w-9 h-9 sm:w-11 sm:h-11 text-cyan-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.6)] z-10" />
+            </div>
+
+            {/* SIH Official Banner Box */}
+            <div className="hidden sm:flex flex-col items-start justify-center h-20 px-5 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-950/40 to-slate-900 shadow-xl shadow-orange-500/10">
+              <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-0.5">Smart India Hackathon 2026</span>
+              <span className="text-sm font-black text-white">Problem Statement: SIH26073</span>
+              <span className="text-[10px] text-slate-300 font-mono mt-1">Ministry of Earth Sciences (MoES) & IMD</span>
             </div>
           </motion.div>
 
@@ -828,7 +835,7 @@ export default function LandingPage() {
       <footer className="relative z-10 border-t border-slate-800 bg-[#0b1329]/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] text-slate-400">
           <span className="font-semibold text-slate-300">
-            © 2026 Metshield AI • Developed by Team AEROTECH (Team ID: 73869) • NAWS-MetShield v4.2
+            © 2026 Smart India Hackathon • MetShield AI Prototype • Problem Statement SIH26073 (MoES & IMD) • Team AEROTECH (Team ID: 73869)
           </span>
           <div className="flex items-center gap-3">
             <Link href="/audit-report" className="hover:text-sky-400 transition-colors">

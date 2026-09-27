@@ -90,19 +90,17 @@ graph LR
 
 MetShield-QMS employs an ensemble architecture combining **deterministic physical heuristics** with an **Edge ML Decision Tree Classifier**:
 
+```mermaid
+graph TD
+    A[Incoming Telemetry] --> B{Tier 1: WMO Plausibility & RoC}
+    B -- Pass --> C{Tier 2: Persistence & Drift}
+    B -- Fail --> F[Quarantine: SENSOR_SPIKE]
+    C -- Pass --> D{Tier 3: Thermodynamic Invariant Discriminator}
+    C -- Fail --> G[Quarantine: PROBE_FREEZE / DRIFT]
+    D -- Coupled Storm Detected --> H[GENUINE_WEATHER_EVENT (Blue Status)]
+    D -- Uncoupled Spike --> F
+    D -- Nominal --> I[NOMINAL_OPERATION (Verified)]
 ```
-                              [ INCOMING TELEMETRY OBSERVATION ]
-                                               │
-                        ┌──────────────────────┴──────────────────────┐
-                        ▼                                             ▼
-            [ Tier 1: WMO Rule Engine ]                   [ Tier 2: Edge ML Classifier ]
-            (lib/anomalyLogic.ts)                         (lib/mlAnomalyModel.ts)
-            • Physical Range Checks                       • Pre-Trained Decision Tree
-            • Zahumenský RoC Step Limits                  • 9-Dimensional Feature Vector
-            • Coupled Thermodynamic Invariant             • Feature Importance Attribution
-            • Spatial KNN Cross-Validation                • Edge Runtime Compatible (<0.1ms)
-                        │                                             │
-                        └──────────────────────┬──────────────────────┘
                                                ▼
                                     [ Telemetry Packet ]
                                • wmoFlag (FLAG_1 to FLAG_5)
@@ -250,8 +248,9 @@ npm run build
 ```
 
 The portal is active at:
-- **National Operations Command Dashboard**: `http://localhost:3000/dashboard`
-- **Smartphone Field Sensor Node (PWA)**: `http://localhost:3000/mobile`
+- **National Operations Command Dashboard (Desktop)**: `http://localhost:3000/dashboard`
+- **Institutional UI Console (Landing)**: `http://localhost:3000/`
+- **Smartphone Field Sensor Node (PWA)**: `http://localhost:3000/mobile` (Open on mobile to activate hardware pressure sensor)
 - **Institutional Technical Audit Dossier**: `http://localhost:3000/audit-report`
 
 ---

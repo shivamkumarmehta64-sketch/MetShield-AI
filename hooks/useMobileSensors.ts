@@ -35,7 +35,7 @@ function getCardinal(deg: number): string {
 
 export function useMobileSensors() {
   // Pressure & Elevation Delta (1 hPa ≈ 8.4m)
-  const [pressure, setPressure] = useState<number | null>(null);
+  const [pressure, setPressure] = useState<number>(1012.35);
   const [isHardwareActive, setIsHardwareActive] = useState<boolean>(false);
   const [sensorSource, setSensorSource] = useState<'hardware' | 'simulated'>('simulated');
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +82,7 @@ export function useMobileSensors() {
     let sensor: PressureSensorInstance | null = null;
     try {
       if (window.PressureSensor) {
-        sensor = new window.PressureSensor({ frequency: 2 });
+        sensor = new window.PressureSensor({ frequency: 1 });
         sensor.addEventListener('reading', () => {
           if (sensor && typeof sensor.pressure === 'number' && !isNaN(sensor.pressure)) {
             const hpa = Math.round(sensor.pressure * 10) / 10;

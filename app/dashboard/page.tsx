@@ -6,7 +6,7 @@ import { nicWmoEngineInstance, TelemetryPacket, WorkOrderTicket, createWorkOrder
 import { fetchLiveStationObservation, fetchBatchLiveObservations, LiveObservation } from '@/lib/liveWeatherService';
 import { GovHeader } from '@/components/GovHeader';
 import { GovNetworkStrip } from '@/components/GovNetworkStrip';
-import { GovNetworkMap } from '@/components/GovNetworkMap';
+import { AWSNetworkMap } from '@/components/AWSNetworkMap';
 import { GovObservationConsole } from '@/components/GovObservationConsole';
 import { GovAnomalyRegister } from '@/components/GovAnomalyRegister';
 import { GovNWPGatingPanel } from '@/components/GovNWPGatingPanel';
@@ -642,7 +642,7 @@ export default function GovernmentAWSManagementPortal() {
               <div className={`bg-white border border-slate-300 rounded-lg p-2 shadow-xs overflow-hidden ${
                 mobileSubView === 'telemetry' ? 'hidden xl:block' : 'block'
               }`}>
-                <GovNetworkMap
+                <AWSNetworkMap
                   latestPackets={latestPackets}
                   selectedStationId={selectedStationId}
                   onSelectStation={setSelectedStationId}

@@ -118,6 +118,7 @@ interface MapProps {
   activeLayer: 'QC' | 'THERMAL' | 'RADAR';
   basemap?: BasemapStyle;
   viewTarget?: { center: [number, number]; zoom: number; key: string } | null;
+  isMobile?: boolean;
 }
 
 export default function LeafletMap({
@@ -126,7 +127,8 @@ export default function LeafletMap({
   onNodeClick,
   activeLayer,
   basemap = 'DARK',
-  viewTarget = null
+  viewTarget = null,
+  isMobile = false
 }: MapProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const activeNodeData = activeNode as any;
@@ -139,6 +141,8 @@ export default function LeafletMap({
       zoom={4}
       style={{ height: '100%', width: '100%', minHeight: '440px', zIndex: 0 }}
       zoomControl={true}
+      dragging={!isMobile}
+      scrollWheelZoom={!isMobile}
     >
       <TileLayer
         key={basemap}
@@ -279,7 +283,7 @@ export default function LeafletMap({
               click: () => onNodeClick(node),
             }}
           >
-            <Popup>
+            {!isMobile && <Popup>
               <div className="text-xs space-y-1.5 p-1 min-w-[210px] font-sans">
                 <div className="font-bold text-slate-900 border-b border-slate-200 pb-1 flex items-center justify-between gap-2">
                   <div className="truncate font-extrabold">{node.name}</div>
@@ -329,7 +333,7 @@ export default function LeafletMap({
                   Inspect in Telemetry Console →
                 </button>
               </div>
-            </Popup>
+            </Popup>}
           </CircleMarker>
         );
       })}

@@ -217,7 +217,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         isAnomaly: qcResult.severity !== 'NOMINAL',
       };
 
-      setTelemetryHistory(prev => [...prev.slice(-24), newChartPoint]);
+      setTelemetryHistory(prev => [...prev.slice(-29), newChartPoint]);
 
       const packetToStore: StoredTelemetryPacket = {
         packetId: `PKT-${currentStation.id}-${now.toString().slice(-6)}`,
@@ -422,8 +422,15 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
               <span>WMO: -10°C to 55°C</span>
             </div>
+            <div className="h-8 w-24 mt-1 opacity-60">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={telemetryHistory}>
+                  <Line type="monotone" dataKey="temperature" stroke="#f59e0b" strokeWidth={2} dot={false} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 shadow-sm group-hover:scale-105 transition-transform">
+          <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 shadow-sm group-hover:scale-105 transition-transform flex flex-col items-center">
             <Thermometer className="w-6 h-6" />
           </div>
         </div>
@@ -436,11 +443,11 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               </span>
               {mobileSensors.isHardwareActive ? (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 animate-pulse">
-                  ● MOBILE HW
+                  ● LIVE MOBILE HARDWARE FEED
                 </span>
               ) : (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-sky-400 border border-blue-500/30">
-                  ● SIMULATED
+                  ● SIMULATED AWS FEED
                 </span>
               )}
             </div>
@@ -479,8 +486,15 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400" />
               <span>Thermodynamic Coupling</span>
             </div>
+            <div className="h-8 w-24 mt-1 opacity-60">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={telemetryHistory}>
+                  <Line type="monotone" dataKey="humidity" stroke="#22d3ee" strokeWidth={2} dot={false} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20 shadow-sm group-hover:scale-105 transition-transform">
+          <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20 shadow-sm group-hover:scale-105 transition-transform flex flex-col items-center">
             <CloudRain className="w-6 h-6" />
           </div>
         </div>
@@ -617,7 +631,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           <div className="flex items-center space-x-2">
             <Wrench className="w-4 h-4 text-sky-400" />
             <span className="text-xs font-semibold text-slate-200">
-              [🔧 Field Diagnostic & Sensor Bench Test Tool (Simulation Suite)]
+              [🔧 NIC-MoES Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]
             </span>
           </div>
           <div className="flex items-center space-x-2 text-slate-400 text-xs">
@@ -634,7 +648,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               className="p-3 rounded-lg border border-rose-500/40 bg-rose-950/20 hover:bg-rose-900/30 text-left transition-all group"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-rose-300">Simulate Thermistor Spike</span>
+                <span className="text-xs font-semibold text-rose-300">Simulate Thermistor Open-Circuit</span>
                 <Zap className="w-4 h-4 text-rose-400" />
               </div>
               <p className="text-[11px] text-slate-400">Injects +14°C step jump without coupling. Triggers Red Alert.</p>
@@ -646,7 +660,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               className="p-3 rounded-lg border border-amber-500/40 bg-amber-950/20 hover:bg-amber-900/30 text-left transition-all group"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-amber-300">Simulate Probe Freeze</span>
+                <span className="text-xs font-semibold text-amber-300">Simulate Signal Wire Disconnect / Freeze</span>
                 <Sliders className="w-4 h-4 text-amber-400" />
               </div>
               <p className="text-[11px] text-slate-400">Injects zero-variance cycles (σ &lt; 0.001). Triggers Amber Alert.</p>
@@ -658,7 +672,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               className="p-3 rounded-lg border border-blue-500/40 bg-blue-950/20 hover:bg-blue-900/30 text-left transition-all group"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-sky-300">Simulate Convective Storm</span>
+                <span className="text-xs font-semibold text-sky-300">Trigger Convective Storm Dynamics</span>
                 <Wind className="w-4 h-4 text-sky-400" />
               </div>
               <p className="text-[11px] text-slate-400">Coupled ΔP ≤ -2.5 hPa + ΔRH ≥ +15%. Triggers Blue Status.</p>
@@ -670,7 +684,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               className="p-3 rounded-lg border border-emerald-500/40 bg-emerald-950/20 hover:bg-emerald-900/30 text-left transition-all group"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-emerald-300">Export QC Audit (.csv)</span>
+                <span className="text-xs font-semibold text-emerald-300">Export QC Audit Log (.csv)</span>
                 <Download className="w-4 h-4 text-emerald-400" />
               </div>
               <p className="text-[11px] text-slate-400">Generates official NIC/IMD metadata header audit report.</p>

@@ -71,7 +71,7 @@ export const WMO_LIMITS = {
 
 // ─── TIER 2: Rate-of-Change & Persistence Limits ───
 export const ROC_LIMITS = {
-  TEMP_STEP_MAX: 4.0, // °C per cycle
+  TEMP_STEP_MAX: 8.0, // °C per cycle
   PRESS_STEP_MAX: 2.2, // hPa per cycle
   HUM_STEP_MAX: 18.0, // % per cycle
   FREEZE_MIN_CYCLES: 6,
@@ -91,7 +91,7 @@ function calculateStdDev(values: number[]): number {
 /**
  * Calculates moving average of past uncorrupted historical values
  */
-function calculateMovingAverage(history: number[], fallback: number): number {
+function calculateGaussianWMA(history: number[], fallback: number): number {
   if (!history.length) return fallback;
   const sum = history.reduce((acc, val) => acc + val, 0);
   return Math.round((sum / history.length) * 10) / 10;
@@ -119,9 +119,9 @@ export function evaluate3ParamQC(
   const validPressHistory = history.map(h => h.pressure).filter(v => v >= WMO_LIMITS.PRESS_MIN && v <= WMO_LIMITS.PRESS_MAX);
   const validHumHistory = history.map(h => h.humidity).filter(v => v >= WMO_LIMITS.HUM_MIN && v <= WMO_LIMITS.HUM_MAX);
 
-  const imputedT = calculateMovingAverage(validTempHistory, T);
-  const imputedP = calculateMovingAverage(validPressHistory, P);
-  const imputedRH = calculateMovingAverage(validHumHistory, RH);
+  const imputedT = calculateGaussianWMA(validTempHistory, T);
+  const imputedP = calculateGaussianWMA(validPressHistory, P);
+  const imputedRH = calculateGaussianWMA(validHumHistory, RH);
 
   // -------------------------------------------------------------
   // TIER 1: Physical Climatological Limits (WMO-No. 8)
@@ -225,7 +225,8 @@ export function evaluate3ParamQC(
   const isHumStep = Math.abs(deltaRH) > ROC_LIMITS.HUM_STEP_MAX;
 
   // Genuine Weather Event rule: ΔP ≤ -2.5 hPa coupled with ΔRH ≥ +15%
-  const isConvectiveStorm = deltaP <= -2.5 && deltaRH >= 15.0;
+  // Genuine Weather Event rule: ΔP ≤ -2.5 hPa coupled with ΔRH ≥ +15% and ΔT ≤ -0.5°C
+  const isConvectiveStorm = deltaP <= -2.5 && deltaRH >= 15.0 && deltaT <= -0.5;
 
   if (isConvectiveStorm) {
     // Both pressure plunge and moisture surge occurred together (thermodynamically coupled)
