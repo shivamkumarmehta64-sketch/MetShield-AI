@@ -22,6 +22,7 @@ import {
   Zap,
 } from 'lucide-react';
 import GuidedTour from './GuidedTour';
+import JatayuAssistant from './JatayuAssistant';
 import {
   ResponsiveContainer,
   LineChart,
@@ -724,6 +725,18 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           </div>
         )}
       </div>
+      
+      {/* Jatayu AI Assistant */}
+      <JatayuAssistant 
+        context={{
+          station: `${currentStation.id} (${currentStation.name})`,
+          telemetry: {
+            temp: latestTelemetry.temp,
+            press: latestTelemetry.press,
+            hum: latestTelemetry.hum,
+          }
+        }} 
+      />
     </div>
   );
 }
