@@ -1,8 +1,8 @@
 # Mobile Field Node Redesign & Telemetry Correctness Pass
 
 **Date:** 2026-09-27
-**Status:** Approved in conversation; awaiting spec review
-**Scope:** `/mobile` redesign, telemetry-console correctness, spec §4 accessibility compliance
+**Status:** Approved. Phase 0 implementation plan in progress.
+**Scope:** `/mobile` redesign, telemetry-console correctness, spec §4 accessibility compliance, interface density reduction
 
 ---
 
@@ -25,7 +25,7 @@ A logic analysis also found **14 concrete defects** in the mobile and dashboard 
 
 ### Decomposition
 
-This is four independently shippable increments, not one change. The implementation plan covers **Phase 0 only**; Phases 1–4 get their own plans once Phase 0 has landed and proved clean. Phases 0 and 1 are safe to merge on their own. Phases 2–4 should not start until the Phase 0 regression tests are in place.
+This is five independently shippable increments, not one change. The implementation plan covers **Phase 0 only**; Phases 1–5 get their own plans once Phase 0 has landed and proved clean. Phases 0 and 1 are safe to merge on their own. Phases 2–5 should not start until the Phase 0 regression tests are in place.
 
 ---
 
@@ -35,7 +35,7 @@ This is four independently shippable increments, not one change. The implementat
 
 - Phase 0 is a pure logic fix with **no visual change**. If anything looks different after it, that is a regression.
 - Phase 1 is purely additive theming.
-- Phases 1–3 are presentational; Phases 0 and 4 carry the only logic changes.
+- Phases 1, 2, 3 and 5 are presentational; Phases 0 and 4 carry the only logic changes.
 
 ---
 
@@ -221,6 +221,8 @@ A single `AccessibilityProvider` in `components/mobile/a11y/` owns three persist
 | **Bilingual Hindi/English** | `lib/i18n.ts` with `en`/`hi` tables. All visible strings move into it, including DCP hex-frame labels and chart axes. |
 | **Keyboard navigation & ARIA** | 14 `focus:outline-none` sites get real `focus-visible` rings. Two currently have **no replacement indicator at all** (`GovInstitutionalConsole.tsx:405`, `GoogleStitchAIToolsSuite.tsx:328`) — highest priority. Touch targets floor at 44×44 px. |
 
+**The language toggle ships with a fixed set, not a runtime picker.** IMD serves Hindi-speaking and English-speaking operators in the same district office, and a technician carrying a shared handset cannot know in advance which colleague will pick it up next. Pinning to `system` (default) / `hi` / `en` is three buttons on an always-visible rail — a full settings modal would add a control the user must open before their first action. Reconsider only if user testing shows the toggle is being missed.
+
 Additionally, `prefers-reduced-motion` is honored **nowhere** in the codebase. Twelve components animate via framer-motion, plus `animate-pulse` live indicators, an infinite `shimmer` keyframe (`globals.css:169`), and Leaflet map motion. Phase 3 adds a global reduced-motion guard.
 
 **Also fixed in this phase:** the root `select-none` on `app/mobile/page.tsx:448` blocks text selection — awkward on a page that has a "Copy JSON" button. Removed; `select-none` is retained only on controls where it prevents accidental interaction.
@@ -248,7 +250,63 @@ UI: technician ID, ticket ID (optional), pressure and temperature offsets. Requi
 
 ---
 
-## 8. Testing
+## 8. Phase 5 — Reduce User-Facing Complexity
+
+The user directive: *"resolve all frontend complexity into user simple mobile use."* Phases 0–4 make the code simple and the interface compliant. Neither makes the interface **simple to use**. A field technician using this one-handed, outdoors, possibly in rain, faces the control inventory below.
+
+### 8.1 Current control inventory
+
+Counted from `app/mobile/page.tsx` — **14 buttons + 3 range sliders**, one scrolling column:
+
+| Group | Count | Lines |
+|---|---|---|
+| Header (audio mute) | 1 | 483 |
+| Geo strip (GPS sync) | 1 | 508 |
+| Chart metric toggle (all / pressure / elevation / gust) | 4 | 734–763 |
+| Transmission (send, auto-stream) | 2 | 830, 839 |
+| Stress pad (squall, spike, freeze, drift) | 4 | 869–911 |
+| Reset to nominal | 1 | 925 |
+| Copy JSON | 1 | 975 |
+| Value sliders (temp, pressure, humidity) | 3 | 601, 626, 643 |
+
+Plus 22 `useState` hooks at the composition root.
+
+The 4 chart-metric buttons are a segmented control behaving as one choice; the 4 stress-pad buttons are a genuine 4-way choice. The mix is the problem — a user cannot tell which of these eight buttons are mutually exclusive.
+
+### 8.2 Principles
+
+1. **One primary action per screen.** Everything else is secondary or behind disclosure.
+2. **Group mutually exclusive choices visually.** Segmented control for chart metric; a labelled grid for the stress pad.
+3. **Never hide what the user must trust.** Live/pending state, GPS accuracy, packet count, and the server verdict stay always-visible. Depth is for *diagnostics*, not for *truth*.
+4. **A 4-tap core loop survives with no network.** GPS → observe → send → verdict, in that order, on one screen.
+
+### 8.3 Changes
+
+**Collapse the 4 chart-metric buttons into one segmented control.** `chartMetric` becomes a single row of 4 segments in a bordered track. Same four states, same `onClick` targets — visual grouping only, no logic change.
+
+**Move diagnostics behind a disclosure.** These are field-technician or IMD-staff concerns, not a routine reading task: the DCP hex frame, the Copy JSON action, the engineering wind-speed/compass/battery/solar readouts, and the mobile QR provision button. Group under a single "Engineering details" disclosure, collapsed by default. Rationale: this is a *mobile station console*, and the primary output — what the server classified — must dominate.
+
+**Keep always-visible:** header (station identity + uplink), geo strip, the 3 value tiles, the primary Send button, auto-stream toggle, the stress pad, and the server verdict.
+
+**Keep the 3 value sliders.** They are the technician's *simulation* of a fault when no hardware is attached — core to how this tool is used, not clutter. But they get a "Simulated values" section label so their role is not mistaken for live sensor readings. This is a real risk in the current build: a slider-set 29.4 °C and a live sensor reading look identical.
+
+**Surface one thing the current build hides: what is actually being transmitted.** The UI shows temperature, pressure, and humidity as tiles, but the auto-stream also sends wind, rainfall, solar, battery, and position. A technician cannot tell which values are real. Mark each tile with its source — live sensor, simulated, or default — reusing the existing `sensorSource` value.
+
+### 8.4 Consequences to accept
+
+- **Hiding Copy JSON reduces diagnosability.** A support path currently exists on the field device; it must not disappear. It moves one tap deeper, and the disclosure is keyboard- and screen-reader-reachable per Phase 3.
+- **Fewer visible controls is a defensible claim only if the hidden ones are reachable.** Phase 3's ARIA work is a hard prerequisite for Phase 5, not a parallel task. A disclosure that cannot be operated by keyboard or announced by a screen reader has made the interface inaccessible, not simpler.
+- **This phase is a visible change to every screen.** Unlike Phase 0, nothing here should look the same afterward. It needs its own review pass with a real user, and it is the phase most likely to need revision after that review.
+
+### 8.5 Testing
+
+- Every disclosure is operable by keyboard and exposes correct expanded/collapsed ARIA state.
+- The 4-tap core loop is completable with no network, using only always-visible controls.
+- Every control reachable before Phase 5 remains reachable after it — asserted by a test that enumerates handlers in the composition root and confirms each is still mounted either visibly or inside a disclosure.
+
+---
+
+## 9. Testing
 
 Vitest is configured with two existing suites (`anomalyEngine.test.ts`, `stationData.test.ts`).
 
@@ -261,9 +319,11 @@ Vitest is configured with two existing suites (`anomalyEngine.test.ts`, `station
 - Translation-table completeness — every key referenced in components exists in **both** `en` and `hi`.
 - Contrast assertions for the light civic palette and the high-contrast mode, both ≥ 4.5:1 for body text.
 
+**Phase 5 tests** — see §8.5.
+
 ---
 
-## 9. Verification
+## 10. Verification
 
 Each phase is checked independently:
 
@@ -272,6 +332,7 @@ Each phase is checked independently:
 - **Phase 2** — `page.tsx` drops to a composition root; telemetry, offline queue, and hardware hooks behave identically.
 - **Phase 3** — every control reachable by keyboard with a visible focus indicator; all strings present in both languages; 44×44 px targets.
 - **Phase 4** — `CALIBRATE_OFFSET` round-trips against `route.ts`; schematics render offline.
+- **Phase 5** — the core loop is completable with no network; every pre-Phase-5 control is still reachable.
 
 ---
 
@@ -305,10 +366,21 @@ Found during analysis, **not** in scope for any phase. Listed so they are not lo
 
 ---
 
-## Appendix B — Open Questions for Review
+## Appendix B — Resolved Decisions
 
-1. **§3.9, row 4** — the spec proposes that generated field-node IDs fall back to the `AWS-MOB-01` mobile profile rather than being constrained to the catalog. A technician at an arbitrary site is recorded under a generic mobile profile instead of a wrong one. Confirm, or prefer the stricter constraint.
-2. **§3.10** — proposed drift clamp is ±5 hPa. Is that the right physical bound for a field barometer, or should it be tighter?
-3. **§3.5** — the `!important` element selectors must stay until the dark-theme migration completes (§1 Non-goals). Confirm that a partial high-contrast mode is acceptable, or pull the migration into scope.
-4. **Non-goals** — confirm the zoom lock and the 13 dark-theme files stay out of scope.
-5. **Unresolved** — the original report was that clicking a station marker "shows view in telemetry console" without specifying the symptom. Two candidates are fixed here: **wrong data** (§3.2, silent fallback to station #0) and **two taps on mobile** (§3.7). If the actual symptom is different, tell me what is seen and Phase 0 needs a different fix.
+| # | Question | Decision |
+|---|---|---|
+| 1 | Field-node IDs: constrain to catalog, or fall back to the `AWS-MOB-01` mobile profile? | **Fall back to the mobile profile** (§3.9). A technician at an arbitrary site is recorded under a generic mobile profile rather than a wrong one. |
+| 2 | Drift clamp bound | **±5 hPa** (§3.10). |
+| 3 | Partial high-contrast acceptable? | **Yes** — the `!important` selectors stay until the dark-theme migration completes (§3.5). |
+| 4 | Non-goals confirmed | **Yes** — zoom lock and the 13 dark-theme files stay out of scope. |
+| 5 | Map→console symptom | **Both** — wrong station data (§3.2) *and* two taps on mobile (§3.7). Both are fixed in Phase 0. |
+| 6 | Scope of "resolve all frontend complexity" | **Both layers** — code internals (Phase 2) and interface density (new Phase 5). |
+
+## Appendix C — Still Open
+
+None blocking Phase 0. The three judgement calls below are worth revisiting once Phase 0 has landed and its regression tests are in place:
+
+1. **§3.10** — ±5 hPa is a proposal, not a measured bound. If IMD publishes a tolerance for the field barometer model in use, that value should replace it.
+2. **§8.4** — hiding Copy JSON reduces on-device diagnosability. Confirm a support path still exists when a technician cannot reach a network.
+3. **§6** — the language toggle is pinned to a 3-button rail by assumption. User testing, not this spec, should decide whether it is discoverable.
