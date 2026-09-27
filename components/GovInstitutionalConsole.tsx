@@ -1,27 +1,20 @@
 'use client';
-
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  Activity,
   AlertTriangle,
   CheckCircle2,
   CloudRain,
   Download,
   Gauge,
   Info,
-  Radio,
-  RefreshCw,
   Sliders,
-  Smartphone,
   Thermometer,
   Wind,
   Wrench,
   ChevronDown,
   ChevronUp,
   ShieldCheck,
-  Zap,
-} from 'lucide-react';
-import GuidedTour from './GuidedTour';
+  Zap } from 'lucide-react';
 import JatayuAssistant from './JatayuAssistant';
 import {
   ResponsiveContainer,
@@ -31,23 +24,19 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend,
-} from 'recharts';
+  Legend } from 'recharts';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
 import {
   evaluate3ParamQC,
   QCValidationResult,
   Reading3Param,
-} from '@/lib/anomalyDetector';
+  AnomalySeverity } from '@/lib/anomalyDetector';
 import {
   insertTelemetry,
   insertEvent,
-  generateAuditCsvContent,
   StoredFaultEvent,
-  StoredTelemetryPacket,
-} from '@/lib/supabaseClient';
+  StoredTelemetryPacket } from '@/lib/supabaseClient';
 import { WebSerialConnector } from '@/components/WebSerialConnector';
-
 interface ChartPoint {
   timeIST: string;
   timestamp: number;
@@ -59,14 +48,13 @@ interface ChartPoint {
   imputedHum?: number;
   isAnomaly?: boolean;
 }
-
 interface IncidentRecord {
   id: string;
   stationId: string;
   stationName: string;
   timestamp: string;
   classification: string;
-  severity: 'NOMINAL' | 'BLUE_GENUINE_WEATHER' | 'AMBER_PROBE_FREEZE' | 'RED_HARDWARE_FAULT';
+  severity: AnomalySeverity;
   badgeLabel: string;
   badgeColor: 'emerald' | 'blue' | 'amber' | 'rose';
   rawValues: { temp: number; press: number; hum: number };
@@ -80,7 +68,6 @@ interface IncidentRecord {
   recommendedAction: string;
   status: 'PENDING' | 'DISPATCHED' | 'AUTO_CORRECTED';
 }
-
 const STATIONS = [
   { id: 'AWS-DEL-01', name: 'New Delhi Safdarjung', state: 'Delhi', baseT: 32.4, baseP: 1008.2, baseRH: 58 },
   { id: 'AWS-MUM-04', name: 'Mumbai Colaba Coastal', state: 'Maharashtra', baseT: 29.8, baseP: 1012.4, baseRH: 82 },
@@ -88,18 +75,13 @@ const STATIONS = [
   { id: 'AWS-KOL-02', name: 'Kolkata Alipore Met', state: 'West Bengal', baseT: 33.1, baseP: 1009.6, baseRH: 76 },
   { id: 'AWS-JOD-08', name: 'Jodhpur Arid Zone', state: 'Rajasthan', baseT: 38.6, baseP: 998.4, baseRH: 28 },
 ];
-
 export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' }) {
-  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [] = useState(false);
   const [selectedStationIndex, setSelectedStationIndex] = useState<number>(0);
   const currentStation = STATIONS[selectedStationIndex];
-
   const mobileSensors = useMobileSensors();
-
   const [ingestionCount, setIngestionCount] = useState<number>(1420);
   const [isDCPActive] = useState<boolean>(true);
-  const [lastHeartbeat, setLastHeartbeat] = useState<string>('Just now');
-
   const [telemetryHistory, setTelemetryHistory] = useState<ChartPoint[]>([]);
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   
@@ -109,28 +91,22 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
   useEffect(() => {
     isFeedPausedRef.current = isFeedPaused;
   }, [isFeedPaused]);
-
   const [showTemp, setShowTemp] = useState<boolean>(true);
   const [showPress, setShowPress] = useState<boolean>(true);
   const [showHum, setShowHum] = useState<boolean>(true);
-
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [benchInjectionMode, setBenchInjectionMode] = useState<string | null>(null);
-
   const rawHistoryRef = useRef<Reading3Param[]>([]);
-
   const getISTTime = useCallback(() => {
     const now = new Date();
     const ist = new Date(now.getTime() + 19800000);
     return ist.toTimeString().split(' ')[0];
   }, []);
-
   useEffect(() => {
     const initialPoints: ChartPoint[] = [];
     const baseT = currentStation.baseT;
     const baseP = currentStation.baseP;
     const baseRH = currentStation.baseRH;
-
     const now = Date.now();
     for (let i = 15; i >= 0; i--) {
       const tTime = now - i * 2500;
@@ -138,40 +114,32 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
       const noiseT = Math.round((Math.sin(i * 0.4) * 0.8 + (Math.random() - 0.5) * 0.4) * 10) / 10;
       const noiseP = Math.round((Math.cos(i * 0.3) * 0.5 + (Math.random() - 0.5) * 0.3) * 10) / 10;
       const noiseRH = Math.round((Math.sin(i * 0.5) * 2 + (Math.random() - 0.5) * 1.5) * 10) / 10;
-
       const pt: ChartPoint = {
         timeIST: istString,
         timestamp: tTime,
         temperature: Math.round((baseT + noiseT) * 10) / 10,
         pressure: Math.round((baseP + noiseP) * 10) / 10,
-        humidity: Math.round((baseRH + noiseRH) * 10) / 10,
-      };
+        humidity: Math.round((baseRH + noiseRH) * 10) / 10 };
       initialPoints.push(pt);
       rawHistoryRef.current.push({
         temperature: pt.temperature,
         pressure: pt.pressure,
         humidity: pt.humidity,
         timestamp: pt.timestamp,
-        stationId: currentStation.id,
-      });
+        stationId: currentStation.id });
     }
     // eslint-disable-next-line
     setTelemetryHistory(initialPoints);
   }, [currentStation]);
-
   useEffect(() => {
     if (!isDCPActive) return;
-
     const interval = setInterval(() => {
       const timeStr = getISTTime();
       const now = Date.now();
-      setLastHeartbeat(timeStr);
       setIngestionCount(prev => prev + 1);
-
       let nextT: number;
       let nextP: number;
       let nextRH: number;
-
       if (benchInjectionMode === 'SPIKE_TEMP') {
         nextT = Math.round((currentStation.baseT + 14.2) * 10) / 10;
         nextP = currentStation.baseP + Math.round((Math.random() - 0.5) * 0.2 * 10) / 10;
@@ -192,7 +160,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         const wanderRH = (Math.random() - 0.5) * 1.0;
         nextT = Math.round((currentStation.baseT + wanderT) * 10) / 10;
         nextRH = Math.round((currentStation.baseRH + wanderRH) * 10) / 10;
-
         if (mobileSensors.isHardwareActive && typeof mobileSensors.pressure === 'number') {
           nextP = mobileSensors.pressure;
         } else {
@@ -200,22 +167,17 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           nextP = Math.round((currentStation.baseP + wanderP) * 10) / 10;
         }
       }
-
       const currentReading: Reading3Param = {
         temperature: nextT,
         pressure: nextP,
         humidity: nextRH,
         timestamp: now,
-        stationId: currentStation.id,
-      };
-
+        stationId: currentStation.id };
       const qcResult: QCValidationResult = evaluate3ParamQC(currentReading, rawHistoryRef.current);
-
       rawHistoryRef.current.push(currentReading);
       if (rawHistoryRef.current.length > 40) {
         rawHistoryRef.current = rawHistoryRef.current.slice(-30);
       }
-
       const newChartPoint: ChartPoint = {
         timeIST: timeStr,
         timestamp: now,
@@ -225,11 +187,8 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         imputedTemp: qcResult.imputed.wasImputed ? qcResult.imputed.temperature : undefined,
         imputedPress: qcResult.imputed.wasImputed ? qcResult.imputed.pressure : undefined,
         imputedHum: qcResult.imputed.wasImputed ? qcResult.imputed.humidity : undefined,
-        isAnomaly: qcResult.severity !== 'NOMINAL',
-      };
-
+        isAnomaly: qcResult.severity !== 'NOMINAL' };
       setTelemetryHistory(prev => [...prev.slice(-29), newChartPoint]);
-
       const packetToStore: StoredTelemetryPacket = {
         packetId: `PKT-${currentStation.id}-${now.toString().slice(-6)}`,
         stationId: currentStation.id,
@@ -241,10 +200,8 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         classification: qcResult.classification,
         alertLevel: qcResult.severity,
         wmoFlag: qcResult.wmoFlag,
-        imputedVal: qcResult.imputed.wasImputed ? qcResult.imputed : undefined,
-      };
+        imputedVal: qcResult.imputed.wasImputed ? qcResult.imputed : undefined };
       insertTelemetry(packetToStore);
-
       if (qcResult.severity !== 'NOMINAL') {
         const eventId = `INC-${Date.now().toString().slice(-6)}`;
         const newIncident: IncidentRecord = {
@@ -259,27 +216,21 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           rawValues: {
             temp: qcResult.raw.temperature,
             press: qcResult.raw.pressure,
-            hum: qcResult.raw.humidity,
-          },
+            hum: qcResult.raw.humidity },
           imputedValues: {
             temp: qcResult.imputed.temperature,
             press: qcResult.imputed.pressure,
-            hum: qcResult.imputed.humidity,
-          },
+            hum: qcResult.imputed.humidity },
           xai: {
             tempWeight: qcResult.xai.tempWeight,
             pressWeight: qcResult.xai.pressWeight,
             humWeight: qcResult.xai.humWeight,
-            explanation: qcResult.xai.diagnosticExplanation,
-          },
+            explanation: qcResult.xai.diagnosticExplanation },
           recommendedAction: qcResult.recommendedAction,
-          status: qcResult.severity === 'BLUE_GENUINE_WEATHER' ? 'AUTO_CORRECTED' : 'PENDING',
-        };
-
+          status: qcResult.severity === 'BLUE_GENUINE_WEATHER' ? 'AUTO_CORRECTED' : 'PENDING' };
         if (!isFeedPausedRef.current) {
           setIncidents(prev => [newIncident, ...prev.slice(0, 19)]);
         }
-
         const faultToStore: StoredFaultEvent = {
           eventId,
           stationId: currentStation.id,
@@ -288,6 +239,11 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           parameter: qcResult.xai.primaryParameter,
           rawVal: qcResult.raw.temperature,
           imputedVal: qcResult.imputed.temperature,
+          // Full 3-parameter snapshot. Without these the audit CSV had no
+          // pressure or humidity to write and fabricated both columns.
+          temperatureC: qcResult.raw.temperature,
+          pres_hPa: qcResult.raw.pressure,
+          rh_pct: qcResult.raw.humidity,
           classification: qcResult.classification,
           severity:
             qcResult.severity === 'BLUE_GENUINE_WEATHER'
@@ -299,12 +255,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             tempWeight: qcResult.xai.tempWeight,
             pressWeight: qcResult.xai.pressWeight,
             humWeight: qcResult.xai.humWeight,
-            explanation: qcResult.xai.diagnosticExplanation,
-          },
-          recommendedAction: qcResult.recommendedAction,
-        };
+            explanation: qcResult.xai.diagnosticExplanation },
+          recommendedAction: qcResult.recommendedAction };
         insertEvent(faultToStore);
-
         if (qcResult.severity === 'RED_HARDWARE_FAULT') {
           mobileSensors.playTelemetryChime(520, 0.15);
         } else if (qcResult.severity === 'BLUE_GENUINE_WEATHER') {
@@ -312,10 +265,8 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         }
       }
     }, 2500);
-
     return () => clearInterval(interval);
   }, [isDCPActive, benchInjectionMode, currentStation, getISTTime, mobileSensors]);
-
   const latestTelemetry = useMemo(() => {
     if (telemetryHistory.length === 0) {
       return { temp: currentStation.baseT, press: currentStation.baseP, hum: currentStation.baseRH };
@@ -323,7 +274,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
     const last = telemetryHistory[telemetryHistory.length - 1];
     return { temp: last.temperature, press: last.pressure, hum: last.humidity };
   }, [telemetryHistory, currentStation]);
-
   const handleExportCsv = useCallback(() => {
     const header = [
       '# METSHIELD AI NAWS-QMS v4.2 | TEAM 73869 AEROTECH',
@@ -333,8 +283,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
       '# =========================================================================',
       'Station_ID,Timestamp_IST,Temp_C,Pres_hPa,RH_pct,WMO_QC_Flag,XAI_Reasoning,Imputed_Value'
     ].join('\n');
-
-    let rows = incidents.map(inc => {
+    const rows = incidents.map(inc => {
       const wmoFlag = inc.severity === 'BLUE_GENUINE_WEATHER' ? 'FLAG_2_CONVECTIVE_STORM' 
                      : inc.severity === 'RED_HARDWARE_FAULT' ? 'FLAG_4_CORRUPT_HARDWARE'
                      : 'FLAG_3_SUSPECT_DRIFT';
@@ -344,7 +293,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         : inc.imputedValues.press !== inc.rawValues.press 
           ? `${inc.imputedValues.press.toFixed(1)} (Press)` 
           : 'N/A';
-
       return [
         `"${inc.stationId}"`,
         `"${inc.timestamp}"`,
@@ -356,8 +304,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         `"${imputed}"`
       ].join(',');
     });
-
     if (rows.length === 0) {
+      // No faults recorded yet: emit a single nominal snapshot row rather than
+      // an empty file, so a reviewer never sees a zero-row audit export.
       rows.push([
         `"${currentStation.id}"`,
         `"${getISTTime()}"`,
@@ -369,7 +318,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         `"N/A"`
       ].join(','));
     }
-
     const csvContent = `${header}\n${rows.join('\n')}`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -380,7 +328,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
     link.click();
     document.body.removeChild(link);
   }, [incidents, currentStation, latestTelemetry, getISTTime]);
-
   return (
     <div className="w-full space-y-4">
       {/* Top Station & DCP Status Bar */}
@@ -394,7 +341,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             <span className="text-[11px] text-slate-500 ml-2">INSAT-3DR DCP Link: 2.5s</span>
           </div>
         </div>
-
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span>Station:</span>
@@ -411,13 +357,11 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               ))}
             </select>
           </div>
-
           <span className="text-xs font-mono text-sky-700 bg-sky-50 px-2 py-1 rounded border border-sky-200">
             {ingestionCount.toLocaleString()} Pkts
           </span>
         </div>
       </div>
-
       {/* 3 Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5" data-tour="metrics-strip">
         <div className="bg-white border border-slate-200 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
@@ -450,7 +394,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             <Thermometer className="w-6 h-6" />
           </div>
         </div>
-
         <div className="bg-white border border-slate-200 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -489,7 +432,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             <Gauge className="w-6 h-6" />
           </div>
         </div>
-
         <div className="bg-white border border-slate-200 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
             <span className="text-xs uppercase font-semibold text-slate-500 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
@@ -521,7 +463,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           </div>
         </div>
       </div>
-
       
       {/* Layer 1: Human Status Capsule (Material 3 Surface) */}
       <div className="w-full bg-white border border-slate-200 shadow-sm rounded-xl p-4 flex items-center gap-3">
@@ -535,7 +476,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           <span className="text-sm font-semibold text-slate-800">⚠️ Probe Lock: Signal variance dropped below threshold.</span>
         )}
       </div>
-
       {/* 65/35 Split Canvas */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" data-tour="imputation-demo">
         {/* Left 65% Recharts */}
@@ -549,7 +489,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 Station: <span className="text-slate-900 font-mono">{currentStation.id}</span> ({currentStation.name})
               </p>
             </div>
-
             <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-lg border border-slate-200 text-xs">
               <button
                 type="button"
@@ -580,7 +519,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               </button>
             </div>
           </div>
-
           <div className="w-full h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={telemetryHistory} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
@@ -592,7 +530,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                   contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#0f172a', borderRadius: '8px', fontSize: '12px' }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
-
                 {showTemp && (
                   <>
                     <Line yAxisId="left" type="monotone" dataKey="temperature" name="Temp (°C)" stroke="#D97706" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
@@ -615,7 +552,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             </ResponsiveContainer>
           </div>
         </div>
-
         {/* Right 35% Real-Time Incident Stream */}
         <div 
           className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-4 flex flex-col shadow-sm" 
@@ -634,7 +570,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               {incidents.length} Events
             </span>
           </div>
-
           <div className="flex-1 overflow-y-auto space-y-2 mt-3 max-h-[320px] pr-1">
             {incidents.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-200 rounded-lg">
@@ -648,7 +583,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 const isRedFault = inc.severity === 'RED_HARDWARE_FAULT';
                 const borderColor = isBlueStorm ? 'border-blue-500/40 bg-blue-950/20' : isRedFault ? 'border-rose-500/40 bg-rose-950/20' : 'border-amber-500/40 bg-amber-950/20';
                 const badgeStyle = isBlueStorm ? 'bg-blue-500/20 text-sky-300 border-blue-500/40' : isRedFault ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-
                 return (
                   <div key={inc.id} className={`p-2.5 rounded-lg border ${borderColor} space-y-1.5 text-xs`}>
                     <div className="flex items-center justify-between">
@@ -672,7 +606,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           </div>
         </div>
       </div>
-
       {/* Stealth Diagnostic Drawer */}
       <div className="border border-slate-200 bg-white rounded-xl overflow-hidden shadow-lg">
         <button
@@ -691,7 +624,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             {isDrawerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </button>
-
         {isDrawerOpen && (
           <div className="p-4 border-t border-slate-200/80 bg-white grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 animate-in fade-in duration-200">
             <button
@@ -705,7 +637,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               </div>
               <p className="text-[11px] text-slate-500">Injects +14°C step jump without coupling. Triggers Red Alert.</p>
             </button>
-
             <button
               type="button"
               onClick={() => setBenchInjectionMode('FREEZE_PROBE')}
@@ -717,7 +648,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               </div>
               <p className="text-[11px] text-slate-500">Injects zero-variance cycles (σ &lt; 0.001). Triggers Amber Alert.</p>
             </button>
-
             <button
               type="button"
               onClick={() => setBenchInjectionMode('STORM_CONVECTIVE')}
@@ -729,7 +659,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               </div>
               <p className="text-[11px] text-slate-500">Coupled ΔP ≤ -2.5 hPa + ΔRH ≥ +15%. Triggers Blue Status.</p>
             </button>
-
             <button
               type="button"
               onClick={handleExportCsv}
@@ -741,7 +670,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               </div>
               <p className="text-[11px] text-slate-500">Generates official NIC/IMD metadata header audit report.</p>
             </button>
-
             <a
               href={`/api/og/certificate?stationId=${currentStation.id}&name=${encodeURIComponent(currentStation.name)}&status=OPTIMAL&temp=${latestTelemetry.temp.toFixed(1)}&press=${latestTelemetry.press.toFixed(1)}&hum=${latestTelemetry.hum.toFixed(0)}`}
               target="_blank"
@@ -769,8 +697,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           telemetry: {
             temp: latestTelemetry.temp,
             press: latestTelemetry.press,
-            hum: latestTelemetry.hum,
-          }
+            hum: latestTelemetry.hum }
         }} 
       />
     </div>

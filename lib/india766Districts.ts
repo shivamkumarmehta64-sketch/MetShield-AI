@@ -7,6 +7,22 @@ export interface IndiaDistrict {
   lng: number;
   population: number;
   isCoastal?: boolean;
+  /**
+   * Elevation above sea level, in metres.
+   *
+   * ADDED because the absence of this field forced two real bugs:
+   *   - lib/districtEngine.ts hardcoded `elevation: 200` for every district,
+   *     so the Trans-Himalayan and Western Ghats were treated as plains.
+   *   - lib/heatwaveEngine.ts did the same, giving Leh (3,524 m) plains
+   *     climatological normals of 34.5-41.5 °C.
+   *
+   * Optional rather than required: only the 21 records in
+   * lib/stationData.ts carry a curated elevation. Until the remaining 745 are
+   * populated, consumers must treat `undefined` as UNKNOWN and must not
+   * substitute a flat 200 m, which is the behaviour that caused the bug.
+   * See getDistrictElevation() in lib/districtElevation.ts for the safe accessor.
+   */
+  elevation?: number;
 }
 
 export const ALL_766_DISTRICTS: IndiaDistrict[] = [
@@ -1666,16 +1682,7 @@ export const ALL_766_DISTRICTS: IndiaDistrict[] = [
     "population": 579056,
     "isCoastal": false
   },
-  {
-    "id": "DST-IND-185",
-    "name": "Kargil",
-    "state": "Jammu and Kashmir",
-    "lat": 33.566,
-    "lng": 76.6368,
-    "population": 4161022,
-    "isCoastal": false
-  },
-  {
+{
     "id": "DST-IND-186",
     "name": "Kathua",
     "state": "Jammu and Kashmir",
@@ -6409,499 +6416,56 @@ export const ALL_766_DISTRICTS: IndiaDistrict[] = [
     "population": 2543243,
     "isCoastal": false
   },
-  {
-    "id": "DST-SUB-712",
-    "name": "Krishna Central",
-    "state": "Andhra Pradesh",
-    "lat": 16.1938,
-    "lng": 81.1851,
-    "population": 1266820,
-    "isCoastal": true
-  },
-  {
-    "id": "DST-SUB-713",
-    "name": "Kurnool Central",
-    "state": "Andhra Pradesh",
-    "lat": 15.4876,
-    "lng": 77.9509,
-    "population": 1072365,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-714",
-    "name": "Mahbubnagar Central",
-    "state": "Andhra Pradesh",
-    "lat": 16.6895,
-    "lng": 78.0393,
-    "population": 3020762,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-715",
-    "name": "Medak Central",
-    "state": "Andhra Pradesh",
-    "lat": 17.9393,
-    "lng": 78.1878,
-    "population": 2836957,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-716",
-    "name": "Nalgonda Central",
-    "state": "Andhra Pradesh",
-    "lat": 17.1632,
-    "lng": 79.2198,
-    "population": 2469477,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-717",
-    "name": "Nellore Central",
-    "state": "Andhra Pradesh",
-    "lat": 13.9922,
-    "lng": 80.1948,
-    "population": 845957,
-    "isCoastal": true
-  },
-  {
-    "id": "DST-SUB-718",
-    "name": "Nizamabad Central",
-    "state": "Andhra Pradesh",
-    "lat": 18.4795,
-    "lng": 78.1252,
-    "population": 794823,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-719",
-    "name": "Prakasam Central",
-    "state": "Andhra Pradesh",
-    "lat": 15.5417,
-    "lng": 80.1666,
-    "population": 752409,
-    "isCoastal": true
-  },
-  {
-    "id": "DST-SUB-720",
-    "name": "Rangareddi Central",
-    "state": "Andhra Pradesh",
-    "lat": 17.2952,
-    "lng": 78.1076,
-    "population": 2518470,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-721",
-    "name": "Srikakulam Central",
-    "state": "Andhra Pradesh",
-    "lat": 18.6209,
-    "lng": 84.3087,
-    "population": 1697294,
-    "isCoastal": true
-  },
-  {
-    "id": "DST-SUB-722",
-    "name": "Vishakhapatnam Central",
-    "state": "Andhra Pradesh",
-    "lat": 17.6964,
-    "lng": 83.0532,
-    "population": 1347984,
-    "isCoastal": true
-  },
-  {
-    "id": "DST-SUB-723",
-    "name": "Vizianagaram Central",
-    "state": "Andhra Pradesh",
-    "lat": 18.3333,
-    "lng": 83.5098,
-    "population": 2616140,
-    "isCoastal": true
-  },
-  {
-    "id": "DST-SUB-724",
-    "name": "Warangal Central",
-    "state": "Andhra Pradesh",
-    "lat": 18.0675,
-    "lng": 79.9242,
-    "population": 2141248,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-725",
-    "name": "West Godavari Central",
-    "state": "Andhra Pradesh",
-    "lat": 16.683,
-    "lng": 81.5091,
-    "population": 2575099,
-    "isCoastal": true
-  },
-  {
-    "id": "DST-SUB-726",
-    "name": "Changlang Central",
-    "state": "Arunachal Pradesh",
-    "lat": 27.4105,
-    "lng": 96.4255,
-    "population": 2787616,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-727",
-    "name": "East Kameng Central",
-    "state": "Arunachal Pradesh",
-    "lat": 27.4212,
-    "lng": 93.0974,
-    "population": 2773451,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-728",
-    "name": "East Siang Central",
-    "state": "Arunachal Pradesh",
-    "lat": 28.2038,
-    "lng": 95.115,
-    "population": 1060256,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-729",
-    "name": "Kurung Kumey Central",
-    "state": "Arunachal Pradesh",
-    "lat": 28.0985,
-    "lng": 93.2953,
-    "population": 1251260,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-730",
-    "name": "Lohit Central",
-    "state": "Arunachal Pradesh",
-    "lat": 27.9968,
-    "lng": 96.6467,
-    "population": 2326905,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-731",
-    "name": "Lower Dibang Valley Central",
-    "state": "Arunachal Pradesh",
-    "lat": 28.3765,
-    "lng": 95.8157,
-    "population": 1949716,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-732",
-    "name": "Lower Subansiri Central",
-    "state": "Arunachal Pradesh",
-    "lat": 27.7585,
-    "lng": 94.0123,
-    "population": 1099919,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-733",
-    "name": "Papum Pare Central",
-    "state": "Arunachal Pradesh",
-    "lat": 27.3235,
-    "lng": 93.5947,
-    "population": 2399161,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-734",
-    "name": "Tawang Central",
-    "state": "Arunachal Pradesh",
-    "lat": 27.7307,
-    "lng": 91.875,
-    "population": 2409519,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-735",
-    "name": "Tirap Central",
-    "state": "Arunachal Pradesh",
-    "lat": 26.9941,
-    "lng": 95.4647,
-    "population": 674130,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-736",
-    "name": "Upper Dibang Valley Central",
-    "state": "Arunachal Pradesh",
-    "lat": 29.0699,
-    "lng": 96.0378,
-    "population": 1903744,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-737",
-    "name": "Upper Siang Central",
-    "state": "Arunachal Pradesh",
-    "lat": 28.8809,
-    "lng": 95.0516,
-    "population": 2324682,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-738",
-    "name": "Upper Subansiri Central",
-    "state": "Arunachal Pradesh",
-    "lat": 28.3272,
-    "lng": 93.9491,
-    "population": 1690137,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-739",
-    "name": "West Kameng Central",
-    "state": "Arunachal Pradesh",
-    "lat": 27.5149,
-    "lng": 92.7002,
-    "population": 899445,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-740",
-    "name": "West Siang Central",
-    "state": "Arunachal Pradesh",
-    "lat": 28.1563,
-    "lng": 94.5851,
-    "population": 2228870,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-741",
-    "name": "Barpeta Central",
-    "state": "Assam",
-    "lat": 26.4779,
-    "lng": 91.0291,
-    "population": 418042,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-742",
-    "name": "Bongaigaon Central",
-    "state": "Assam",
-    "lat": 26.5001,
-    "lng": 90.7234,
-    "population": 1077329,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-743",
-    "name": "Cachar Central",
-    "state": "Assam",
-    "lat": 24.8656,
-    "lng": 92.9185,
-    "population": 1181655,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-744",
-    "name": "Darrang Central",
-    "state": "Assam",
-    "lat": 26.6346,
-    "lng": 92.0914,
-    "population": 2945412,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-745",
-    "name": "Dhemaji Central",
-    "state": "Assam",
-    "lat": 27.6365,
-    "lng": 94.7634,
-    "population": 2487861,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-746",
-    "name": "Dhuburi Central",
-    "state": "Assam",
-    "lat": 26.1191,
-    "lng": 90.0404,
-    "population": 726112,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-747",
-    "name": "Dibrugarh Central",
-    "state": "Assam",
-    "lat": 27.3561,
-    "lng": 95.1498,
-    "population": 1929244,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-748",
-    "name": "Goalpara Central",
-    "state": "Assam",
-    "lat": 26.0673,
-    "lng": 90.6487,
-    "population": 830174,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-749",
-    "name": "Golaghat Central",
-    "state": "Assam",
-    "lat": 26.4272,
-    "lng": 93.8758,
-    "population": 353812,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-750",
-    "name": "Hailakandi Central",
-    "state": "Assam",
-    "lat": 24.5075,
-    "lng": 92.6415,
-    "population": 1401812,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-751",
-    "name": "Jorhat Central",
-    "state": "Assam",
-    "lat": 26.8124,
-    "lng": 94.352,
-    "population": 2039407,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-752",
-    "name": "Kamrup Central",
-    "state": "Assam",
-    "lat": 26.2209,
-    "lng": 91.6386,
-    "population": 873096,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-753",
-    "name": "Karbi Anglong Central",
-    "state": "Assam",
-    "lat": 26.2543,
-    "lng": 93.4462,
-    "population": 1978862,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-754",
-    "name": "Karimganj Central",
-    "state": "Assam",
-    "lat": 24.7466,
-    "lng": 92.4179,
-    "population": 559872,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-755",
-    "name": "Kokrajhar Central",
-    "state": "Assam",
-    "lat": 26.5472,
-    "lng": 90.19,
-    "population": 2778426,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-756",
-    "name": "Lakhimpur Central",
-    "state": "Assam",
-    "lat": 27.1913,
-    "lng": 94.1276,
-    "population": 1090879,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-757",
-    "name": "Marigaon Central",
-    "state": "Assam",
-    "lat": 26.2965,
-    "lng": 92.2695,
-    "population": 2586892,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-758",
-    "name": "Nagaon Central",
-    "state": "Assam",
-    "lat": 26.3146,
-    "lng": 92.9806,
-    "population": 1364384,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-759",
-    "name": "Nalbari Central",
-    "state": "Assam",
-    "lat": 26.5132,
-    "lng": 91.456,
-    "population": 2845119,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-760",
-    "name": "North Cachar Hills Central",
-    "state": "Assam",
-    "lat": 25.3883,
-    "lng": 93.0274,
-    "population": 2559673,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-761",
-    "name": "Sibsagar Central",
-    "state": "Assam",
-    "lat": 27.0776,
-    "lng": 94.9503,
-    "population": 1792596,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-762",
-    "name": "Sonitpur Central",
-    "state": "Assam",
-    "lat": 26.7851,
-    "lng": 92.902,
-    "population": 938124,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-763",
-    "name": "Tinsukia Central",
-    "state": "Assam",
-    "lat": 27.5855,
-    "lng": 95.7406,
-    "population": 468282,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-764",
-    "name": "Araria Central",
-    "state": "Bihar",
-    "lat": 26.2615,
-    "lng": 87.3577,
-    "population": 3046108,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-765",
-    "name": "Aurangabad Central",
-    "state": "Bihar",
-    "lat": 24.8243,
-    "lng": 84.5099,
-    "population": 578531,
-    "isCoastal": false
-  },
-  {
-    "id": "DST-SUB-766",
-    "name": "Banka Central",
-    "state": "Bihar",
-    "lat": 24.8824,
-    "lng": 86.9165,
-    "population": 898717,
-    "isCoastal": false
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ];

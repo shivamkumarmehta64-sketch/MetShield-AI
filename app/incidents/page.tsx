@@ -1,17 +1,35 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle, ShieldCheck, Download } from 'lucide-react';
-import { getAuditLogRecords, StoredFaultEvent, generateAuditCsvContent } from '@/lib/supabaseClient';
+import {
+  getAuditLogSnapshot,
+  subscribeToAuditLog,
+  StoredFaultEvent,
+  generateAuditCsvContent,
+} from '@/lib/supabaseClient';
 
 export default function IncidentsPage() {
-  const [incidents, setIncidents] = useState<StoredFaultEvent[]>([]);
+  /**
+   * The audit buffer is an external mutable store, so it is read through
+   * useSyncExternalStore rather than copied into useState inside an effect.
+   *
+   * The previous version snapshotted the buffer once on mount, which meant the
+   * incident log never showed a fault that arrived after the page loaded — and
+   * doing that copy in an effect also triggered a cascading re-render on every
+   * visit. getAuditLogSnapshot returns an identity-stable array that is
+   * invalidated on mutation, as useSyncExternalStore requires.
+   */
+  const rawRecords = useSyncExternalStore(
+    subscribeToAuditLog,
+    getAuditLogSnapshot,
+    getAuditLogSnapshot
+  );
 
-  useEffect(() => {
-    // In production, this would fetch from Supabase. For SIH demo, we use the local in-memory buffer.
-    const records = getAuditLogRecords();
-    setIncidents(records.reverse()); // latest first
-  }, []);
+  const incidents = useMemo<StoredFaultEvent[]>(
+    () => [...rawRecords].reverse(), // latest first
+    [rawRecords]
+  );
 
   const handleExport = () => {
     if (incidents.length === 0) return;

@@ -226,7 +226,6 @@ function AIToolCard({ tool, onExecute }: { tool: AITool; onExecute: (id: number)
 
 export function GoogleStitchAIToolsSuite() {
   const [promptInput, setPromptInput] = useState('');
-  const [activeTool, setActiveTool] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [aiResponse, setAiResponse] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -238,7 +237,6 @@ export function GoogleStitchAIToolsSuite() {
     : aiTools.filter(t => t.category.toLowerCase().includes(selectedCategory.toLowerCase()) || selectedCategory.toLowerCase().includes(t.category.toLowerCase()));
 
   const handleExecute = async (toolId: number) => {
-    setActiveTool(toolId);
     const tool = aiTools.find(t => t.id === toolId);
     if (!tool) return;
 
@@ -258,11 +256,10 @@ export function GoogleStitchAIToolsSuite() {
 
       const data = await response.json();
       setAiResponse(data.result || 'Tool executed successfully.');
-    } catch (error) {
+    } catch  {
       setAiResponse('Error executing AI tool. Please try again.');
     } finally {
       setIsProcessing(false);
-      setTimeout(() => setActiveTool(null), 5000);
     }
   };
 
@@ -280,7 +277,7 @@ export function GoogleStitchAIToolsSuite() {
 
       const data = await response.json();
       setAiResponse(data.result || 'Query processed.');
-    } catch (error) {
+    } catch  {
       setAiResponse('Error processing query. Please try again.');
     } finally {
       setIsProcessing(false);

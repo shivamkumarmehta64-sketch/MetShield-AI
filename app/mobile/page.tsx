@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import {
   Radio,
   MapPin,
@@ -21,8 +21,7 @@ import {
   Copy,
   Check,
   Volume2,
-  VolumeX,
-} from 'lucide-react';
+  VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import { getStationProfile } from '@/lib/stationData';
 import { TelemetryPacket } from '@/lib/anomalyLogic';
@@ -35,8 +34,31 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
-} from 'recharts';
+  CartesianGrid } from 'recharts';
+
+/**
+ * Browser connectivity as an external store, for useSyncExternalStore.
+ *
+ * The server has no `navigator`, so it always reports "online" — a node that
+ * has not yet reported a connectivity problem. The client snapshot reads the
+ * real value. Because both sides go through this store, the first client render
+ * matches the server HTML and hydration stays clean, and no setState-in-effect
+ * is needed to adopt the real value after mount.
+ */
+const getServerConnectivitySnapshot = (): boolean => true;
+
+const getConnectivitySnapshot = (): boolean =>
+  typeof navigator === 'undefined' ? true : navigator.onLine;
+
+function subscribeToConnectivity(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener('online', onStoreChange);
+  window.addEventListener('offline', onStoreChange);
+  return () => {
+    window.removeEventListener('online', onStoreChange);
+    window.removeEventListener('offline', onStoreChange);
+  };
+}
 
 // Predefined Indian Meteorological Cities for instant 1-tap live weather
 const INDIAN_CITIES = [
@@ -52,18 +74,69 @@ const INDIAN_CITIES = [
   { name: 'Lucknow (Amausi)', lat: 26.760, lon: 80.883, stationId: 'AWS-LKO-10' },
 ];
 
+/**
+ * Field node identifier, read from sessionStorage as an external store.
+ *
+ * The initializer previously called Math.random() whenever sessionStorage was
+ * empty. The server has no sessionStorage, so it fell through to 'AWS-MOB-01'
+ * while the browser generated a random id — the first client render never
+ * matched the server HTML, producing a hydration error on EVERY load of this
+ * route and forcing React to discard the server markup.
+ *
+ * Resolved with useSyncExternalStore for the same reason as connectivity: the
+ * server snapshot must be deterministic, and a setState-in-effect on mount
+ * reintroduces the cascading-render problem. The node id changes at most once
+ * per browser session, so the snapshot is cached and only recomputed when the
+ * stored value actually differs.
+ */
+
+const DEFAULT_NODE_ID = 'AWS-MOB-01';
+const NODE_ID_STORAGE_KEY = 'naws_mobile_node_id';
+
+function readStoredNodeId(): string {
+  try {
+    const saved = sessionStorage.getItem(NODE_ID_STORAGE_KEY);
+    if (saved) return saved;
+    const generated = `AWS-MOB-${String(Math.floor(Math.random() * 89) + 11)}`;
+    sessionStorage.setItem(NODE_ID_STORAGE_KEY, generated);
+    return generated;
+  } catch {
+    // Private mode / storage disabled: stay deterministic rather than crashing.
+    return DEFAULT_NODE_ID;
+  }
+}
+
+/** Server render: a fixed id, matching the first client render. */
+const getServerNodeIdSnapshot = (): string => DEFAULT_NODE_ID;
+
+/** Client snapshot: cached so identity is stable between renders. */
+let cachedNodeId: string | null = null;
+function getNodeIdSnapshot(): string {
+  if (cachedNodeId === null) cachedNodeId = readStoredNodeId();
+  return cachedNodeId;
+}
+
+/** No external updates: the id changes only when the tab is reloaded. */
+function subscribeToNodeId(): () => void {
+  return () => {};
+}
+
+/**
+ * Override the active node id, e.g. when the operator picks a different city
+ * from the fallback list. Persists to sessionStorage so the override survives
+ * the re-render that follows.
+ */
+function setNodeId(nextId: string): void {
+  cachedNodeId = nextId;
+  try {
+    sessionStorage.setItem(NODE_ID_STORAGE_KEY, nextId);
+  } catch {
+    // Storage unavailable: the in-memory cache still applies for this session.
+  }
+}
+
 export default function MobileEdgeNodePage() {
-  const [stationId, setStationId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('naws_mobile_node_id');
-      if (saved) return saved;
-      const num = String(Math.floor(Math.random() * 89) + 11);
-      const newId = `AWS-MOB-${num}`;
-      sessionStorage.setItem('naws_mobile_node_id', newId);
-      return newId;
-    }
-    return 'AWS-MOB-01';
-  });
+  const stationId = useSyncExternalStore(subscribeToNodeId, getNodeIdSnapshot, getServerNodeIdSnapshot);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lon: number; accuracy: number } | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
@@ -82,7 +155,26 @@ export default function MobileEdgeNodePage() {
   const [liveDataStatus, setLiveDataStatus] = useState<string | null>(null);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isJsonCopied, setIsJsonCopied] = useState<boolean>(false);
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  /**
+   * Connectivity state.
+   *
+   * Resolved through useSyncExternalStore rather than useState + effect, which
+   * is the correct primitive for an external browser API and avoids both
+   * problems the obvious approaches have:
+   *
+   *   - reading `navigator.onLine` in a useState initializer diverges between
+   *     server and client (the server has no navigator), producing a hydration
+   *     mismatch that discards the server-rendered HTML;
+   *   - calling setIsOnline(navigator.onLine) inside an effect is a
+   *     synchronous state update in an effect, which React flags as a
+   *     cascading-render risk.
+   *
+   * The server snapshot is hardcoded to `true` (a node that has not yet
+   * reported a problem is optimistically online), and the client snapshot is
+   * read live. `subscribe` attaches the online/offline listeners, so this also
+   * removes the listener-management effect entirely.
+   */
+  const isOnline = useSyncExternalStore(subscribeToConnectivity, getConnectivitySnapshot, getServerConnectivitySnapshot);
   const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
 
   // Hardware Sensors Hook (Expanded with Compass, Shake-to-Gust, Solar, Battery, Haptics & Audio)
@@ -100,8 +192,7 @@ export default function MobileEdgeNodePage() {
     batteryLevel,
     elevationDeltaMeters,
     triggerHaptic,
-    playTelemetryChime,
-  } = useMobileSensors();
+    playTelemetryChime } = useMobileSensors();
 
   interface MobileChartPoint {
     time: string;
@@ -119,8 +210,7 @@ export default function MobileEdgeNodePage() {
         time: t,
         pressure: 1008.2,
         elevation: 0,
-        gust: 14.5,
-      });
+        gust: 14.5 });
     }
     return pts;
   });
@@ -140,8 +230,7 @@ export default function MobileEdgeNodePage() {
           time: timeStr,
           pressure: Math.round(curP * 10) / 10,
           elevation: Math.round(curElev * 10) / 10,
-          gust: Math.round(curGust * 10) / 10,
-        },
+          gust: Math.round(curGust * 10) / 10 },
       ]);
     }, 1500);
 
@@ -208,8 +297,7 @@ export default function MobileEdgeNodePage() {
         const coords = {
           lat: Math.round(pos.coords.latitude * 1000) / 1000,
           lon: Math.round(pos.coords.longitude * 1000) / 1000,
-          accuracy: Math.round(pos.coords.accuracy),
-        };
+          accuracy: Math.round(pos.coords.accuracy) };
         setGpsCoords(coords);
         await fetchRealWeatherForCoords(coords.lat, coords.lon, `Phone GPS (±${coords.accuracy}m)`);
       },
@@ -230,23 +318,19 @@ export default function MobileEdgeNodePage() {
     return () => clearTimeout(t);
   }, [requestGpsLocation]);
 
-  // Handle Online/Offline Status and sync
+  // Initial offline-queue depth.
+  //
+  // Connectivity is handled by useSyncExternalStore above, so this effect only
+  // reads the IndexedDB queue once on mount. It no longer installs online/
+  // offline listeners — the store owns those.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsOnline(navigator.onLine);
-      const handleOnline = () => setIsOnline(true);
-      const handleOffline = () => setIsOnline(false);
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
-
-      // Initial queue check
-      getQueuedReadings().then(q => setOfflineQueueCount(q.length));
-
-      return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-      };
-    }
+    let cancelled = false;
+    getQueuedReadings().then((q) => {
+      if (!cancelled) setOfflineQueueCount(q.length);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const syncOfflineQueue = useCallback(async () => {
@@ -261,13 +345,12 @@ export default function MobileEdgeNodePage() {
         const res = await fetch('/api/telemetry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(packet),
-        });
+          body: JSON.stringify(packet) });
         if (res.ok && packet.id) {
           await clearQueuedReading(packet.id);
           successCount++;
         }
-      } catch (e) {
+      } catch  {
         break; // Network failed again
       }
     }
@@ -278,10 +361,26 @@ export default function MobileEdgeNodePage() {
     }
   }, [isOnline]);
 
+  /**
+   * Drain the offline queue whenever connectivity returns.
+   *
+   * PREVIOUSLY: `if (isOnline) syncOfflineQueue();` ran on mount as well as on
+   * every online transition. Because `isOnline` initialises to true, every
+   * fresh page load triggered a full queue replay attempt — a burst of POSTs
+   * to /api/telemetry for a queue that is usually empty, which on a rate-limited
+   * edge is the fastest way to get the node throttled.
+   *
+   * NOW: replay only on a genuine offline -> online transition. The initial
+   * queue depth is read separately above, and the first live transmit picks up
+   * anything still queued.
+   */
+  const wasOfflineRef = useRef(!isOnline);
+
   useEffect(() => {
-    if (isOnline) {
-      syncOfflineQueue();
+    if (wasOfflineRef.current && isOnline) {
+      void syncOfflineQueue();
     }
+    wasOfflineRef.current = !isOnline;
   }, [isOnline, syncOfflineQueue]);
 
   // Transmit telemetry packet to central Next.js server API
@@ -307,8 +406,7 @@ export default function MobileEdgeNodePage() {
         lat: gpsCoords?.lat,
         lon: gpsCoords?.lon,
         deviceName: typeof navigator !== 'undefined' && navigator.userAgent.includes('iPhone') ? 'iPhone Field Sensor Node' : 'Android Field Sensor Node',
-        sensorSource,
-      };
+        sensorSource };
 
       try {
         if (!navigator.onLine) {
@@ -323,8 +421,7 @@ export default function MobileEdgeNodePage() {
         const res = await fetch('/api/telemetry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+          body: JSON.stringify(payload) });
 
         const data = await res.json();
         setPacketCounter((prev) => prev + 1);
@@ -421,19 +518,22 @@ export default function MobileEdgeNodePage() {
   };
 
   const handleResetToNominal = () => {
+    // A field node is not in the station registry, so there may be no profile.
+    // Reset to the live reading we last saw, or to a neutral plains baseline —
+    // never to another station's climatology.
     const defaultProfile = getStationProfile(stationId);
-    setTemp(defaultProfile.baseline.tempMean);
-    setPress(defaultProfile.baseline.pressureMean);
-    setHumidity(defaultProfile.baseline.humidityMean);
+    const fallback = defaultProfile?.baseline ?? { tempMean: 28.0, pressureMean: 1008.0, humidityMean: 60.0 };
+    setTemp(fallback.tempMean);
+    setPress(fallback.pressureMean);
+    setHumidity(fallback.humidityMean);
     triggerHaptic(80);
     if (!isAudioMuted) playTelemetryChime(1040, 0.1);
     transmitObservation({
-      t: defaultProfile.baseline.tempMean,
-      p: defaultProfile.baseline.pressureMean,
-      h: defaultProfile.baseline.humidityMean,
+      t: fallback.tempMean,
+      p: fallback.pressureMean,
+      h: fallback.humidityMean,
       w: 15.0,
-      rain: 0,
-    });
+      rain: 0 });
   };
 
   const copyTelemetryJson = () => {
@@ -548,7 +648,7 @@ export default function MobileEdgeNodePage() {
                 setSelectedCity(cityName);
                 const c = INDIAN_CITIES.find(x => x.name === cityName);
                 if (c) {
-                  setStationId(c.stationId);
+                  setNodeId(c.stationId);
                   fetchRealWeatherForCoords(c.lat, c.lon, c.name);
                 }
               }}

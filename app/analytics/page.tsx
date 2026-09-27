@@ -1,25 +1,50 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, LineChart, Activity, ShieldCheck, Download, Server } from 'lucide-react';
+import { ArrowLeft, LineChart, ShieldCheck, Server } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { SimulatedBanner } from '@/components/ProvenanceBadge';
+
+/**
+ * Deterministic pseudo-noise in [-1, 1].
+ *
+ * The series used Math.random() inline during render, which meant the chart
+ * re-randomised on EVERY render — the plotted values visibly jumped on any
+ * state change, and the raw/imputed series were not even internally consistent
+ * (two independent draws for the same hour). A fixed-seed hash keeps the shape
+ * reproducible across renders and loads.
+ */
+function pseudoNoise(seed: number): number {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1;
+}
 
 export default function AnalyticsPage() {
-  // Generate some synthetic data to demonstrate NWP Feed Continuity
-  const data = Array.from({ length: 24 }).map((_, i) => {
-    const time = `${i.toString().padStart(2, '0')}:00`;
-    const baseTemp = 25 + Math.sin(i / 12 * Math.PI) * 10;
-    
-    // Simulate a hardware failure gap between 12:00 and 15:00
-    const hasHardwareFailure = i >= 12 && i <= 15;
-    
-    return {
-      time,
-      rawTemp: hasHardwareFailure ? null : baseTemp + (Math.random() * 2 - 1),
-      imputedTemp: hasHardwareFailure ? baseTemp + (Math.random() * 0.5 - 0.25) : baseTemp + (Math.random() * 2 - 1),
-      nwpUptime: 100,
-    };
-  });
+  // Synthetic series illustrating NWP feed continuity: a raw channel with a
+  // scripted 12:00-15:00 hardware failure, and the imputed channel filling it.
+  // Generated once — it is a fixed illustration, not a live signal.
+  const data = useMemo(
+    () =>
+      Array.from({ length: 24 }).map((_, i) => {
+        const time = `${i.toString().padStart(2, '0')}:00`;
+        const baseTemp = 25 + Math.sin((i / 12) * Math.PI) * 10;
+        const hasHardwareFailure = i >= 12 && i <= 15;
+        // Same noise value for both channels so the imputed line is a smooth
+        // continuation of the raw one rather than an independent random walk.
+        const noise = pseudoNoise(i + 1) * 1.0;
+
+        return {
+          time,
+          rawTemp: hasHardwareFailure ? null : Math.round((baseTemp + noise) * 10) / 10,
+          imputedTemp:
+            hasHardwareFailure
+              ? Math.round((baseTemp + noise * 0.25) * 10) / 10
+              : Math.round((baseTemp + noise) * 10) / 10,
+          nwpUptime: 100,
+        };
+      }),
+    []
+  );
 
   return (
     <div className="min-h-screen bg-[#070d1e] text-slate-200 p-8 font-sans">
@@ -35,26 +60,28 @@ export default function AnalyticsPage() {
             <h1 className="text-2xl font-bold text-white tracking-tight">NWP Feed Continuity Analytics</h1>
           </div>
           <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-mono">
-            <Server className="w-4 h-4 text-emerald-400" />
-            <span>WRF/GFS Sync: <span className="text-emerald-400">OPTIMAL</span></span>
+            <Server className="w-4 h-4 text-amber-400" />
+            <span>WRF/GFS Sync: <span className="text-amber-400">SIMULATED</span></span>
           </div>
         </div>
+
+        <SimulatedBanner source="syntheticAnalytics" />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
             <div className="text-xs text-slate-400 uppercase font-semibold mb-1">Total Data Packets (24h)</div>
-            <div className="text-2xl font-black text-white font-mono">34,560</div>
-            <div className="text-[10px] text-emerald-400 mt-1">+100% Delivery</div>
+            <div className="text-2xl font-black text-amber-300 font-mono">34,560</div>
+            <div className="text-[10px] text-slate-500 mt-1">Illustrative figure — not a measured count</div>
           </div>
           <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
             <div className="text-xs text-slate-400 uppercase font-semibold mb-1">Hardware Data Voids</div>
             <div className="text-2xl font-black text-rose-400 font-mono">1,420</div>
-            <div className="text-[10px] text-slate-500 mt-1">Packets quarantined by QC</div>
+            <div className="text-[10px] text-slate-500 mt-1">Illustrative figure — not a measured count</div>
           </div>
-          <div className="bg-slate-900/60 border border-emerald-900/30 rounded-xl p-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+          <div className="bg-slate-900/60 border border-amber-900/30 rounded-xl p-4">
             <div className="text-xs text-slate-400 uppercase font-semibold mb-1">NWP Effective Uptime</div>
-            <div className="text-2xl font-black text-emerald-400 font-mono">100.0%</div>
-            <div className="text-[10px] text-emerald-500 mt-1">Zero voids via Self-Healing Imputation</div>
+            <div className="text-2xl font-black text-amber-400 font-mono">100.0%</div>
+            <div className="text-[10px] text-slate-500 mt-1">By construction — imputation always fills the gap</div>
           </div>
         </div>
 
@@ -63,7 +90,8 @@ export default function AnalyticsPage() {
             <div>
               <h2 className="text-lg font-bold text-white">24-Hour Predictive Continuity Matrix</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Visualizing how Gaussian WMA Imputation bridges hardware sensor failures to maintain 100% GFS/WRF model ingestion.
+                Illustrating how windowed-mean imputation bridges a sensor failure so the model
+                feed stays continuous. The imputer is a trailing mean, not a Gaussian WMA.
               </p>
             </div>
           </div>

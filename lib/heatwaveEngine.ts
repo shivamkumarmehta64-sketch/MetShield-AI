@@ -16,6 +16,7 @@
 
 import { IndiaDistrict } from './india766Districts';
 import { LiveDistrictReading, HistoricalReading } from './sensorFaultEngine';
+import { getDistrictElevation } from './districtElevation';
 
 export type IMDHeatwaveWarning = 'NO_WARNING' | 'WATCH' | 'ALERT' | 'WARNING_SEVERE';
 
@@ -26,6 +27,15 @@ export interface HeatwaveReport {
   terrainType: 'Plains' | 'Coastal' | 'Hilly';
   maxTemp: number;
   climatologicalNormal: number;
+  /**
+   * True when the district has a registered elevation and the climatological
+   * normal was computed with a real terrain adjustment. When false, the normal
+   * fell back to a coarse latitude/sea-level approximation and `departure`
+   * should be treated as provisional.
+   */
+  elevationKnown: boolean;
+  /** Elevation used, or null when unknown. */
+  elevationM: number | null;
   departure: number;
   heatwaveStatus: 'NORMAL' | 'HEAT_WAVE' | 'SEVERE_HEAT_WAVE';
   warningLevel: IMDHeatwaveWarning;
@@ -44,6 +54,12 @@ export interface HeatwaveReport {
     warningLevel: IMDHeatwaveWarning;
     warningColor: string;
   }>;
+  /**
+   * Per-day maximum temperature actually OBSERVED in the fetched hourly window.
+   * Not a forecast. Present so the panel can show real recent behaviour in
+   * place of a fabricated outlook.
+   */
+  recentObservedMaxima: Array<{ date: string; maxTemp: number }>;
   healthAdvisory: string[];
 }
 
@@ -118,12 +134,42 @@ export function evaluateIMDHeatwave(
   currentReading: LiveDistrictReading | null,
   history: HistoricalReading[] = []
 ): HeatwaveReport {
-  const elev = 200;
-  const isHilly = elev > 1200 || district.state.includes('Ladakh') || district.state.includes('Himachal') || district.state.includes('Uttarakhand') || district.state.includes('Sikkim');
+  /**
+   * Terrain resolution.
+   *
+   * PREVIOUSLY: `const elev = 200;` — every district in India was evaluated as
+   * if it sat 200 m above sea level. Leh (3,524 m) and Shimla (2,205 m) were
+   * therefore given plains/coastal climatological normals of 34.5-41.5 °C, and
+   * a district with a 40 °C summer day could be classified against a normal
+   * that has no relationship to its climate. The `isHilly` state-name substring
+   * test partly masked this for four states and failed for the rest.
+   *
+   * NOW: use the registry's elevation when present. When it is absent, say so
+   * rather than substituting a constant — `elevationKnown` is surfaced on the
+   * report so the UI can mark the departure as provisional.
+   */
+  const knownElev = getDistrictElevation(district);
+  const elevationKnown = knownElev !== null;
+  // Substring test retained only as a fallback signal when no elevation is
+  // registered, never as an override for a known elevation.
+  const stateSuggestsHills =
+    district.state.includes('Ladakh') ||
+    district.state.includes('Himachal') ||
+    district.state.includes('Uttarakhand') ||
+    district.state.includes('Sikkim') ||
+    district.state.includes('Jammu');
+  const isHilly = elevationKnown
+    ? knownElev >= 700
+    : stateSuggestsHills;
   const isCoastal = district.isCoastal ?? false;
 
   const terrainType = isHilly ? 'Hilly' : isCoastal ? 'Coastal' : 'Plains';
-  const normalMax = getClimatologicalNormalMaxTemp(district.lat, district.lng, isHilly ? 1500 : elev, isCoastal);
+  const normalMax = getClimatologicalNormalMaxTemp(
+    district.lat,
+    district.lng,
+    knownElev ?? (stateSuggestsHills ? 1500 : undefined),
+    isCoastal
+  );
 
   // Use observed temperature or fallback to estimated summer day peak
   const observedTemp = currentReading?.temperature_2m ?? normalMax;
@@ -180,40 +226,42 @@ export function evaluateIMDHeatwave(
   const isWarmNight = minTemp >= 28.0 && maxTemp >= 40.0;
   const minTempDeparture = Math.round((minTemp - 24.0) * 10) / 10;
 
-  // 5-Day forecast outlook simulation (based on standard meteorological forecast trends)
-  const now = new Date();
-  const dayForecast = [1, 2, 3, 4, 5].map(d => {
-    const fDate = new Date(now.getTime() + d * 86400000);
-    const dateStr = fDate.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
+  /**
+   * 5-day outlook.
+   *
+   * PREVIOUSLY: each day was `Math.sin(d * 0.8) * 1.5` added to the current
+   * temperature, producing plausible-looking `forecastMaxTemp`,
+   * `forecastDeparture` and IMD colour-coded `warningLevel` values for five
+   * days in the future. That is not a forecast and is not derived from any
+   * numerical model — it is a sine wave, rendered in IMD's official warning
+   * colours, on a panel titled "forecast". A heatwave warning is exactly the
+   * kind of output an operator would act on.
+   *
+   * NOW: the array is empty, because this build has no forecast model. Showing
+   * nothing is correct; showing a fabricated heatwave risk is not.
+   *
+   * `history` (Open-Meteo hourly, up to 48h) is a genuine forecast source and
+   * is the right thing to plumb in when wired up.
+   */
+  const dayForecast: HeatwaveReport['dayForecast'] = [];
 
-    // Gradual progression or diurnal fluctuation
-    const delta = Math.sin(d * 0.8) * 1.5;
-    const fMax = Math.round((maxTemp + delta) * 10) / 10;
-    const fDep = Math.round((fMax - normalMax) * 10) / 10;
-
-    let fWarn: IMDHeatwaveWarning = 'NO_WARNING';
-    let fCol = '#22c55e';
-
-    if (fDep > 6.4 || fMax >= 47.0) {
-      fWarn = 'WARNING_SEVERE';
-      fCol = '#ef4444';
-    } else if (fDep >= 4.5 || fMax >= 45.0) {
-      fWarn = 'ALERT';
-      fCol = '#f97316';
-    } else if (fDep >= 2.5 || fMax >= 42.0) {
-      fWarn = 'WATCH';
-      fCol = '#eab308';
+  // Observational context we DO have: the most recent hourly maxima from the
+  // fetched history window. Not a forecast — clearly separated and labelled.
+  const recentObservedMaxima = (() => {
+    if (history.length === 0) return [];
+    const byDay = new Map<string, number>();
+    for (const h of history) {
+      const t = h.temperature;
+      if (t == null || !Number.isFinite(t)) continue;
+      const key = String(h.timestamp).slice(0, 10);
+      const prev = byDay.get(key);
+      if (prev === undefined || t > prev) byDay.set(key, t);
     }
-
-    return {
-      day: d,
-      dateStr,
-      forecastMaxTemp: fMax,
-      forecastDeparture: fDep,
-      warningLevel: fWarn,
-      warningColor: fCol
-    };
-  });
+    return [...byDay.entries()].map(([date, t]) => ({
+      date,
+      maxTemp: Math.round(t * 10) / 10,
+    }));
+  })();
 
   // Actionable NDMA & MoES Health Advisories
   const healthAdvisory: string[] = [];
@@ -238,6 +286,8 @@ export function evaluateIMDHeatwave(
     terrainType,
     maxTemp,
     climatologicalNormal: normalMax,
+    elevationKnown,
+    elevationM: knownElev,
     departure,
     heatwaveStatus,
     warningLevel,
@@ -249,6 +299,7 @@ export function evaluateIMDHeatwave(
     isWarmNight,
     minTempDeparture,
     dayForecast,
+    recentObservedMaxima,
     healthAdvisory
   };
 }

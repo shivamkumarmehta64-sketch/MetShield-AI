@@ -145,6 +145,12 @@ export default function GovernmentAWSManagementPortal() {
     try {
       setLiveSyncError(null);
       const profile = getStationProfile(stationId);
+      // An unregistered station id has no profile to fetch against. Report it
+      // rather than silently syncing another station's coordinates.
+      if (!profile) {
+        setLiveSyncError(`Station ${stationId} is not in the registry — live sync skipped.`);
+        return;
+      }
       const obs = await fetchLiveStationObservation(profile);
       if (obs) { setLiveObservation(obs); liveCacheRef.current[stationId] = obs; }
 
@@ -153,7 +159,7 @@ export default function GovernmentAWSManagementPortal() {
         liveCacheRef.current = { ...liveCacheRef.current, ...batch };
         if (batch[stationId]) setLiveObservation(batch[stationId]);
       }
-    } catch (err) {
+    } catch  {
       setLiveSyncError("Failed to reach live API");
     } finally { setIsSyncingLive(false); }
   }, []);
@@ -422,6 +428,27 @@ export default function GovernmentAWSManagementPortal() {
 
   const triggerAndTick = (fn: (id: string) => void, id: string) => { fn(id); processNextTick(); };
 
+  /**
+   * Live-sync failure notice.
+   *
+   * `liveSyncError` was being set (including by the unregistered-station guard
+   * added in Phase 2) but never rendered, so a failed live sync was silent and
+   * the console just stopped updating with no explanation. It is now surfaced
+   * inline. `role="status"` so assistive tech announces it.
+   */
+  const liveSyncNotice = liveSyncError ? (
+    <div
+      role="status"
+      className="mb-3 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+    >
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <span>
+        <strong className="font-semibold">Live sync unavailable.</strong> {liveSyncError}{' '}
+        Telemetry below may be showing the last known values rather than a current reading.
+      </span>
+    </div>
+  ) : null;
+
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-all duration-300 relative ${isMissionControl ? 'bg-slate-950 text-slate-100' : 'bg-[#F4F6F9] text-slate-900'}`}>
 
@@ -642,7 +669,9 @@ export default function GovernmentAWSManagementPortal() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-[540px_1fr] gap-5 items-start">
+            {liveSyncNotice}
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
               <div className={`bg-white border border-slate-300 rounded-lg p-2 shadow-xs overflow-hidden ${
                 mobileSubView === 'telemetry' ? 'hidden xl:block' : 'block'
               }`}>

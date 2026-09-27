@@ -2,8 +2,20 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Radio, CheckCircle2 } from 'lucide-react';
+import { SimulatedBanner } from '@/components/ProvenanceBadge';
 
 export default function StationsPage() {
+  /**
+   * ILLUSTRATIVE RECORDS — not a live or authoritative inventory.
+   *
+   * These five entries are hand-written and were never reconciled against
+   * lib/stationData.ts. In particular AWS-JOD-08 does not exist in the
+   * station registry, so getStationProfile('AWS-JOD-08') silently falls back to
+   * Safdarjung. The check icons are static decoration, not connectivity state.
+   *
+   * The real registry is IMD_AWS_STATIONS (lib/stationData.ts). This page should
+   * be rewritten to render from it rather than maintaining a second list.
+   */
   const STATIONS = [
     { id: 'AWS-DEL-01', name: 'New Delhi Safdarjung', state: 'Delhi', sensor: 'Vaisala PTB110', calibrated: '2025-10-15' },
     { id: 'AWS-MUM-04', name: 'Mumbai Colaba Coastal', state: 'Maharashtra', sensor: 'Humicap', calibrated: '2026-01-20' },
@@ -19,18 +31,20 @@ export default function StationsPage() {
           <ArrowLeft className="w-4 h-4" />
           <span>Back to National Operations Command</span>
         </Link>
-        
+
         <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-          <Radio className="w-6 h-6 text-emerald-400" />
+          <Radio className="w-6 h-6 text-amber-400" />
           <h1 className="text-2xl font-bold text-white tracking-tight">AWS Network Station Inventory</h1>
         </div>
+
+        <SimulatedBanner message="Five hand-written example stations. These are not read from the station registry, and the status icons are static decoration rather than live connectivity. The authoritative list in this build is IMD_AWS_STATIONS in lib/stationData.ts." />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {STATIONS.map(st => (
             <div key={st.id} className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 hover:border-emerald-500/30 transition-colors">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-mono text-emerald-400 font-bold">{st.id}</span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm font-mono text-amber-400 font-bold">{st.id}</span>
+                <CheckCircle2 className="w-4 h-4 text-slate-600" aria-label="Status not reported" />
               </div>
               <h3 className="text-lg font-bold text-white mb-1">{st.name}</h3>
               <p className="text-xs text-slate-400 mb-4">{st.state}</p>

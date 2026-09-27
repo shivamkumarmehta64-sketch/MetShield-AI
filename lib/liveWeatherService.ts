@@ -3,7 +3,23 @@ import { IMDStationProfile } from './stationData';
 export interface LiveObservation {
   stationId: string;
   temperature: number;
+  /**
+   * MEAN SEA LEVEL pressure (QNH), in hPa.
+   *
+   * Open-Meteo reports `surface_pressure` (station pressure / QFE), which for
+   * Shimla is ~790 hPa against a stored MSL baseline of 1014.2 hPa. Feeding the
+   * raw QFE value to the QC engine produced a 224 hPa step on the first live
+   * sample. Observations are therefore reduced to MSL here so that live values
+   * and `IMDStationProfile.baseline.pressureMean` are on the same level.
+   *
+   * See __tests__/pressureLevelConsistency.test.ts.
+   */
   pressure: number;
+  /**
+   * Un-reduced station pressure (QFE) as reported by the provider, when
+   * available. Retained for audit; not fed to the QC engine.
+   */
+  stationPressure?: number;
   humidity: number;
   windSpeedKph?: number;
   windDirectionDeg?: number;
@@ -14,6 +30,27 @@ export interface LiveObservation {
   isLive: boolean;
 }
 
+/**
+ * WMO/ICAO standard atmosphere reduction: station pressure (QFE) -> MSL (QNH).
+ *
+ * Mirrors calculateQnhPressure() in lib/anomalyLogic.ts. Duplicated here on
+ * purpose: that module is the engine, this is the ingestion boundary, and
+ * importing the engine into the fetch path would pull the whole QC stack into
+ * the live-weather bundle. Keep the two in sync — the barometric test in
+ * __tests__/pressureLevelConsistency.test.ts covers the engine side.
+ */
+function reduceToMeanSeaLevel(
+  stationPressureHpa: number,
+  elevationM: number,
+  tempC: number
+): number {
+  if (elevationM <= 0) return stationPressureHpa;
+  const lapseRate = 0.0065; // K/m, standard tropospheric lapse rate
+  const factor = 1 - (lapseRate * elevationM) / (tempC + lapseRate * elevationM + 273.15);
+  if (factor <= 0) return stationPressureHpa;
+  return Math.round(stationPressureHpa * Math.pow(factor, -5.257) * 10) / 10;
+}
+
 // In-memory cache for live station observations (60-second TTL)
 const liveCache: Map<string, { data: LiveObservation; expiry: number }> = new Map();
 
@@ -21,12 +58,20 @@ function transformOpenMeteoCurrent(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   current: any,
   stationId: string,
-  now: number
+  now: number,
+  elevationM = 0
 ): LiveObservation | null {
   if (!current || current.temperature_2m === undefined) return null;
 
   const temp = Math.round(Number(current.temperature_2m) * 10) / 10;
-  const press = Math.round(Number(current.surface_pressure) * 10) / 10;
+  // Open-Meteo's surface_pressure is station pressure (QFE). Baselines are MSL,
+  // so reduce before storing, otherwise every elevated station shows a step
+  // change of ~1 hPa per 27 m of elevation on its first live sample.
+  const surfacePressure = Number(current.surface_pressure);
+  const hasPressure = Number.isFinite(surfacePressure);
+  const press = hasPressure
+    ? reduceToMeanSeaLevel(surfacePressure, elevationM, temp)
+    : 0;
   const hum = Math.round(Number(current.relative_humidity_2m) * 10) / 10;
   const windSpeed = current.wind_speed_10m !== undefined ? Math.round(Number(current.wind_speed_10m) * 10) / 10 : undefined;
   const windDir = current.wind_direction_10m !== undefined ? Math.round(Number(current.wind_direction_10m)) : undefined;
@@ -36,6 +81,7 @@ function transformOpenMeteoCurrent(
     stationId,
     temperature: temp,
     pressure: press,
+    ...(hasPressure ? { stationPressure: Math.round(surfacePressure * 10) / 10 } : {}),
     humidity: hum,
     windSpeedKph: windSpeed,
     windDirectionDeg: windDir,
@@ -119,7 +165,12 @@ export async function fetchLiveStationObservation(
     }
 
     const json = await response.json();
-    const observation = transformOpenMeteoCurrent(json?.current, station.stationId, now);
+    const observation = transformOpenMeteoCurrent(
+    json?.current,
+    station.stationId,
+    now,
+    station.elevationM
+  );
 
     if (observation) {
       liveCache.set(station.stationId, {
@@ -190,7 +241,12 @@ export async function fetchBatchLiveObservations(
     for (let i = 0; i < unexpiredStations.length; i++) {
       const station = unexpiredStations[i];
       const entry = dataList[i];
-      const obs = transformOpenMeteoCurrent(entry?.current, station.stationId, now);
+      const obs = transformOpenMeteoCurrent(
+      entry?.current,
+      station.stationId,
+      now,
+      station.elevationM
+    );
 
       if (obs) {
         liveCache.set(station.stationId, {

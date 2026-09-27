@@ -10,6 +10,21 @@ interface ChatMessage {
   content: string;
 }
 
+/**
+ * Monotonic message-id generator.
+ *
+ * These ids previously came from `Date.now()`, which is impure (it changes on
+ * every render, so it must not be called during render) and collides: the
+ * assistant reply at line 62 and the error fallback at line 68 both used
+ * `Date.now() + 1` in the same tick, so a reply and an error could share an id
+ * and React would reconcile the wrong node.
+ *
+ * A module-level counter is unique for the life of the page and is only ever
+ * touched inside event handlers, never during render.
+ */
+let messageSeq = 0;
+const nextMessageId = (): string => `msg-${++messageSeq}`;
+
 interface JatayuAssistantProps {
   context: {
     station: string;
@@ -44,7 +59,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
   const handleSend = async (query: string) => {
     if (!query.trim()) return;
 
-    const newMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: query.trim() };
+    const newMsg: ChatMessage = { id: nextMessageId(), role: 'user', content: query.trim() };
     setMessages(prev => [...prev, newMsg]);
     setInputStr('');
     setIsLoading(true);
@@ -59,13 +74,13 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
       const data = await res.json();
       
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+        id: nextMessageId(),
         role: 'assistant',
         content: data.reply || 'I am unable to access the meteorological network right now.',
       }]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+        id: nextMessageId(),
         role: 'assistant',
         content: 'Error connecting to JATAYU-Sahayak edge service.',
       }]);

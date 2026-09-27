@@ -135,7 +135,17 @@ export async function persistTelemetryToEdge(
     }
   }
 
-  return { persisted: true, storage: 'IN_MEMORY_FALLBACK' };
+  return {
+    // HONEST REPORTING. This previously returned `persisted: true` while the
+    // packet existed only in a process-local array capped at 200 entries and
+    // lost on the next cold start. A caller checking `persisted` was told the
+    // write succeeded when nothing durable had happened at all.
+    //
+    // For a product whose pitch is a tamper-evident audit trail, silently
+    // downgrading to a volatile buffer is a data-loss event, not a fallback.
+    persisted: false,
+    storage: 'IN_MEMORY_FALLBACK',
+  };
 }
 
 /**
@@ -174,7 +184,9 @@ export async function persistWorkOrderToEdge(
     }
   }
 
-  return { persisted: true, storage: 'IN_MEMORY_FALLBACK' };
+  // Same reasoning as persistTelemetryToEdge: an in-memory Map is not
+  // persistence. See the note there.
+  return { persisted: false, storage: 'IN_MEMORY_FALLBACK' };
 }
 
 /**

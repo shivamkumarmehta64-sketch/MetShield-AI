@@ -7,10 +7,7 @@ import {
   ChevronLeft,
   ShieldCheck,
   Activity,
-  Smartphone,
   CheckCircle2,
-  AlertTriangle,
-  Layers,
   Cpu,
   ArrowRight,
   ExternalLink,
@@ -22,17 +19,7 @@ import {
   BookOpen,
   Home,
   Globe,
-  Radio,
-  BarChart3,
-  Server,
-  CloudRain,
   Compass,
-  Wrench,
-  Flame,
-  ArrowDownRight,
-  Database,
-  Code,
-  FileText,
   RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -91,7 +78,7 @@ export default function PitchDeck() {
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-white tracking-wide">METSHIELD AI</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-sky-300 border border-blue-500/30">
-              SIH26073 Pitch Deck
+              Pitch Deck
             </span>
             <span className="hidden sm:inline-block text-xs text-slate-400">
               Team ID: <strong className="text-slate-200">73869 (AEROTECH)</strong>
@@ -160,8 +147,6 @@ export default function PitchDeck() {
               <span>SMART INDIA HACKATHON 2026 — INNOVATION PROTOTYPE DECK</span>
             </div>
             <div className="flex items-center gap-3 text-slate-400 font-mono text-[11px]">
-              <span>PS: SIH26073</span>
-              <span>•</span>
               <span>Team 73869 (AEROTECH)</span>
               <span>•</span>
               <span className="text-emerald-400 font-semibold">PS Sponsor: MoES / IMD</span>
@@ -200,10 +185,6 @@ export default function PitchDeck() {
                   {/* Left Column: Metadata List */}
                   <div className="lg:col-span-6 space-y-3.5 bg-slate-900/60 p-5 rounded-xl border border-slate-800">
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-start gap-2">
-                        <strong className="text-sky-300 min-w-[170px]">• Problem Statement ID:</strong>
-                        <span className="font-mono font-bold text-white">SIH26073</span>
-                      </div>
                       <div className="flex items-start gap-2">
                         <strong className="text-sky-300 min-w-[170px]">• Problem Statement:</strong>
                         <span className="text-slate-200 font-medium">
@@ -537,7 +518,7 @@ export default function PitchDeck() {
                   <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
                     <div className="text-xs font-bold text-sky-400 uppercase mb-1">Viability</div>
                     <ul className="text-[11px] text-slate-300 space-y-1 list-disc list-inside">
-                      <li>Directly addresses the SIH26073 problem statement for automated quality management.</li>
+                      <li>Directly addresses the automated weather station quality management mandate.</li>
                       <li>Preserves NWP feed integrity by eliminating data corruption voids.</li>
                       <li>Reduces routine manual station inspection trips by ~95%.</li>
                     </ul>
@@ -565,28 +546,23 @@ export default function PitchDeck() {
                       {
                         num: '01',
                         risk: 'Intermittent Rural Connectivity: Telemetry dropouts in remote areas.',
-                        strat: 'Dual-mode edge buffer (DCP satellite + cellular GPRS) with packet-loss detection.',
-                      },
+                        strat: 'Dual-mode edge buffer (DCP satellite + cellular GPRS) with packet-loss detection.' },
                       {
                         num: '02',
                         risk: 'False Alarms During Extreme Storms: Cyclones flagged as broken sensors.',
-                        strat: 'Coupled thermodynamic validation (ΔP drop + ΔRH surge) marks storms in Blue.',
-                      },
+                        strat: 'Coupled thermodynamic validation (ΔP drop + ΔRH surge) marks storms in Blue.' },
                       {
                         num: '03',
                         risk: 'Data Gaps in Forecasting Models: Quarantined readings cause numerical voids.',
-                        strat: 'Automated moving-average data imputation synthesizes realistic substitute values.',
-                      },
+                        strat: 'Automated moving-average data imputation synthesizes realistic substitute values.' },
                       {
                         num: '04',
                         risk: 'Sensor Hardware Degradation: Harsh weather causes progressive calibration drift.',
-                        strat: 'Rolling baseline regression tracks slow drift and triggers predictive maintenance.',
-                      },
+                        strat: 'Rolling baseline regression tracks slow drift and triggers predictive maintenance.' },
                       {
                         num: '05',
                         risk: 'Observatory Workflow Integration: Reluctance to adopt unfamiliar UI systems.',
-                        strat: 'Accessible bilingual UI with automated CSV audit logs conforming to standard IMD data structures.',
-                      },
+                        strat: 'Accessible bilingual UI with automated CSV audit logs conforming to standard IMD data structures.' },
                     ].map(item => (
                       <div
                         key={item.num}
@@ -803,7 +779,7 @@ export default function PitchDeck() {
                     <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
                       <div>
                         <div className="font-bold text-emerald-300">Source Code Repository</div>
-                        <div className="text-[10px] text-slate-400">SIH26073 Production Build</div>
+                        <div className="text-[10px] text-slate-400">Production Build</div>
                       </div>
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                     </div>

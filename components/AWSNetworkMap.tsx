@@ -5,7 +5,8 @@ import { TelemetryPacket, WMOQualityFlag } from '@/lib/anomalyLogic';
 import { IMD_AWS_STATIONS, IMDStationProfile } from '@/lib/stationData';
 import { ALL_INDIA_DISTRICTS, districtToStationProfile } from '@/lib/indiaDistrictCatalog';
 import { ALL_766_DISTRICTS, IndiaDistrict } from '@/lib/india766Districts';
-import { BasemapStyle } from './LeafletMap';
+import { isSyntheticDistrict, DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
+import { BasemapStyle, type MapNode } from './LeafletMap';
 import {
   MapPin,
   Wifi,
@@ -20,7 +21,6 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronUp } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const DynamicLeafletMap = dynamic(() => import('./LeafletMap'), {
@@ -48,8 +48,7 @@ const FLAG_COLORS: Record<WMOQualityFlag | 'UNKNOWN', { fill: string; ring: stri
   FLAG_3_SUSPECT_DRIFT:    { fill: '#d97706', ring: '#fde68a', label: 'Drift' },
   FLAG_4_CORRUPT_HARDWARE: { fill: '#dc2626', ring: '#fecaca', label: 'Fault' },
   FLAG_5_PACKET_LOSS:      { fill: '#7c3aed', ring: '#ede9fe', label: 'Packet Loss' },
-  UNKNOWN:                 { fill: '#64748b', ring: '#e2e8f0', label: 'Standby' },
-};
+  UNKNOWN:                 { fill: '#64748b', ring: '#e2e8f0', label: 'Standby' } };
 
 type RmcFilter = 'ALL' | 'Northern' | 'Western' | 'Southern' | 'Eastern' | 'Central' | 'North-Eastern' | 'MOBILE';
 type MapLayer = 'QC' | 'THERMAL' | 'RADAR';
@@ -63,8 +62,7 @@ const REGIONAL_VIEWS: Record<string, { name: string; hindiName: string; center: 
   SOUTH: { name: 'Southern', hindiName: 'दक्षिण', center: [12.5, 78.2], zoom: 6 },
   EAST: { name: 'Eastern', hindiName: 'पूर्व', center: [23.5, 86.5], zoom: 6 },
   NE: { name: 'North-East', hindiName: 'पूर्वोत्तर', center: [26.2, 92.8], zoom: 6.5 },
-  CENTRAL: { name: 'Central', hindiName: 'मध्य', center: [23.2, 79.5], zoom: 6 },
-};
+  CENTRAL: { name: 'Central', hindiName: 'मध्य', center: [23.2, 79.5], zoom: 6 } };
 
 function convert766ToProfile(d: IndiaDistrict): IMDStationProfile {
   const elev = d.isCoastal ? 12 : 320;
@@ -115,8 +113,11 @@ export const AWSNetworkMap = React.memo<Props>(function AWSNetworkMap({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewTarget, setViewTarget] = useState<{ center: [number, number]; zoom: number; key: string } | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
-  const [mobileView, setMobileView] = useState<'MAP' | 'LIST'>('LIST');
-  const [bottomSheetNode, setBottomSheetNode] = useState<any>(null);
+  // Default to the MAP, not the list. On phones the list used to render first,
+  // so the GIS view looked like it "never opened" until the user found and hit
+  // a second toggle nested inside the map panel.
+  const [mobileView, setMobileView] = useState<'MAP' | 'LIST'>('MAP');
+  const [bottomSheetNode, setBottomSheetNode] = useState<MapNode | null>(null);
   const [showPanHelper, setShowPanHelper] = useState<boolean>(false);
 
   useEffect(() => {
@@ -220,6 +221,7 @@ export const AWSNetworkMap = React.memo<Props>(function AWSNetworkMap({
           flag,
           alert,
           col,
+          isSynthetic: isSyntheticDistrict(d.id),
           indiaDistrict: d
         });
       }
@@ -332,8 +334,17 @@ export const AWSNetworkMap = React.memo<Props>(function AWSNetworkMap({
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#002147]">
                   {language === 'hi' ? 'अखिल भारतीय जिला वेधशाला जीआईएस मानचित्र' : 'All-India Meteorological GIS Command Portal'}
                 </h2>
-                <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide">
-                  {densityMode === 'ALL_766' ? '766 ALL-INDIA DISTRICTS' : '70+ BENCHMARK OBSERVATORIES'}
+                <span
+                  className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide"
+                  title={
+                    densityMode === 'ALL_766'
+                      ? `${DISTRICT_REGISTRY_COUNTS.real} real districts, ${DISTRICT_REGISTRY_COUNTS.modified} attribute-modified, ${DISTRICT_REGISTRY_COUNTS.synthesized} synthesized placeholders (drawn hollow).`
+                      : undefined
+                  }
+                >
+                  {densityMode === 'ALL_766'
+                    ? `${DISTRICT_REGISTRY_COUNTS.total} DISTRICT RECORDS`
+                    : '70+ BENCHMARK OBSERVATORIES'}
                 </span>
                 <span className="bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
                   {activeBasemap} BASEMAP
@@ -445,13 +456,14 @@ export const AWSNetworkMap = React.memo<Props>(function AWSNetworkMap({
             </button>
             <button
               onClick={() => setDensityMode('ALL_766')}
+              title={`${DISTRICT_REGISTRY_COUNTS.real} real districts, ${DISTRICT_REGISTRY_COUNTS.modified} attribute-modified, ${DISTRICT_REGISTRY_COUNTS.synthesized} synthesized placeholders. Elevated nodes are rendered hollow.`}
               className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${
                 densityMode === 'ALL_766'
                   ? 'bg-[#002147] text-white font-extrabold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              🇮🇳 All 766 Districts
+              🇮🇳 All {DISTRICT_REGISTRY_COUNTS.total} District Records
             </button>
           </div>
         </div>
@@ -557,7 +569,7 @@ export const AWSNetworkMap = React.memo<Props>(function AWSNetworkMap({
         </div>
 
         {/* Dynamic Leaflet GIS Map */}
-        <div className="w-full h-full min-h-[460px] h-[60vh] lg:h-[740px] rounded overflow-hidden border border-slate-300 shadow-xs">
+        <div className="w-full h-full min-h-[460px] h-[60vh] lg:h-[560px] rounded overflow-hidden border border-slate-300 shadow-xs">
           <DynamicLeafletMap
             nodes={filteredNodes}
             activeNode={activeNode}

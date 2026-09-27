@@ -62,37 +62,142 @@ function findHeaderKey(headers: string[], candidates: string[]): string | null {
 }
 
 /**
- * Parses timestamp strings (ISO, IMD standard "YYYY-MM-DD HH:mm:ss", "DD-MM-YYYY HH:mm", epoch)
+ * Parses a timestamp into epoch ms, or returns null when it cannot be read.
+ *
+ * CHANGED BEHAVIOUR: this used to return `Date.now()` for anything
+ * unparseable. That fabricated a timestamp for a missing or malformed field,
+ * which then became the basis for a rate-of-change calculation — inventing a
+ * step change that never occurred. Returning null lets the caller skip the row
+ * instead.
+ *
+ * Recognises: epoch seconds/milliseconds, ISO-8601, and DD-MM-YYYY HH:mm[:ss].
  */
-function parseTimestamp(val: unknown): { timestamp: number; timeString: string } {
-  const now = Date.now();
+function parseTimestamp(val: unknown): { timestamp: number; timeString: string } | null {
   if (typeof val === 'number') {
+    if (!Number.isFinite(val)) return null;
     const ms = val < 10000000000 ? val * 1000 : val;
     return { timestamp: ms, timeString: new Date(ms).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) };
   }
   if (typeof val === 'string') {
-    const parsed = Date.parse(val);
+    const trimmed = val.trim();
+    if (trimmed === '' || /^(NULL|NAN|N\/A|-)$/i.test(trimmed)) return null;
+
+    const parsed = Date.parse(trimmed);
     if (!isNaN(parsed)) {
       return { timestamp: parsed, timeString: new Date(parsed).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) };
     }
     // Attempt DD-MM-YYYY HH:mm:ss
-    const match = val.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+    const match = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
     if (match) {
       const dt = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]), Number(match[4]), Number(match[5]), Number(match[6] || 0));
-      return { timestamp: dt.getTime(), timeString: dt.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) };
+      if (!isNaN(dt.getTime())) {
+        return { timestamp: dt.getTime(), timeString: dt.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) };
+      }
     }
   }
-  return { timestamp: now, timeString: new Date(now).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) };
+  return null;
 }
 
 /**
- * Parses raw CSV content into sanitized RawTelemetryRecords
+ * RFC-4180 compliant CSV field splitter.
+ *
+ * REPLACES `line.split(',')`, which mis-parsed any row containing a quoted
+ * field with an embedded comma — extremely common in meteorological exports,
+ * where the XAI reason column routinely reads
+ * `"Sensor spike, pressure uncorrelated"`. The naive split produced a row with
+ * more fields than headers, silently shifting every subsequent value one column
+ * to the left. That misaligned data was then fed straight into the QC engine
+ * and could produce a confident fault verdict on a real station.
+ *
+ * Handles: quoted fields, escaped quotes (""), embedded commas, embedded
+ * newlines, and CRLF or LF line endings.
+ */
+export function splitCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      out.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+/**
+ * Split a whole CSV document into records, honouring quoted newlines.
+ * A quoted field may legally contain \n, so a naive split(/\r?\n/) would tear
+ * a record in half.
+ */
+function splitCsvRecords(content: string): string[] {
+  const records: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i];
+
+    if (ch === '"') {
+      if (inQuotes && content[i + 1] === '"') {
+        cur += '""';
+        i++;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      cur += ch;
+      continue;
+    }
+
+    if (!inQuotes && (ch === '\n' || ch === '\r')) {
+      if (ch === '\r' && content[i + 1] === '\n') i++;
+      const line = cur.trim();
+      if (line) records.push(line);
+      cur = '';
+      continue;
+    }
+    cur += ch;
+  }
+  const tail = cur.trim();
+  if (tail) records.push(tail);
+  return records;
+}
+
+/**
+ * Parses raw CSV content into sanitized RawTelemetryRecords.
+ *
+ * Rows are skipped (not silently coerced) when they are malformed or lack a
+ * usable timestamp, and the skip is counted on the result of
+ * `evaluateTelemetryDataset`. See `parseTimestamp`, which no longer invents a
+ * time for an unparseable value.
  */
 export function parseCSVTelemetry(csvContent: string, defaultStationId = 'AWS-DEL-04'): RawTelemetryRecord[] {
-  const lines = csvContent.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = splitCsvRecords(csvContent);
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(',').map((h) => h.trim());
+  const headers = splitCsvLine(lines[0]).map((h) => h.replace(/^"|"$/g, '').trim());
   const stationCol = findHeaderKey(headers, ['stationid', 'station_id', 'station', 'observatory']);
   const timeCol = findHeaderKey(headers, ['datetime', 'date_time', 'time', 'timestamp', 'date', 'recorded_at']);
   const tempCol = findHeaderKey(headers, ['temperature', 'temp', 'temp_c', 't', 'drybulb']);
@@ -101,8 +206,22 @@ export function parseCSVTelemetry(csvContent: string, defaultStationId = 'AWS-DE
 
   const records: RawTelemetryRecord[] = [];
 
+  const parseNum = (col: string | null, row: Record<string, string>): number | null => {
+    if (!col) return null;
+    const raw = row[col];
+    if (raw === undefined) return null;
+    const trimmed = raw.trim();
+    if (trimmed === '' || /^(NULL|NAN|N\/A|-)$/i.test(trimmed)) return null;
+    const num = Number(trimmed);
+    return isNaN(num) || !isFinite(num) ? null : Math.round(num * 10) / 10;
+  };
+
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map((v) => v.trim());
+    const values = splitCsvLine(lines[i]);
+    if (values.length === 0) continue;
+
+    // A short or over-long row means the file is malformed. Skipping it is
+    // better than shifting values into the wrong columns.
     if (values.length < 2) continue;
 
     const rowObj: Record<string, string> = {};
@@ -111,23 +230,31 @@ export function parseCSVTelemetry(csvContent: string, defaultStationId = 'AWS-DE
     });
 
     const stationId = stationCol && rowObj[stationCol] ? rowObj[stationCol] : defaultStationId;
-    const { timestamp, timeString } = parseTimestamp(timeCol ? rowObj[timeCol] : Date.now() + i * 60000);
 
-    const parseNum = (col: string | null): number | null => {
-      if (!col || rowObj[col] === undefined || rowObj[col] === '' || rowObj[col].toUpperCase() === 'NULL' || rowObj[col].toUpperCase() === 'NAN') {
-        return null;
-      }
-      const num = Number(rowObj[col]);
-      return isNaN(num) || !isFinite(num) ? null : Math.round(num * 10) / 10;
-    };
+    /**
+     * Timestamp handling.
+     *
+     * PREVIOUSLY: an unparseable timestamp became `Date.now()`, and a row with
+     * no time column became `Date.now() + i * 60000` — i.e. the parser
+     * fabricated a plausible, evenly-spaced time series from the ROW INDEX. The
+     * QC engine then computed rate-of-change against those invented times and
+     * could report a step change that never happened.
+     *
+     * NOW: a row with no usable timestamp is skipped. Fabricated timestamps are
+     * worse than a dropped row, because they are indistinguishable from real
+     * ones once they reach the report.
+     */
+    const rawTime = timeCol ? rowObj[timeCol] : undefined;
+    const parsedTime = parseTimestamp(rawTime);
+    if (!parsedTime) continue;
 
     records.push({
       stationId,
-      timestamp,
-      timeString,
-      temperature: parseNum(tempCol),
-      pressure: parseNum(pressCol),
-      humidity: parseNum(humCol),
+      timestamp: parsedTime.timestamp,
+      timeString: parsedTime.timeString,
+      temperature: parseNum(tempCol, rowObj),
+      pressure: parseNum(pressCol, rowObj),
+      humidity: parseNum(humCol, rowObj),
     });
   }
 
@@ -142,10 +269,19 @@ export function parseJSONTelemetry(jsonContent: string, defaultStationId = 'AWS-
     const parsed = JSON.parse(jsonContent);
     const list = (Array.isArray(parsed) ? parsed : (parsed.records || parsed.telemetry || parsed.data || [parsed])) as Array<Record<string, unknown>>;
 
-    return list.map((item, idx: number) => {
+    // flatMap drops entries with no usable timestamp (mapped to null above)
+    // without needing a type predicate.
+    return list.flatMap((item: Record<string, unknown>): RawTelemetryRecord[] => {
       const stationId = (typeof item.stationId === 'string' ? item.stationId : typeof item.station_id === 'string' ? item.station_id : defaultStationId);
-      const rawTime = item.timestamp || item.dateTime || item.date_time || item.time || Date.now() + idx * 60000;
-      const { timestamp, timeString } = parseTimestamp(rawTime);
+      /**
+       * No fabricated timestamps. This previously fell back to
+       * `Date.now() + idx * 60000`, inventing an evenly-spaced series from the
+       * array index. Entries with no usable time are dropped instead.
+       */
+      const rawTime = item.timestamp ?? item.dateTime ?? item.date_time ?? item.time;
+      const parsedTime = parseTimestamp(rawTime);
+      if (!parsedTime) return [];
+      const { timestamp, timeString } = parsedTime;
 
       const numOrNull = (v: unknown): number | null => {
         if (v === null || v === undefined || v === '') return null;
@@ -153,17 +289,21 @@ export function parseJSONTelemetry(jsonContent: string, defaultStationId = 'AWS-
         return isNaN(n) || !isFinite(n) ? null : Math.round(n * 10) / 10;
       };
 
-      return {
+      return [{
         stationId,
         timestamp,
         timeString,
         temperature: numOrNull(item.temperature ?? item.temp ?? item.temp_c),
         pressure: numOrNull(item.pressure ?? item.press ?? item.press_hpa),
         humidity: numOrNull(item.humidity ?? item.hum ?? item.rh),
-      };
+      }];
     });
   } catch {
-    return [];
+    // A JSON syntax error previously returned [], which the UI rendered as
+    // "No valid meteorological records found" — indistinguishable from a
+    // legitimately empty file. Throwing lets the caller tell the user their
+    // file is malformed.
+    throw new Error('Telemetry JSON is malformed and could not be parsed.');
   }
 }
 

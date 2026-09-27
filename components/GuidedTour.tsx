@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Play, Pause, X, ChevronLeft } from 'lucide-react';
 
 interface GuidedTourProps {
   onTriggerSpike: () => void;

@@ -234,17 +234,28 @@ export default function OfficialAuditReportPage() {
               <span className="block text-[10px] text-slate-600">National Centre for Medium Range Weather Forecasting</span>
             </div>
             <div className="space-y-1">
-              <span className="block font-bold text-slate-800">System Security Stamp:</span>
+              <span className="block font-bold text-slate-800">System Integrity Stamp:</span>
               <div className="p-2 border border-slate-300 rounded bg-slate-50 text-[10px] font-mono text-slate-600">
-                Merkle Root: 0x7b4a2f8e10d<br />
-                HMAC Seal: AUTHENTIC<br />
-                Standard: WMO-Pub8 / Zahumenský
+                Checksum algo: FNV-1a (x2)<br />
+                Signature: NONE — demo build<br />
+                QC Standard: WMO-Pub8 Tier 1-3
               </div>
+              <span className="block text-[9px] text-slate-500 leading-snug">
+                Demo build: no cryptographic signing. The displayed checksum is an unkeyed
+                corruption check and is not a tamper-evident seal.
+              </span>
             </div>
           </div>
 
           <div className="text-center text-[10px] text-slate-500 mt-8 pt-4 border-t border-slate-200">
             <strong>System Operational Notice:</strong> This technical audit dossier is automatically compiled by Metshield AI Automated Weather Station Quality Management System (AWS-QMS). Field telemetry and sensor health parameters are continuously cross-validated against WMO Pub 8 and physical thermodynamic coupling criteria.
+          </div>
+          <div className="text-center text-[9px] text-amber-800 mt-3 pt-3 border-t border-amber-300 bg-amber-50/70 rounded px-3 py-2">
+            <strong>DEMONSTRATION BUILD — NOT AN OFFICIAL RECORD.</strong> The observations,
+            quality-control outcomes and work orders in this dossier are generated from a seeded
+            simulation, not read from an IMD instrument archive. The Tier 1-3 quality-control logic
+            and the report layout are production code; the data is illustrative. Do not cite this
+            document as evidence of the state of any real station.
           </div>
         </div>
       </div>

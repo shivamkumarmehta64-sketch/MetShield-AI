@@ -17,8 +17,9 @@ export interface MLPrediction {
 }
 
 export function classifyAnomaly(features: AnomalyFeatureVector): MLPrediction {
-  // Edge-compatible Mini Decision Tree logic
-  // Hardcoded rules simulating a trained tree model
+  // Rule-based threshold cascade. This is NOT a trained model — see
+  // getModelMetadata() below and lib/dataProvenance.ts
+  // (DATA_SOURCES.ruleBasedClassifier).
 
   if (features.tempAbsolute === null || features.pressAbsolute === null || features.humAbsolute === null) {
     return {
@@ -67,11 +68,38 @@ export function classifyAnomaly(features: AnomalyFeatureVector): MLPrediction {
   };
 }
 
+/**
+ * Metadata for the classifier.
+ *
+ * IMPORTANT: this is NOT a trained machine-learning model. `classifyAnomaly`
+ * is a hand-written if/else chain over rate-of-change features. There are no
+ * learned weights, no gradient descent, and no training set.
+ *
+ * This function previously reported `trainingAccuracy: 0.945`, `f1Score: 0.92`
+ * and claimed training on "5 years of historical IMD AWS station data
+ * (2018-2023)". None of that was measured — the numbers were invented and were
+ * being displayed in the UI and pitch deck as model performance.
+ *
+ * `confidence` values returned by classifyAnomaly are likewise heuristic
+ * constants, NOT calibrated probabilities. Treat them as ranking hints only.
+ *
+ * The `isTrainedModel: false` flag below is a guard: any UI that wants to quote
+ * a precision/recall figure must check it first.
+ */
 export function getModelMetadata() {
   return {
     version: '1.0.0-edge',
-    trainingAccuracy: 0.945,
-    f1Score: 0.92,
-    trainingDatasetDescription: 'Trained on 5 years of historical IMD AWS station data (2018-2023)',
+    /** Always false. There are no learned weights in this file. */
+    isTrainedModel: false,
+    kind: 'rule-based threshold classifier' as const,
+    basis:
+      'Hand-authored if/else chain over rate-of-change and persistence features. Deterministic; no training data was used.',
+    /**
+     * Intentionally omitted — previously fabricated:
+     *   trainingAccuracy, f1Score, precision, recall,
+     *   trainingDatasetDescription
+     * Do not reintroduce these without a real evaluation harness and a
+     * labelled dataset. See __tests__/mlModelMetadata.test.ts.
+     */
   };
 }

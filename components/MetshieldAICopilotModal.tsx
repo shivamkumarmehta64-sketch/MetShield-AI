@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send, Volume2, VolumeX, ShieldCheck } from 'lucide-react';
+import { X, Send, Volume2, VolumeX, ShieldCheck } from 'lucide-react';
 import { IMDStationProfile } from '@/lib/stationData';
 import { TelemetryPacket } from '@/lib/anomalyLogic';
 

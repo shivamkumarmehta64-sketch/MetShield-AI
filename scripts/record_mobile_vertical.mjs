@@ -61,7 +61,7 @@ async function main() {
     try {
       await cityButtons.nth(i).click({ timeout: 2000 });
       await sleep(1500);
-    } catch (e) {}
+    } catch  {}
   }
 
   // Scroll down to view sensor cards & calibration
@@ -78,7 +78,7 @@ async function main() {
       await sendButton.click();
       await sleep(2000);
     }
-  } catch (e) {}
+  } catch  {}
 
   await smoothScroll(page, 1400);
   await sleep(2000);

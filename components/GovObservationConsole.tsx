@@ -43,28 +43,6 @@ const STATUS_MAP: Record<string, { cls: string; label: string }> = {
   TELEMETRY_PACKET_LOSS: { cls: 'text-purple-700', label: 'Packet Drop (Reconstructed)' },
 };
 
-// Fallback packet factory
-const makeFallback = (s: IMDStationProfile): TelemetryPacket => ({
-  packetId: `PKT-${s?.stationId?.replace('AWS-', '') || 'UNK'}-104821`, stationId: s?.stationId || 'UNKNOWN',
-  timestamp: 1773220800000, timeIST: '20:30:10',
-  raw: { temperature: s?.baseline?.tempMean ?? 25, pressure: s?.baseline?.pressureMean ?? 1010, humidity: s?.baseline?.humidityMean ?? 60, windSpeedKph: s?.baseline?.windMean ?? 15, windDirectionDeg: s?.baseline?.windDirMean ?? 225, rainfallMm10min: 0 },
-  imputed: { temperature: s?.baseline?.tempMean ?? 25, pressure: s?.baseline?.pressureMean ?? 1010, humidity: s?.baseline?.humidityMean ?? 60, windSpeedKph: s?.baseline?.windMean ?? 15, windDirectionDeg: s?.baseline?.windDirMean ?? 225, rainfallMm10min: 0, wasCorrected: false },
-  ratesOfChange: { tempRoC: 0.1, pressRoC: -0.2, humRoC: 0.4, windRoC: 0 },
-  classification: 'NOMINAL_OPERATION', wmoFlag: 'FLAG_1_VERIFIED_GOOD', alertLevel: 'LEVEL_0_NOMINAL', faultProbability: 0.02,
-  xaiAttribution: { tempWeight: 33.3, pressWeight: 33.3, humWeight: 33.4, primaryParameter: 'None', diagnosticNote: 'Nominal baseline' },
-  mlPrediction: { mlClassification: 'NOMINAL_OPERATION', mlConfidence: 0.99, agreesWithRules: true },
-  operationalAction: 'Observation verified compliant with WMO Pub No. 8 & IMD Quality Standards.', ticketId: null,
-  securitySeal: {
-    hmacSha256: '0x8f4a19b2e041',
-    antiReplayNonce: 104821,
-    auditMerkleRoot: '0x2e0418f4a19a7f9',
-    geofenceStatus: 'VERIFIED_IN_BOUNDS',
-    tamperStatus: 'AUTHENTIC',
-  },
-});
-
-
-
 interface StationChartPoint {
   time: string;
   temperature: number | null;
@@ -608,7 +586,7 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className={`text-white font-semibold text-[11px] ${isMissionControlVibe ? 'bg-slate-900 border-b border-slate-800 text-emerald-400 font-mono' : 'bg-[#002147]'}`}>
-                {['Packet ID', 'Timestamp (IST)', 'Temp (°C)', 'Pressure (hPa)', 'Humidity (%)', 'Cryptographic Seal', 'WMO QC Flag', 'Data Validation Status'].map((h, i) => (
+                {['Packet ID', 'Timestamp (IST)', 'Temp (°C)', 'Pressure (hPa)', 'Humidity (%)', 'Demo Checksum', 'WMO QC Flag', 'Data Validation Status'].map((h, i) => (
                   <th key={h} className={`py-1.5 px-2.5 ${i < 7 ? (isMissionControlVibe ? 'border-r border-slate-800' : 'border-r border-slate-600') : ''} ${[2, 3, 4].includes(i) ? 'text-right' : ''}`}>{h}</th>
                 ))}
               </tr>
@@ -641,17 +619,26 @@ export const GovObservationConsole = React.memo<Props>(function GovObservationCo
                     <td suppressHydrationWarning className={`py-1.5 px-2.5 text-right font-bold ${isMissionControlVibe ? 'text-emerald-400' : 'text-slate-900'} ${borderClass}`}>
                       {pkt.raw.humidity !== null ? pkt.raw.humidity.toFixed(1) : <span className="text-red-400">NULL</span>}
                     </td>
-                    <td suppressHydrationWarning className={`py-1.5 px-2.5 ${borderClass}`}>
-                      <span className={`inline-flex items-center gap-1 font-mono text-[9px] px-2 py-0.5 rounded border font-semibold ${
-                        isMissionControlVibe
-                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                      }`} title={`HMAC-SHA256: ${pkt.securitySeal?.hmacSha256 || '0x7f4a...'} | Merkle: ${pkt.securitySeal?.auditMerkleRoot || '0x9a2b...'} | Nonce: #${pkt.securitySeal?.antiReplayNonce || '0'}`}>
-                        <Lock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
-                        <span className="truncate max-w-[70px]">{pkt.securitySeal?.hmacSha256 ? pkt.securitySeal.hmacSha256.slice(0, 8) + '…' : '0x8f4a…'}</span>
-                        <span className="text-[8px] bg-emerald-700/20 text-emerald-400 px-1 rounded font-bold uppercase">VERIFIED</span>
-                      </span>
-                    </td>
+                     <td suppressHydrationWarning className={`py-1.5 px-2.5 ${borderClass}`}>
+                       <span
+                         className={`inline-flex items-center gap-1 font-mono text-[9px] px-2 py-0.5 rounded border font-semibold ${
+                           isMissionControlVibe
+                             ? 'bg-slate-800/80 text-slate-300 border-slate-600/60'
+                             : 'bg-slate-100 text-slate-700 border-slate-300'
+                         }`}
+                         title={
+                           `Demo checksum (NOT a signature): ${pkt.securitySeal?.hmacSha256 || 'n/a'}\n` +
+                           `Second checksum (NOT a Merkle root): ${pkt.securitySeal?.auditMerkleRoot || 'n/a'}\n` +
+                           `Anti-replay nonce: #${pkt.securitySeal?.antiReplayNonce || '0'}\n` +
+                           `Status: ${pkt.securitySeal?.tamperStatus || 'n/a'} — unkeyed checksum, detects ` +
+                           `accidental corruption only, provides no tamper resistance.`
+                         }
+                       >
+                         <Lock className="w-2.5 h-2.5 text-slate-400 shrink-0" aria-hidden="true" />
+                         <span className="truncate max-w-[70px]">{pkt.securitySeal?.hmacSha256 ? pkt.securitySeal.hmacSha256.slice(0, 8) + '…' : '0x8f4a…'}</span>
+                         <span className="text-[8px] bg-slate-500/20 text-slate-400 px-1 rounded font-bold uppercase">Unverified</span>
+                       </span>
+                     </td>
                     <td suppressHydrationWarning className={`py-1.5 px-2.5 ${borderClass}`}>
                       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${f.bg} ${f.text} border`}>{f.icon} {f.label}</span>
                     </td>

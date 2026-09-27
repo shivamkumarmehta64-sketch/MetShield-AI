@@ -124,12 +124,59 @@ describe('NICWMOAnomalyEngine', () => {
     expect(engine.getStationDrift(stationId)).toBeGreaterThan(-1.0);
   });
 
-  it('persists telemetry and resolves work orders using D1 edge adapter fallback', async () => {
+  it('rejects a temperature offset instead of silently discarding it', () => {
+    // applyFieldCalibration used to accept `tempOffset` and ignore it, returning
+    // success: true. On a calibration function that means the audit trail
+    // claims a correction that was never applied.
+    const before = engine.getStationDrift(stationId);
+
+    const rejected = engine.applyFieldCalibration(stationId, 0, 2.5);
+    expect(rejected.success).toBe(false);
+    expect(rejected.message).toMatch(/not implemented/i);
+    // And crucially: no state change.
+    expect(engine.getStationDrift(stationId)).toBe(before);
+
+    // A barometric-only call still works.
+    const applied = engine.applyFieldCalibration(stationId, 1.5);
+    expect(applied.success).toBe(true);
+    expect(applied.newDriftOffset).toBeCloseTo(before + 1.5, 2);
+  });
+
+  it('reports durable vs fallback storage honestly when no D1 binding exists', async () => {
+    // UPDATED BEHAVIOUR. This test previously asserted
+    //   expect(persistResult.persisted).toBe(true)
+    // which was asserting the bug: with no D1 binding, the packet only lands in
+    // a process-local array capped at 200 entries and lost on the next cold
+    // start, yet the adapter reported success. A caller building an audit trail
+    // would treat that as a durable write.
+    //
+    // It now asserts the honest contract: the storage tier is named, and
+    // `persisted` is false when the write was not durable.
     const pkt = engine.generatePacket(stationId);
     const persistResult = await persistTelemetryToEdge(pkt);
-    expect(persistResult.persisted).toBe(true);
+
+    expect(persistResult.storage).toBe('IN_MEMORY_FALLBACK');
+    expect(persistResult.persisted).toBe(false);
 
     const resolveResult = await resolveWorkOrderOnEdge('WO-TEST-001', 'Technician replaced PT100 probe');
     expect(typeof resolveResult).toBe('boolean');
+  });
+
+  it('reports persisted:true only when a real D1 binding succeeds', async () => {
+    // The positive case: with a working binding the adapter must still claim
+    // success, so the honest-reporting change did not break the real path.
+    const fakeDb = {
+      prepare: () => ({
+        bind: () => ({
+          run: async () => ({ success: true }),
+        }),
+      }),
+    } as unknown as Parameters<typeof persistTelemetryToEdge>[1];
+
+    const pkt = engine.generatePacket(stationId);
+    const result = await persistTelemetryToEdge(pkt, fakeDb);
+
+    expect(result.storage).toBe('D1_EDGE_SQLITE');
+    expect(result.persisted).toBe(true);
   });
 });

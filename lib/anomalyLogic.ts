@@ -24,12 +24,31 @@ export interface TelemetryPacket {
   ticketId: string | null;
   orographicQnhPressure?: number | null;
   spatialValidation?: { nearestStations: string[]; verdict: 'SINGLE_NODE_FAULT' | 'REGIONAL_WEATHER' | 'INSUFFICIENT_DATA' };
+  /**
+   * DEMO INTEGRITY SEAL — NOT CRYPTOGRAPHIC.
+   *
+   * The field names are retained for D1/back-compat, but read them as:
+   *   hmacSha256      -> a non-cryptographic FNV-1a style checksum
+   *   auditMerkleRoot -> a second, independent checksum of the same input
+   * Neither is HMAC-SHA256. Neither is a Merkle root. Neither resists tampering:
+   * an attacker who can write to the row can recompute both in one pass.
+   *
+   * The seal detects ACCIDENTAL corruption (a truncated write, a partially
+   * updated field) and nothing more. See `computeDemoIntegritySeal` and
+   * `lib/dataProvenance.ts` (DATA_SOURCES.demoIntegritySeal).
+   *
+   * To make this claim true, replace the body of computeDemoIntegritySeal with
+   * a real Web Crypto HMAC-SHA256 over a server-held secret, and rename these
+   * fields. Do not simply flip tamperStatus to 'AUTHENTIC' again.
+   */
   securitySeal: {
+    /** Non-cryptographic checksum. NOT HMAC-SHA256. */
     hmacSha256: string;
     antiReplayNonce: number;
+    /** Second independent checksum. NOT a Merkle root. */
     auditMerkleRoot: string;
     geofenceStatus: 'VERIFIED_IN_BOUNDS' | 'GEOFENCE_BREACH';
-    tamperStatus: 'AUTHENTIC' | 'SIGNATURE_INVALID' | 'REPLAY_REJECTED';
+    tamperStatus: 'DEMO_UNVERIFIED' | 'CORRUPTION_DETECTED';
   };
 }
 
@@ -89,14 +108,55 @@ export function calculateQnhPressure(stationPressureHpa: number | null, elevatio
   return Math.round(pMsl * 10) / 10;
 }
 
+/**
+ * DEMO INTEGRITY CHECKSUM — explicitly NOT a cryptographic signature.
+ *
+ * Two independent 32-bit FNV-1a-style accumulators are run over the payload and
+ * emitted as hex. Properties this actually has:
+ *   - deterministic: same input always yields the same output
+ *   - cheap and dependency-free
+ *   - detects accidental corruption (truncation, partial write, bit rot)
+ *
+ * Properties this does NOT have, despite the legacy field names:
+ *   - it is not HMAC-SHA256 and uses no secret key
+ *   - it is not a Merkle root and commits to no other records
+ *   - it is not collision resistant in any security-relevant sense
+ *   - anyone able to write the row can recompute it, so it proves nothing
+ *     about authenticity
+ *
+ * The two accumulators use different primes and seeds purely so a
+ * single-accumulator bug cannot silently pass as agreement.
+ *
+ * To make the field names true, replace this with a real Web Crypto
+ * HMAC-SHA256 keyed on a server-side secret and rename the seal fields.
+ */
+export function computeDemoIntegritySeal(payload: string): {
+  checksumA: string;
+  checksumB: string;
+} {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x27d4eb2f;
+  for (let i = 0; i < payload.length; i++) {
+    const code = payload.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 0x01000193);
+    h2 = Math.imul(h2 ^ code, 0x5bd1e995);
+  }
+  const hex1 = (h1 >>> 0).toString(16).padStart(8, '0');
+  const hex2 = (h2 >>> 0).toString(16).padStart(8, '0');
+  return { checksumA: `0x${hex1}${hex2}`, checksumB: `0x${hex2}${hex1}a7f9` };
+}
+
 /** Shared work order factory — eliminates duplicate creation in page.tsx */
 export function createWorkOrder(pkt: TelemetryPacket, fallbackTicketPrefix = 'IMD-QMS-2026'): WorkOrderTicket {
+  // An unregistered station id must not silently resolve to Safdarjung. Fall
+  // back to the packet's own id/name and mark the state as unknown so a
+  // mis-keyed packet is visible in the ticket rather than quietly relabelled.
   const station = getStationProfile(pkt.stationId);
   return {
     ticketId: pkt.ticketId || `${fallbackTicketPrefix}-${Date.now().toString().slice(-4)}`,
     stationId: pkt.stationId,
-    stationName: station.name,
-    state: station.state,
+    stationName: station?.name ?? pkt.stationId,
+    state: station?.state ?? 'Unregistered station',
     timestamp: pkt.timeIST,
     parameterInvolved: pkt.xaiAttribution.primaryParameter,
     classification: pkt.classification,
@@ -135,25 +195,33 @@ export class NICWMOAnomalyEngine {
     liveBaseline?: { temperature: number; pressure: number; humidity: number; windSpeedKph?: number; windDirectionDeg?: number; rainfallMm10min?: number },
     deterministic = false
   ): TelemetryPacket {
+    // Registered stations use their own climatology. An unregistered id (a
+    // mobile node, a dynamically provisioned district, a typo) falls back to a
+    // neutral plains baseline rather than borrowing Safdarjung's, which would
+    // apply Delhi's elevation to an unknown site's barometry.
     const station = getStationProfile(stationId);
+    const baseline = station?.baseline;
+    const stationElevation = station?.elevationM ?? 0;
+    const stationLat = station?.latitude ?? 28.585;
+    const stationLon = station?.longitude ?? 77.206;
     const buf = this.stationBuffers.get(stationId) || [];
     const prev = buf.length > 0 ? buf[buf.length - 1] : null;
 
     // Atmospheric baseline: live API or diurnal sinusoidal model
     const phase = ((tickCount % 60) / 60) * 2 * Math.PI;
-    const jT = deterministic ? Math.sin(tickCount * 13.1 + station.latitude) * 0.05 : (Math.random() - 0.5) * 0.1;
-    const jP = deterministic ? Math.cos(tickCount * 17.3 + station.longitude) * 0.05 : (Math.random() - 0.5) * 0.1;
-    const jH = deterministic ? Math.sin(tickCount * 23.7 + station.elevationM) * 0.1 : (Math.random() - 0.5) * 0.2;
+    const jT = deterministic ? Math.sin(tickCount * 13.1 + stationLat) * 0.05 : (Math.random() - 0.5) * 0.1;
+    const jP = deterministic ? Math.cos(tickCount * 17.3 + stationLon) * 0.05 : (Math.random() - 0.5) * 0.1;
+    const jH = deterministic ? Math.sin(tickCount * 23.7 + stationElevation) * 0.1 : (Math.random() - 0.5) * 0.2;
 
     const rnd = deterministic ? 0 : 1;
-    const baseT = liveBaseline ? liveBaseline.temperature + jT : station.baseline.tempMean + Math.sin(phase - 1) * 5.2 + (Math.random() - 0.5) * 0.2 * rnd;
-    const baseP = liveBaseline ? liveBaseline.pressure + jP : station.baseline.pressureMean + Math.cos(phase * 2) * 2.1 + (Math.random() - 0.5) * 0.15 * rnd;
-    const baseH = liveBaseline ? liveBaseline.humidity + jH : station.baseline.humidityMean - Math.sin(phase - 1) * 14 + (Math.random() - 0.5) * 0.4 * rnd;
+    const baseT = liveBaseline ? liveBaseline.temperature + jT : (baseline?.tempMean ?? 28.0) + Math.sin(phase - 1) * 5.2 + (Math.random() - 0.5) * 0.2 * rnd;
+    const baseP = liveBaseline ? liveBaseline.pressure + jP : (baseline?.pressureMean ?? 1008.0) + Math.cos(phase * 2) * 2.1 + (Math.random() - 0.5) * 0.15 * rnd;
+    const baseH = liveBaseline ? liveBaseline.humidity + jH : (baseline?.humidityMean ?? 60.0) - Math.sin(phase - 1) * 14 + (Math.random() - 0.5) * 0.4 * rnd;
 
     // Wind: diurnal pattern or live Open-Meteo wind speed & direction
-    const windBase = liveBaseline?.windSpeedKph ?? station.baseline.windMean ?? 18;
+    const windBase = liveBaseline?.windSpeedKph ?? baseline?.windMean ?? 18;
     const rawWindSpeed = Math.max(0, windBase + (liveBaseline?.windSpeedKph !== undefined ? 0 : Math.sin(phase - 0.5) * 8) + (deterministic ? Math.sin(tickCount * 7.3) * 2 : (Math.random() - 0.5) * 4));
-    const rawWindDir = ((liveBaseline?.windDirectionDeg ?? station.baseline.windDirMean ?? 225) + (deterministic ? Math.sin(tickCount * 5.1) * 20 : (Math.random() - 0.5) * 30) + 360) % 360;
+    const rawWindDir = ((liveBaseline?.windDirectionDeg ?? baseline?.windDirMean ?? 225) + (deterministic ? Math.sin(tickCount * 5.1) * 20 : (Math.random() - 0.5) * 30) + 360) % 360;
     // Rainfall: live Open-Meteo precipitation or synthetic stochastic burst
     const rainProb = deterministic ? (Math.sin(tickCount * 3.7) > 0.85 ? 1 : 0) : (Math.random() > 0.92 ? 1 : 0);
     const rawRainfall = liveBaseline?.rainfallMm10min !== undefined
@@ -232,10 +300,14 @@ export class NICWMOAnomalyEngine {
     allLatest: Record<string, TelemetryPacket>
   ): TelemetryPacket['spatialValidation'] {
     const station = getStationProfile(stationId);
+    // Unknown station: fall back to a national centroid rather than Safdarjung's
+    // coordinates, so the neighbour set is at least not biased toward Delhi.
+    const originLat = station?.latitude ?? 22.5;
+    const originLon = station?.longitude ?? 79.0;
     // Sort neighbors by distance
     const neighbors = IMD_AWS_STATIONS
       .filter(s => s.stationId !== stationId && s.wmoBlockNo !== '49999')
-      .map(s => ({ s, km: haversineKm(station.latitude, station.longitude, s.latitude, s.longitude) }))
+      .map(s => ({ s, km: haversineKm(originLat, originLon, s.latitude, s.longitude) }))
       .filter(n => n.km <= 500)
       .sort((a, b) => a.km - b.km)
       .slice(0, 3);
@@ -255,6 +327,8 @@ export class NICWMOAnomalyEngine {
 
   private evaluate(stationId: string, rawT: number | null, rawP: number | null, rawH: number | null, rawW: number | null, rawWD: number | null, rawRain: number | null, timestamp: number): TelemetryPacket {
     const station = getStationProfile(stationId);
+    const baseline = station?.baseline;
+    const stationElevation = station?.elevationM ?? 0;
     const buf = this.stationBuffers.get(stationId) || [];
     const prev = buf.length > 0 ? buf[buf.length - 1] : null;
 
@@ -353,11 +427,11 @@ export class NICWMOAnomalyEngine {
       const valid = arr.filter((v): v is number => v !== null).slice(-6);
       return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
     };
-    const aT = avg(buf.map(p => p.raw.temperature)) ?? station.baseline.tempMean;
-    const aP = avg(buf.map(p => p.raw.pressure)) ?? station.baseline.pressureMean;
-    const aH = avg(buf.map(p => p.raw.humidity)) ?? station.baseline.humidityMean;
-    const aW = avg(buf.map(p => p.raw.windSpeedKph)) ?? (station.baseline.windMean ?? 15);
-    const aWD = avg(buf.map(p => p.raw.windDirectionDeg)) ?? (station.baseline.windDirMean ?? 225);
+    const aT = avg(buf.map(p => p.raw.temperature)) ?? (baseline?.tempMean ?? 28.0);
+    const aP = avg(buf.map(p => p.raw.pressure)) ?? (baseline?.pressureMean ?? 1008.0);
+    const aH = avg(buf.map(p => p.raw.humidity)) ?? (baseline?.humidityMean ?? 60.0);
+    const aW = avg(buf.map(p => p.raw.windSpeedKph)) ?? (baseline?.windMean ?? 15);
+    const aWD = avg(buf.map(p => p.raw.windDirectionDeg)) ?? (baseline?.windDirMean ?? 225);
     const aRain = avg(buf.map(p => p.raw.rainfallMm10min)) ?? 0;
 
     const corrected = cls !== 'NOMINAL_OPERATION' && cls !== 'GENUINE_CONVECTIVE_EVENT';
@@ -368,19 +442,9 @@ export class NICWMOAnomalyEngine {
     const iWD = (isWindFrozen) ? Math.round(aWD) : (rawWD ?? Math.round(aWD));
     const iRain = isRainOverflow ? Math.round(aRain * 10) / 10 : (rawRain ?? Math.round(aRain * 10) / 10);
 
-    // Cryptographic Zero-Trust Seal computation (HMAC-SHA256 signature & Merkle integrity)
-    const rawSig = `${stationId}:${timestamp}:${rawT}:${rawP}:${rawH}:${cls}`;
-    let h1 = 0x811c9dc5;
-    let h2 = 0x27d4eb2f;
-    for (let i = 0; i < rawSig.length; i++) {
-      const code = rawSig.charCodeAt(i);
-      h1 = Math.imul(h1 ^ code, 0x01000193);
-      h2 = Math.imul(h2 ^ code, 0x5bd1e995);
-    }
-    const hex1 = (h1 >>> 0).toString(16).padStart(8, '0');
-    const hex2 = (h2 >>> 0).toString(16).padStart(8, '0');
-    const hmacSig = `0x${hex1}${hex2}${(timestamp % 0xffff).toString(16).padStart(4, '0')}`;
-    const merkleRoot = `0x${hex2}${hex1}a7f9`;
+    const { checksumA, checksumB } = computeDemoIntegritySeal(
+      `${stationId}:${timestamp}:${rawT}:${rawP}:${rawH}:${cls}`
+    );
 
     const mlFeatures: AnomalyFeatureVector = {
       tempRoC: tempRoC,
@@ -405,7 +469,11 @@ export class NICWMOAnomalyEngine {
       console.warn(`[ML Disagreement] Station ${stationId}: Rule=${cls}, ML=${mappedMlCls}`);
     }
 
-    const qnhPressure = calculateQnhPressure(rawP, station.elevationM, rawT);
+    // Reduce station pressure to mean-sea-level using the station's own
+    // elevation. For an unregistered node the elevation is unknown, so no
+    // reduction is applied and the raw value is passed through unchanged
+    // rather than being corrected with a borrowed station's altitude.
+    const qnhPressure = calculateQnhPressure(rawP, stationElevation, rawT);
 
     const pkt: TelemetryPacket = {
       packetId: `PKT-${stationId.replace('AWS-', '')}-${timestamp.toString().slice(-6)}`,
@@ -419,11 +487,13 @@ export class NICWMOAnomalyEngine {
       operationalAction: action, ticketId: tid,
       orographicQnhPressure: qnhPressure,
       securitySeal: {
-        hmacSha256: hmacSig,
+        hmacSha256: checksumA,
         antiReplayNonce: timestamp % 999999,
-        auditMerkleRoot: merkleRoot,
+        auditMerkleRoot: checksumB,
         geofenceStatus: 'VERIFIED_IN_BOUNDS',
-        tamperStatus: 'AUTHENTIC',
+        // Nothing here has been cryptographically verified, so nothing may
+        // claim to be. "AUTHENTIC" was a false assertion.
+        tamperStatus: 'DEMO_UNVERIFIED',
       },
     };
 
@@ -433,8 +503,33 @@ export class NICWMOAnomalyEngine {
     return pkt;
   }
 
-  // ─── Bidirectional Field Calibration Loopback (OTA) ───
-  applyFieldCalibration(stationId: string, pressureOffset: number, tempOffset = 0): { success: boolean; newDriftOffset: number; message: string } {
+  /**
+   * Bidirectional field calibration loopback (OTA).
+   *
+   * `tempOffset` was previously accepted and then silently ignored, so a
+   * technician submitting a temperature correction was told `success: true`
+   * while nothing changed. A no-op parameter on a calibration function is
+   * worse than an absent one: the audit record would claim a correction that
+   * was never applied.
+   *
+   * Temperature offsets are not implemented. The parameter is now rejected
+   * explicitly rather than swallowed.
+   */
+  applyFieldCalibration(
+    stationId: string,
+    pressureOffset: number,
+    tempOffset = 0
+  ): { success: boolean; newDriftOffset: number; message: string } {
+    if (tempOffset !== 0) {
+      return {
+        success: false,
+        newDriftOffset: this.driftOffset.get(stationId) || 0,
+        message:
+          `Temperature offset rejected: temperature calibration is not implemented in this ` +
+          `build (${tempOffset} C discarded). Only barometric offsets are applied.`,
+      };
+    }
+
     const current = this.driftOffset.get(stationId) || 0;
     const updated = Math.round((current + pressureOffset) * 100) / 100;
     this.driftOffset.set(stationId, updated);

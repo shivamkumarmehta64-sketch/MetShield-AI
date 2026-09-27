@@ -46,8 +46,8 @@ Surface automated weather sensors frequently encounter severe mechanical, electr
 | **S** | **Surveillance** | Continuous multi-parameter monitoring for physical range violations, Zahumenský step limits, and sensor drift. |
 | **H** | **Heuristic & ML** | Hybrid deterministic thermodynamic invariant rules coupled with an Edge ML Decision Tree Classifier. |
 | **I** | **Imputation** | WMO-compliant 5-step Gaussian Weighted Moving Average (WMA) and spatial K-Nearest Neighbors (KNN) reconstruction. |
-| **E** | **Explainable AI** | SHAP-compliant normalized parameter attribution and root-cause diagnostic telemetry tagging. |
-| **L** | **Ledger & Audit** | Cryptographically sealed HMAC-SHA256 telemetry verification and automated NABL maintenance dispatch logs. |
+| **E** | **Explainable AI** | Normalized rule-based parameter attribution and root-cause diagnostic telemetry tagging. |
+| **L** | **Ledger & Audit** | Deterministic integrity tagging (non-cryptographic) with NABL maintenance dispatch logs and automated NABL maintenance dispatch logs. |
 | **D** | **Defense** | Zero-trust quarantine of corrupted transducer packets preventing contamination of Numerical Weather Prediction (NWP) models. |
 
 ---
@@ -107,7 +107,7 @@ graph TD
                                • classification (Root Cause)
                                • mlPrediction: { mlClassification, mlConfidence, agreesWithRules }
                                • xaiAttribution: { tempWeight, pressWeight, humWeight }
-                               • securitySeal: { hmacSha256, merkleRoot }
+                               • integrityTag: { digest, merkleRoot }   // non-cryptographic digest — not HMAC
 ```
 
 ### Supported WMO Quality Flags
@@ -158,7 +158,7 @@ graph TD
 - **Dynamic Graphical Compass Needle**: Rotates smoothly ($0^\circ - 360^\circ$) as the user physically turns the phone, outputting cardinal wind direction (N, NE, E, SE, S, SW, W, NW).
 - **Kinetic Accelerometer Shake-to-Gust**: Gesturing or shaking the phone translates real kinetic acceleration into squall-force wind gusts ($45 - 95\text{ km/h}$).
 - **1-Tap Field Anomaly Injector**: Test severe squalls, broken thermistor wires (+54.8°C spike), frozen loops, and monotonic barometric drift with tactile haptic and synthesized acoustic feedback.
-- **Zero-Trust Telemetry Seal**: Signs every transmitted observation with an HMAC-SHA256 signature and cryptographic nonce.
+- **Telemetry Integrity Tag**: Every transmitted observation carries a deterministic integrity digest. This is a tamper-*evident* checksum, **not** a cryptographic MAC — see [§13](#13-honest-engineering-notes--known-limitations).
 
 ---
 
@@ -210,8 +210,8 @@ npm test
 7. **WMA Imputation Integrity**: Null raw sensor values yield valid, non-null imputed replacements.
 8. **Spatial KNN Cross-Validation (Regional Weather)**: Multiple anomalous neighbors classify event as `REGIONAL_WEATHER`.
 9. **Spatial KNN Cross-Validation (Single Node Fault)**: Isolated anomaly classifies as `SINGLE_NODE_FAULT`.
-10. **XAI Attribution Summation**: SHAP/Zahumenský attribution weights sum to $100.0\% \pm 0.1\%$.
-11. **HMAC Security Seals**: Every telemetry packet includes a valid `0x...` HMAC-SHA256 signature.
+10. **XAI Attribution Summation**: normalized rule-based attribution weights sum to $100.0\% \pm 0.1\%$.
+11. **Telemetry Packet Seal**: Every telemetry packet carries a deterministic integrity digest matching `0x[0-9a-f]+`. This is a tamper-*evident* checksum, **not** a cryptographic MAC — see §13.
 12. **Barometric QNH Reduction**: Altimeter equation adjusts station pressure to MSL using hypsometric formula.
 13. **Cloudflare D1 Work Order Resolution**: Edge storage adapter registers and resolves maintenance work orders.
 14. **Station Coordinates Bounds**: All 21 stations confirmed within India geographic bounding box ($6^\circ\text{N} - 38^\circ\text{N}$, $68^\circ\text{E} - 98^\circ\text{E}$).
@@ -283,3 +283,112 @@ While the evaluation version runs on Vercel Serverless Edge Cloud for sub-millis
 - **Problem Statement**: SIH26073 (Automatic Weather Station Quality Management System)
 - **Nodal Ministry**: Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD)
 - **License**: Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+---
+
+## 12. Empirical Benchmark (Reproducible)
+
+All figures below are produced by running the detector in `lib/anomalyDetector.ts` against a
+seeded synthetic frame generator. Nothing here is hand-entered.
+
+```bash
+npm run bench
+```
+
+The harness (`scripts/benchmark-detector.ts`) is **seeded** (`mulberry32`, seed `20260927`) and
+therefore byte-for-byte reproducible. Fault magnitudes are *sampled* from ranges rather than
+hand-picked, and every frame carries realistic transducer noise. A deliberately naive
+**static-threshold QC** is benchmarked alongside so the central claim is measured rather than
+asserted.
+
+**Configuration:** 20,000 balanced frames · 8 cycles of context · 2.5s DCP cadence · 5 classes.
+
+| Fault Category | Precision | Recall | F1 | False Alarm | p95 Latency |
+| --- | --- | --- | --- | --- | --- |
+| NOMINAL | 94.2% | 99.6% | 96.8% | 1.6% | 0.005 ms |
+| SENSOR_SPIKE | 100.0% | 100.0% | 100.0% | 0.0% | 0.003 ms |
+| PROBE_FREEZE | 100.0% | 100.0% | 100.0% | 0.0% | 0.003 ms |
+| CONVECTIVE_STORM | 100.0% | 100.0% | 100.0% | 0.0% | 0.003 ms |
+| CALIBRATION_DRIFT | 99.6% | 93.9% | 96.6% | 0.1% | 0.006 ms |
+
+**Overall accuracy 98.7% · Macro F1 98.7% · p50 0.002 ms · p95 0.004 ms · p99 0.010 ms**
+
+### The headline result
+
+This is the claim the whole project rests on, so it is measured rather than stated:
+
+| System | Genuine storms misreported as hardware failure |
+| --- | --- |
+| Naive static-threshold QC | **100.0%** (4,000 / 4,000) |
+| MetShield thermodynamic engine | **0.0%** (0 / 4,000) |
+
+A static threshold filter cannot distinguish a $3.5\ \text{hPa}$ barometric plunge caused by a
+squall line from one caused by a failing transducer, so it quarantines *all* of them. The
+thermodynamic invariant ($\Delta P \le -2.5\ \text{hPa}$ **coupled with** $\Delta RH \ge +15\%$
+**and** $\Delta T \le -0.5^\circ\text{C}$) separates the two on every frame tested.
+
+Naive QC quarantines **40%** of all traffic. That is the false-alarm burden a duty meteorologist
+carries today, and the reason severe-weather warnings are silenced precisely when they matter.
+
+### What the benchmark changed
+
+The first honest run of this harness scored **66.5%** macro F1 and exposed three real defects,
+all since fixed:
+
+1. **`CALIBRATION_DRIFT` scored 0%.** `evaluate3ParamQC` had no drift tier at all — a slowly
+   ageing transducer produces no single-cycle step, so neither the spike test nor the storm
+   discriminator ever saw it. A **Tier 2.5** monotonic-drift detector was added.
+2. **The drift threshold was a magic constant.** A fixed `0.8` excursion is large for a
+   barometer ($\sigma \approx 0.15$) but unremarkable for a hygrometer ($\sigma \approx 1.5$).
+   The test is now **self-calibrating**: each channel's noise floor is estimated from its own
+   first differences, and the trend must clear it by `DRIFT_SIGMA_MULTIPLE`.
+3. **~6% false "probe freeze" alarms on healthy stations.** The freeze test used a variance
+   threshold, which is unreliable when telemetry is quantised to 0.1. It now uses a
+   **peak-to-peak range** test, which a quantisation artefact cannot fake.
+
+Drift detection is additionally guarded so it cannot absorb real weather: a window is
+disqualified if the arriving frame breaches any step limit (a squall steps), and exactly one
+channel must drift (genuine atmospheric change moves all three together; a failing transducer
+moves alone).
+
+Regression coverage for all of this lives in [`__tests__/qcEngine.test.ts`](./__tests__/qcEngine.test.ts)
+(12 cases). Before this work `evaluate3ParamQC` had **no tests at all**, which is precisely how
+the 0% drift score went unnoticed.
+
+---
+
+## 13. Honest Engineering Notes & Known Limitations
+
+Stated plainly so that nobody relies on a capability the codebase does not have.
+
+- **The detector is physics-based, not machine-learned.** There is no trained Isolation Forest,
+  autoencoder, or neural model anywhere in this repository. Discrimination is achieved with
+  explicit WMO-No. 8 physical invariants and rate-of-change rules. This is a deliberate
+  design choice — the rules are auditable, deterministic, and explainable — and it is what
+  produces the 100% storm-classification result above. It is *not* a claim of ML.
+- **`lib/mlAnomalyModel.ts` is a rule-based decision tree, not a trained model.** Its
+  `getModelMetadata()` values are static literals, not measured metrics. It is retained only as
+  a compact edge-side classifier.
+- **"XAI attribution" is normalized rule-based weighting, not SHAP.** The attribution weights in
+  `computeXAIWeights` are derived from the magnitude of the breached invariant and normalised to
+  sum to 100%. They are explanatory and deterministic; they are not a Shapley-value computation.
+- **The packet integrity tag is a checksum, not a cryptographic MAC.** It is a deterministic
+  non-keyed digest. It detects accidental corruption; it does **not** resist a deliberate
+  forger, because no secret is involved. A production deployment needs real HMAC-SHA256 signing
+  with a per-station pre-shared key, plus timestamp/replay rejection.
+- **`tamperStatus` is currently always `AUTHENTIC`.** There is no signature verification step
+  yet, so this field is aspirational.
+- **No authentication or role-based access control exists** on the API surface. Any client that
+  can reach the deployment can read telemetry and post work orders. The Origin check in
+  `middleware.ts` is browser CSRF friction, not authentication.
+- **The AI endpoints (`/api/ai/*`) have no rate limiting** and no prompt-length cap. They must
+  be authenticated and metered before any public deployment.
+- **Station coverage figures differ across the UI** (1,350 network-wide vs. a 5-station live
+  demo roster). The live console renders a representative subset, not the full network.
+- **"Uptime" on the landing page measures seconds since page load**, not engine uptime.
+- **`middleware.ts` and `export const runtime = 'edge'` are deprecated in Next.js 16** in favour
+  of `proxy.ts` and the Node.js runtime. They still function but will be removed in a future
+  major version.
+- **Deterministic replay, not live ingest, drives the console.** The synthetic stream is derived
+  from fixed epochs and sinusoidal baselines so that demos are reproducible. Real live data is
+  available through `/api/weather` (IMD / Open-Meteo) and is used where a live baseline exists.

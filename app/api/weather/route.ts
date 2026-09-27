@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getStationProfile } from '@/lib/stationData';
 
 export type SupportedWeatherProvider = 'imd' | 'weatherstack' | 'openmeteo' | 'wttrin' | 'consensus' | 'auto';
 
@@ -8,6 +9,26 @@ interface ProviderObservation {
   pressure: number;
   humidity: number;
   locationName: string;
+}
+
+/**
+ * WMO/ICAO standard atmosphere reduction: station pressure (QFE) -> MSL (QNH).
+ *
+ * Mirrors calculateQnhPressure() in lib/anomalyLogic.ts and
+ * reduceToMeanSeaLevel() in lib/liveWeatherService.ts. Three copies is already
+ * one too many; the next step is a single shared barometry helper. Kept local
+ * here so this route does not import the QC engine.
+ */
+function reduceToMeanSeaLevel(
+  stationPressureHpa: number,
+  elevationM: number,
+  tempC: number
+): number {
+  if (!Number.isFinite(stationPressureHpa) || elevationM <= 0) return stationPressureHpa;
+  const lapseRate = 0.0065; // K/m
+  const factor = 1 - (lapseRate * elevationM) / (tempC + lapseRate * elevationM + 273.15);
+  if (factor <= 0) return stationPressureHpa;
+  return Math.round(stationPressureHpa * Math.pow(factor, -5.257) * 10) / 10;
 }
 
 /**
@@ -23,6 +44,18 @@ export async function GET(request: NextRequest) {
   const lon = (!isNaN(rawLon) && rawLon >= -180 && rawLon <= 180 ? rawLon : 77.206).toFixed(3);
   const stationId = (searchParams.get('stationId') || 'AWS-DEL-04').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 30);
   const requestedProvider = (searchParams.get('provider') || 'auto').toLowerCase() as SupportedWeatherProvider;
+
+  /**
+   * Elevation in metres, used to reduce station pressure to sea level.
+   * Prefers the registered station profile; an explicit `elev` query param is
+   * accepted for one-off coordinate lookups. Defaults to 0, which makes the
+   * reduction a no-op and returns the provider's raw station pressure — the
+   * caller then gets a QFE value and is responsible for knowing that.
+   */
+  const elevParam = parseFloat(searchParams.get('elev') || '');
+  const elev = Number.isFinite(elevParam)
+    ? elevParam
+    : (getStationProfile(stationId)?.elevationM ?? 0);
 
   const observations: ProviderObservation[] = [];
 
@@ -79,7 +112,9 @@ export async function GET(request: NextRequest) {
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${Number(lat).toFixed(
         3
-      )}&longitude=${Number(lon).toFixed(3)}&current=temperature_2m,relative_humidity_2m,surface_pressure&timezone=Asia%2FKolkata`;
+      )}&longitude=${Number(lon).toFixed(3)}&current=temperature_2m,relative_humidity_2m,surface_pressure&elevation=${Number(elev).toFixed(
+        0
+      )}&timezone=Asia%2/Kolkata`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -90,10 +125,21 @@ export async function GET(request: NextRequest) {
         const json = await res.json();
         const current = json?.current;
         if (current && current.temperature_2m !== undefined) {
+          const temp = Math.round(Number(current.temperature_2m) * 10) / 10;
+          // Open-Meteo returns surface_pressure (station pressure / QFE). Every
+          // baseline in lib/stationData.ts is mean-sea-level (QNH), so reduce
+          // here at the boundary. Without this, an elevated station reads ~790
+          // hPa against a 1014 hPa baseline — a 224 hPa step that the QC engine
+          // correctly reads as a hardware fault. See
+          // __tests__/pressureLevelConsistency.test.ts.
           return {
             provider: 'OPEN_METEO',
-            temperature: Math.round(Number(current.temperature_2m) * 10) / 10,
-            pressure: Math.round(Number(current.surface_pressure) * 10) / 10,
+            temperature: temp,
+            pressure: reduceToMeanSeaLevel(
+              Number(current.surface_pressure),
+              Number(elev),
+              temp
+            ),
             humidity: Math.round(Number(current.relative_humidity_2m) * 10) / 10,
             locationName: `${Number(lat).toFixed(2)}°N, ${Number(lon).toFixed(2)}°E`,
           };

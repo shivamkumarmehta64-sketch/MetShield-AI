@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       3: 'You are a WMO Pub 8 Rule Engine. Run 5-tier quality control validation on weather telemetry packets.',
       4: 'You are a Spatial Cross-Validator using Haversine geometry. Cross-check observations against neighboring weather stations.',
       5: 'You are a Sensor Health Index Calculator. Calculate real-time degradation metrics and predict failure probability within 72 hours.',
-      6: 'You are an HMAC-SHA256 Data Seal Generator. Create tamper-proof cryptographic verification for telemetry provenance.',
+      6: 'You are a Telemetry Integrity Checksum Explainer. Describe how the deterministic FNV-1a checksum and anti-replay nonce in lib/anomalyLogic.ts detect accidental corruption. Be explicit that this is NOT a cryptographic signature, NOT HMAC-SHA256, and NOT tamper-resistant. Never output a value labelled as a signature, seal, or MAC.',
       7: 'You are a Heatwave & Severe Weather Decision Support System. Provide impact-based early warnings for extreme weather events.',
       8: 'You are an Edge Telemetry Ingestion Pipeline. Validate multi-packet telemetry with sub-5ms latency optimization.',
       9: 'You are Metshield Natural Language AI Copilot. Answer natural language queries about weather telemetry and diagnostics.',

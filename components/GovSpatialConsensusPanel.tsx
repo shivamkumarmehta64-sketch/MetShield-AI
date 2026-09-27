@@ -1,22 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   Compass,
   Radio,
-  CheckCircle2,
-  AlertTriangle,
   ShieldCheck,
-  ShieldAlert,
-  ShieldX,
   Download,
-  Share2,
-  Activity,
-  Layers,
-  ArrowRight,
-  Database,
-  Cpu,
 } from 'lucide-react';
 
 interface StationCohortNode {

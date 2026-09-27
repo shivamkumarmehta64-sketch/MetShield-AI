@@ -93,8 +93,31 @@ export function findStationProfile(id: string): IMDStationProfile | undefined {
   return IMD_AWS_STATIONS.find(s => s.stationId === id);
 }
 
-export const getStationProfile = (id: string): IMDStationProfile =>
-  IMD_AWS_STATIONS.find((s) => s.stationId === id) || IMD_AWS_STATIONS[0];
+/**
+ * Look up a station profile, or `undefined` if the id is not registered.
+ *
+ * PREVIOUSLY THIS SILENTLY FELL BACK to IMD_AWS_STATIONS[0] (Safdarjung, New
+ * Delhi) for any unknown id. That made a typo — or any unregistered station id
+ * — return Delhi's data with no error, which is how the `AWS-JOD-08` and
+ * `AWS-CHE-10` benchmark fixtures in lib/datasetParser.ts were silently
+ * misattributed to a Delhi station. It also meant a wrong elevation could be
+ * applied to a barometric reduction without any signal that it was wrong.
+ *
+ * Callers that genuinely want a fallback must opt in explicitly:
+ *   getStationProfile(id) ?? getStationProfile('AWS-DEL-04')
+ *   or use getDefaultStationProfile() below.
+ */
+export const getStationProfile = (id: string): IMDStationProfile | undefined =>
+  IMD_AWS_STATIONS.find((s) => s.stationId === id);
+
+/**
+ * Explicit opt-in fallback for callers that must always have a station
+ * (e.g. rendering a placeholder row). Named separately so that the unsafe
+ * behaviour is visible at every call site.
+ */
+export function getDefaultStationProfile(): IMDStationProfile {
+  return IMD_AWS_STATIONS[0];
+}
 
 // Re-export open-access live meteorological services directly from stationData
 export { fetchLiveStationObservation, fetchBatchLiveObservations } from './liveWeatherService';

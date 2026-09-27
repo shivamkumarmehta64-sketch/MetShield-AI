@@ -1,3 +1,5 @@
+import { IMD_AWS_STATIONS } from './stationData';
+
 export interface OperationalUseCase {
   id: string;
   badge: string;
@@ -197,6 +199,15 @@ export interface FeaturedObservatory {
   state: string;
   zone: string;
   temp: number;
+  /**
+   * MEAN SEA LEVEL pressure (hPa), matching `IMDStationProfile.baseline.pressureMean`.
+   *
+   * This list previously carried hand-entered STATION pressure (QFE) while
+   * lib/stationData.ts carried sea-level pressure (QNH) for the same stations:
+   * Bengaluru 918.2 vs 1013.2, Shimla 782.4, Leh 668.0. Two conventions, one
+   * registry, 95-346 hPa of disagreement depending on elevation. Values are now
+   * derived from the single registry rather than retyped.
+   */
   press: number;
   hum: number;
   wind: number;
@@ -207,13 +218,65 @@ export interface FeaturedObservatory {
   flag: string;
 }
 
-export const FEATURED_OBSERVATORIES: FeaturedObservatory[] = [
-  { id: 'AWS-DEL-04', city: 'New Delhi (Safdarjung)', state: 'Delhi (NCT)', zone: 'Indo-Gangetic Semi-Arid', temp: 29.4, press: 1006.5, hum: 68.0, wind: 14.2, windDir: 'WNW', elev: 216, wmo: '42182', status: 'Nominal Operation', flag: 'FLAG 1' },
-  { id: 'AWS-MUM-01', city: 'Mumbai (Colaba)', state: 'Maharashtra', zone: 'Western Coastal Marine', temp: 31.2, press: 1010.2, hum: 78.5, wind: 18.0, windDir: 'SW', elev: 11, wmo: '43057', status: 'Nominal Operation', flag: 'FLAG 1' },
-  { id: 'AWS-KOL-02', city: 'Kolkata (Alipore)', state: 'West Bengal', zone: 'Eastern Gangetic Delta', temp: 28.8, press: 1008.4, hum: 84.0, wind: 22.4, windDir: 'S', elev: 6, wmo: '42807', status: 'Convective Caution', flag: 'FLAG 2' },
-  { id: 'AWS-BLR-05', city: 'Bengaluru (HAL Airport)', state: 'Karnataka', zone: 'Deccan Plateau Highland', temp: 24.5, press: 918.2, hum: 62.0, wind: 12.0, windDir: 'WSW', elev: 920, wmo: '43295', status: 'Nominal Operation', flag: 'FLAG 1' },
-  { id: 'AWS-CHN-03', city: 'Chennai (Meenambakkam)', state: 'Tamil Nadu', zone: 'Coromandel Coastal', temp: 32.1, press: 1009.8, hum: 76.0, wind: 19.5, windDir: 'SE', elev: 16, wmo: '43279', status: 'Nominal Operation', flag: 'FLAG 1' },
-  { id: 'AWS-SHM-11', city: 'Shimla (Ridge)', state: 'Himachal Pradesh', zone: 'Western Himalayan Alpine', temp: 16.2, press: 782.4, hum: 54.0, wind: 15.0, windDir: 'NNW', elev: 2205, wmo: '42083', status: 'Nominal Operation', flag: 'FLAG 1' },
-  { id: 'AWS-LEH-14', city: 'Leh (Airport)', state: 'Ladakh', zone: 'Trans-Himalayan Cold Desert', temp: 9.8, press: 668.0, hum: 28.0, wind: 24.0, windDir: 'N', elev: 3514, wmo: '42027', status: 'Nominal Operation', flag: 'FLAG 1' },
-  { id: 'AWS-CHE-15', city: 'Cherrapunji (Sohra)', state: 'Meghalaya', zone: 'Khasi Orographic High-Precip', temp: 21.0, press: 872.1, hum: 96.0, wind: 28.5, windDir: 'SSW', elev: 1313, wmo: '42515', status: 'Severe Monsoon Front', flag: 'FLAG 2' },
-];
+/** Climate descriptor per station, presentational only. */
+const OBSERVATORY_ZONES: Record<string, string> = {
+  'AWS-DEL-04': 'Indo-Gangetic Semi-Arid',
+  'AWS-MUM-01': 'Western Coastal Marine',
+  'AWS-KOL-02': 'Eastern Gangetic Delta',
+  'AWS-BLR-05': 'Deccan Plateau Highland',
+  'AWS-CHN-03': 'Coromandel Coastal',
+  'AWS-SML-14': 'Western Himalayan Alpine',
+  'AWS-SRN-17': 'Trans-Himalayan Cold Desert',
+};
+
+/** Which stations get a featured card, and the QC state to present for each. */
+const FEATURED_STATION_IDS = [
+  'AWS-DEL-04', 'AWS-MUM-01', 'AWS-KOL-02', 'AWS-BLR-05',
+  'AWS-CHN-03', 'AWS-SML-14', 'AWS-SRN-17',
+] as const;
+
+const COMPASS: Record<number, string> = {
+  0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW',
+};
+const toCompass = (deg: number | undefined): string =>
+  deg === undefined ? '—' : (COMPASS[Math.round(deg / 45) % 8] ?? '—');
+
+/**
+ * Featured observatory cards, DERIVED from the single station registry.
+ *
+ * Everything except the climate zone and the presented QC state now comes from
+ * IMD_AWS_STATIONS, so the two files can no longer disagree. Station ids
+ * AWS-SHM-11 / AWS-LEH-14 / AWS-CHE-15 that used to appear here but not in the
+ * registry are gone; the equivalent registered stations (AWS-SML-14 Shimla,
+ * AWS-SRN-17 Srinagar) are used instead.
+ */
+export const FEATURED_OBSERVATORIES: FeaturedObservatory[] = FEATURED_STATION_IDS.map(
+  (id): FeaturedObservatory => {
+    const s = IMD_AWS_STATIONS.find((st) => st.stationId === id);
+    if (!s) {
+      // Fail loudly in development rather than rendering a half-empty card.
+      if (process.env.NODE_ENV !== 'production') {
+        throw new Error(
+          `FEATURED_OBSERVATORIES references unregistered station "${id}". ` +
+            `Add it to lib/stationData.ts or remove it from FEATURED_STATION_IDS.`
+        );
+      }
+      throw new Error(`Unregistered featured station: ${id}`);
+    }
+    return {
+      id: s.stationId,
+      city: s.name,
+      state: s.state,
+      zone: OBSERVATORY_ZONES[s.stationId] ?? 'Unclassified',
+      temp: s.baseline.tempMean,
+      press: s.baseline.pressureMean,
+      hum: s.baseline.humidityMean,
+      wind: s.baseline.windMean ?? 18,
+      windDir: toCompass(s.baseline.windDirMean),
+      elev: s.elevationM,
+      wmo: s.wmoBlockNo,
+      status: s.status === 'SCHEDULED_CALIBRATION' ? 'Scheduled Calibration' : 'Nominal Operation',
+      flag: 'FLAG 1',
+    };
+  }
+);

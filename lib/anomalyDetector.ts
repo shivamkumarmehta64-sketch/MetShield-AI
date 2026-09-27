@@ -12,7 +12,7 @@ export interface Reading3Param {
   stationId?: string;
 }
 
-export type AnomalySeverity = 'NOMINAL' | 'BLUE_GENUINE_WEATHER' | 'AMBER_PROBE_FREEZE' | 'RED_HARDWARE_FAULT';
+export type AnomalySeverity = 'NOMINAL' | 'BLUE_GENUINE_WEATHER' | 'AMBER_PROBE_FREEZE' | 'AMBER_CALIBRATION_DRIFT' | 'RED_HARDWARE_FAULT';
 
 export interface XAIAttribution {
   tempWeight: number; // 0 - 100%
@@ -32,6 +32,7 @@ export interface QCValidationResult {
     | 'HARDWARE_FAULT'
     | 'SENSOR_SPIKE'
     | 'PROBE_FREEZE'
+    | 'CALIBRATION_DRIFT'
     | 'PHYSICAL_LIMIT_EXCEEDED';
   wmoFlag: 'FLAG_1_GOOD' | 'FLAG_2_CONVECTIVE_STORM' | 'FLAG_3_SUSPECT' | 'FLAG_4_CORRUPT_HARDWARE';
   alertBadge: {
@@ -63,8 +64,29 @@ export interface QCValidationResult {
 export const WMO_LIMITS = {
   TEMP_MIN: -10.0, // °C
   TEMP_MAX: 55.0,  // °C
-  PRESS_MIN: 920.0, // hPa
-  PRESS_MAX: 1050.0, // hPa
+  /**
+   * Pressure plausibility floor, in hPa.
+   *
+   * PREVIOUSLY 920.0 — a sea-level-only bound. That quarantined every real
+   * high-altitude station in this repo's own registry: Leh (3,514 m, 668.0 hPa)
+   * and Shimla (2,205 m, 782.4 hPa) both came back FLAG_4_CORRUPT_HARDWARE
+   * while perfectly healthy.
+   *
+   * 300.0 hPa is the pressure at the summit of Everest (~8,848 m) and is below
+   * anything an Indian station can physically report. The upper bound is the
+   * highest sea-level pressure ever recorded (~1,084 hPa, Mongolia).
+   *
+   * NOTE ON LEVEL: this range deliberately admits BOTH station pressure (QFE,
+   * what a barometer physically reads, and what liveWeatherService fetches via
+   * Open-Meteo `surface_pressure`) and sea-level-reduced pressure (QNH/MSL,
+   * what every baseline in lib/stationData.ts is expressed in). Tier 1 is a
+   * gross-error gate, not a level discriminator, so spanning both is correct.
+   * The QFE/QNH distinction is handled by calculateQnhPressure() in
+   * lib/anomalyLogic.ts, which is called before imputation and stored on the
+   * packet as `orographicQnhPressure`.
+   */
+  PRESS_MIN: 300.0, // hPa — ~8,848 m summit
+  PRESS_MAX: 1085.0, // hPa — highest recorded sea-level pressure
   HUM_MIN: 5.0,    // %
   HUM_MAX: 100.0,  // %
 };
@@ -76,16 +98,79 @@ export const ROC_LIMITS = {
   HUM_STEP_MAX: 18.0, // % per cycle
   FREEZE_MIN_CYCLES: 6,
   FREEZE_VARIANCE_THRESHOLD: 0.001,
+  /**
+   * Peak-to-peak window range below which a channel counts as physically static.
+   * Telemetry arrives quantised to 0.1, so a live sensor does not repeat an identical
+   * reading for FREEZE_MIN_CYCLES consecutive cycles. A pure variance threshold is
+   * unreliable at that quantisation and produced spurious "probe freeze" alarms on
+   * healthy channels — measured at ~6% false-alarm rate by scripts/benchmark-detector.ts.
+   */
+  FREEZE_RANGE_THRESHOLD: 0.05,
+  /**
+   * Drift significance, in units of the channel's OWN measured noise.
+   *
+   * A fixed absolute threshold cannot work across channels: 0.8 hPa is a large
+   * excursion for a barometer (σ≈0.15) but an unremarkable one for a hygrometer
+   * (σ≈1.5). The test is therefore self-calibrating — the noise floor is estimated
+   * from the window's own first differences, and the cumulative move must clear it
+   * by this many standard deviations.
+   */
+  DRIFT_SIGMA_MULTIPLE: 2.5,
+  /** Fraction of consecutive window steps that must share the drift sign. */
+  DRIFT_MONOTONIC_RATIO: 0.75,
 };
 
 /**
- * Calculates standard deviation for an array of numbers
+ * Peak-to-peak range across a window. Used instead of variance for the freeze test
+ * because telemetry is quantised to 0.1 and variance thresholds misfire at that scale.
  */
-function calculateStdDev(values: number[]): number {
-  if (values.length < 2) return 1.0;
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / values.length;
-  return Math.sqrt(variance);
+function peakToPeakRange(values: number[]): number {
+  if (values.length < 2) return Number.POSITIVE_INFINITY;
+  let min = values[0];
+  let max = values[0];
+  for (const v of values) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  return max - min;
+}
+
+/**
+ * Detects a sustained one-way bias across a window — the signature of a slowly
+ * ageing transducer rather than a physical event.
+ *
+ * Self-calibrating: the channel's noise floor is estimated from the standard
+ * deviation of its own first differences, then the cumulative move is required to
+ * clear that floor by DRIFT_SIGMA_MULTIPLE. Returns null when the move is
+ * indistinguishable from ordinary channel noise.
+ */
+function detectMonotonicDrift(series: number[]): { cumulative: number; monotonicRatio: number; sigmaMultiple: number } | null {
+  if (series.length < 3) return null;
+
+  const deltas: number[] = [];
+  for (let i = 1; i < series.length; i++) deltas.push(series[i] - series[i - 1]);
+
+  const cumulative = series[series.length - 1] - series[0];
+
+  // Sample standard deviation of the first differences = this channel's noise floor.
+  const mean = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+  const variance = deltas.reduce((acc, d) => acc + Math.pow(d - mean, 2), 0) / (deltas.length - 1);
+  const noiseSd = Math.sqrt(variance);
+
+  // A perfectly constant channel has no estimable noise floor; leave it to the freeze test.
+  if (noiseSd === 0) return null;
+
+  // Expected magnitude of the cumulative move if the channel were pure noise.
+  const noiseFloor = noiseSd * Math.sqrt(deltas.length);
+  const sigmaMultiple = Math.abs(cumulative) / noiseFloor;
+  if (sigmaMultiple < ROC_LIMITS.DRIFT_SIGMA_MULTIPLE) return null;
+
+  const sign = cumulative > 0 ? 1 : -1;
+  const nonZero = deltas.filter((d) => d !== 0).length;
+  const agreeing = deltas.filter((d) => d !== 0 && Math.sign(d) === sign).length;
+  const monotonicRatio = nonZero === 0 ? 0 : agreeing / nonZero;
+
+  return { cumulative, monotonicRatio, sigmaMultiple };
 }
 
 /**
@@ -173,13 +258,9 @@ export function evaluate3ParamQC(
     const pSeries = [...recentHistory.map(h => h.pressure), P];
     const rhSeries = [...recentHistory.map(h => h.humidity), RH];
 
-    const tStd = calculateStdDev(tSeries);
-    const pStd = calculateStdDev(pSeries);
-    const rhStd = calculateStdDev(rhSeries);
-
-    const isTFrozen = tStd < ROC_LIMITS.FREEZE_VARIANCE_THRESHOLD;
-    const isPFrozen = pStd < ROC_LIMITS.FREEZE_VARIANCE_THRESHOLD;
-    const isRHFrozen = rhStd < ROC_LIMITS.FREEZE_VARIANCE_THRESHOLD;
+    const isTFrozen = peakToPeakRange(tSeries) <= ROC_LIMITS.FREEZE_RANGE_THRESHOLD;
+    const isPFrozen = peakToPeakRange(pSeries) <= ROC_LIMITS.FREEZE_RANGE_THRESHOLD;
+    const isRHFrozen = peakToPeakRange(rhSeries) <= ROC_LIMITS.FREEZE_RANGE_THRESHOLD;
 
     if (isTFrozen || isPFrozen || isRHFrozen) {
       const weights = computeXAIWeights(
@@ -223,6 +304,76 @@ export function evaluate3ParamQC(
   const isTempSpike = Math.abs(deltaT) > ROC_LIMITS.TEMP_STEP_MAX;
   const isPressStep = Math.abs(deltaP) > ROC_LIMITS.PRESS_STEP_MAX;
   const isHumStep = Math.abs(deltaRH) > ROC_LIMITS.HUM_STEP_MAX;
+
+  // -------------------------------------------------------------
+  // TIER 2.5: Slow Monotonic Calibration Drift
+  // -------------------------------------------------------------
+  // A slowly ageing transducer produces no single-cycle step, so the Tier 3 spike
+  // test never sees it and the storm discriminator is irrelevant. It is visible only
+  // as a sustained one-way trend across the analysis window.
+  //
+  // Two guards keep this from absorbing real weather:
+  //  1. Any step breach on the arriving frame disqualifies the window (a squall steps).
+  //  2. Exactly one channel must drift. Genuine atmospheric change moves temperature,
+  //     pressure and humidity together; a failing transducer moves alone.
+  if (!isTempSpike && !isPressStep && !isHumStep) {
+    const windows: Array<{ channel: 'temperature' | 'pressure' | 'humidity'; series: number[] }> = [
+      { channel: 'temperature', series: [...recentHistory.map((h) => h.temperature), T] },
+      { channel: 'pressure', series: [...recentHistory.map((h) => h.pressure), P] },
+      { channel: 'humidity', series: [...recentHistory.map((h) => h.humidity), RH] },
+    ];
+
+    const drifting = windows
+      .map((w) => ({ channel: w.channel, drift: detectMonotonicDrift(w.series) }))
+      .filter(
+        (w): w is {
+          channel: 'temperature' | 'pressure' | 'humidity';
+          drift: { cumulative: number; monotonicRatio: number; sigmaMultiple: number };
+        } => w.drift !== null && w.drift.monotonicRatio >= ROC_LIMITS.DRIFT_MONOTONIC_RATIO
+      );
+
+    if (drifting.length === 1) {
+      const { channel, drift } = drifting[0];
+      const cumulative = Math.round(drift.cumulative * 10) / 10;
+      const perCycle = Math.round((drift.cumulative / Math.max(1, recentHistory.length)) * 100) / 100;
+      const channelLabel =
+        channel === 'pressure' ? 'Barometer' : channel === 'temperature' ? 'Thermistor' : 'Humidity probe';
+
+      const weights = computeXAIWeights(
+        channel === 'temperature' ? 70 : 10,
+        channel === 'pressure' ? 70 : 10,
+        channel === 'humidity' ? 70 : 10
+      );
+
+      return {
+        // A slow bias is physically plausible, so the packet is not discarded —
+        // it is flagged suspect and routed for recalibration.
+        isValid: true,
+        tierPassed: 2,
+        severity: 'AMBER_CALIBRATION_DRIFT',
+        classification: 'CALIBRATION_DRIFT',
+        wmoFlag: 'FLAG_3_SUSPECT',
+        alertBadge: {
+          label: 'CALIBRATION DRIFT',
+          color: 'amber',
+          description: `Sustained monotonic bias on a single channel (~${perCycle} per cycle over ${recentHistory.length} cycles).`,
+        },
+        raw: { temperature: T, pressure: P, humidity: RH },
+        imputed: {
+          temperature: T,
+          pressure: P,
+          humidity: RH,
+          wasImputed: false,
+        },
+        deltas: { deltaT, deltaP, deltaRH },
+        xai: {
+          ...weights,
+          diagnosticExplanation: `${channelLabel} Calibration Drift: a sustained ${cumulative > 0 ? 'rising' : 'falling'} bias of ${Math.abs(cumulative)} (${channel === 'humidity' ? '%' : channel === 'pressure' ? 'hPa' : '°C'}) accumulated monotonically across the analysis window with no step discontinuity and no corroborating movement on the other channels. Consistent with transducer ageing rather than atmospheric forcing.`,
+        },
+        recommendedAction: 'Schedule NABL-traceable recalibration. Data retained for assimilation with a drift flag.',
+      };
+    }
+  }
 
   // Genuine Weather Event rule: ΔP ≤ -2.5 hPa coupled with ΔRH ≥ +15%
   // Genuine Weather Event rule: ΔP ≤ -2.5 hPa coupled with ΔRH ≥ +15% and ΔT ≤ -0.5°C

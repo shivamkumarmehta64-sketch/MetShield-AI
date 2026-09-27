@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Cpu, ShieldCheck, Activity, Brain, CheckCircle2, GitBranch, Layers, Check, Zap, Server } from 'lucide-react';
+import { Brain, CheckCircle2 } from 'lucide-react';
 
 export function AIEnginePipeline() {
   return (
@@ -100,69 +99,98 @@ export function AIEnginePipeline() {
         </div>
       </div>
 
-      {/* Model Benchmark Performance Matrix Table */}
+      {/*
+        DEMO NOTICE — read before restoring any numbers here.
+
+        This table previously displayed per-category Precision / Recall / F1 /
+        False-Alarm-Rate / Detection-Latency figures (e.g. "98.4% / 97.8% /
+        98.1%", "3.4 ms") under the heading "Empirical Evaluation Matrix on
+        Anomaly-Injected Test Datasets" and the caption "Evaluated on 50,000
+        Synthetic Frames".
+
+        No evaluation was ever run. Those numbers were hand-written, there is no
+        labelled dataset behind them, and the latency figures were not measured.
+        The classifier in lib/mlAnomalyModel.ts is an if/else chain, not a
+        trained model. Quoting fabricated precision/recall for a
+        government-adjacent quality-control system is the kind of claim that
+        ends an audit badly.
+
+        What we CAN defend today, and now state instead:
+          - the rule engine is deterministic
+          - it is covered by automated tests for each tier
+          - __tests__/qcEngine.test.ts locks in storm-vs-fault discrimination
+
+        To restore a real performance table, first build an evaluation harness
+        and a labelled corpus, run it, and paste the OUTPUT. Do not retype
+        plausible-looking numbers.
+      */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-2">
           <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            Empirical Evaluation Matrix on Anomaly-Injected Test Datasets
+            <CheckCircle2 className="w-4 h-4 text-amber-400" />
+            Classifier Status — Metrics Not Yet Measured
           </span>
-          <span className="text-[10px] font-mono text-slate-400">Evaluated on 50,000 Synthetic Frames</span>
+          <span className="text-[10px] font-mono text-amber-400/80 shrink-0">No benchmark run</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-sans border-collapse">
             <thead>
               <tr className="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase border-b border-slate-800">
-                <th className="py-2 px-3">Fault Category</th>
-                <th className="py-2 px-3">Precision</th>
-                <th className="py-2 px-3">Recall</th>
-                <th className="py-2 px-3">F1-Score</th>
-                <th className="py-2 px-3">False Alarm Rate</th>
-                <th className="py-2 px-3">Detection Latency</th>
-                <th className="py-2 px-3">Action Triggered</th>
+                <th className="py-2 px-3">Property</th>
+                <th className="py-2 px-3">Status</th>
+                <th className="py-2 px-3">Evidence</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80 font-mono text-[11px]">
-              <tr className="bg-slate-900/40 hover:bg-slate-800/50 transition-colors">
-                <td className="py-2 px-3 font-bold text-white">Sensor Hardware Spike</td>
-                <td className="py-2 px-3 text-emerald-400 font-bold">98.4%</td>
-                <td className="py-2 px-3 text-cyan-400 font-bold">97.8%</td>
-                <td className="py-2 px-3 text-emerald-300 font-bold">98.1%</td>
-                <td className="py-2 px-3 text-slate-400">1.6%</td>
-                <td className="py-2 px-3 text-slate-300">3.4 ms</td>
-                <td className="py-2 px-3 text-rose-400 font-bold">Quarantine &amp; Impute</td>
-              </tr>
-              <tr className="bg-slate-900/40 hover:bg-slate-800/50 transition-colors">
-                <td className="py-2 px-3 font-bold text-white">Stuck / Frozen ADC Register</td>
-                <td className="py-2 px-3 text-emerald-400 font-bold">99.1%</td>
-                <td className="py-2 px-3 text-cyan-400 font-bold">98.5%</td>
-                <td className="py-2 px-3 text-emerald-300 font-bold">98.8%</td>
-                <td className="py-2 px-3 text-slate-400">0.9%</td>
-                <td className="py-2 px-3 text-slate-300">2.1 ms</td>
-                <td className="py-2 px-3 text-rose-400 font-bold">Reset &amp; Neighbor Sync</td>
-              </tr>
-              <tr className="bg-slate-900/40 hover:bg-slate-800/50 transition-colors">
-                <td className="py-2 px-3 font-bold text-white">Barometric Sensor Drift</td>
-                <td className="py-2 px-3 text-emerald-400 font-bold">94.2%</td>
-                <td className="py-2 px-3 text-cyan-400 font-bold">92.6%</td>
-                <td className="py-2 px-3 text-emerald-300 font-bold">93.4%</td>
-                <td className="py-2 px-3 text-slate-400">3.8%</td>
-                <td className="py-2 px-3 text-slate-300">4.8 ms</td>
-                <td className="py-2 px-3 text-amber-400 font-bold">Kriging Bias Imputation</td>
-              </tr>
-              <tr className="bg-slate-900/40 hover:bg-slate-800/50 transition-colors">
-                <td className="py-2 px-3 font-bold text-white">Genuine Severe Convective Storm</td>
-                <td className="py-2 px-3 text-emerald-400 font-bold">96.8%</td>
-                <td className="py-2 px-3 text-cyan-400 font-bold">97.5%</td>
-                <td className="py-2 px-3 text-emerald-300 font-bold">97.1%</td>
-                <td className="py-2 px-3 text-slate-400">2.1%</td>
-                <td className="py-2 px-3 text-slate-300">3.9 ms</td>
-                <td className="py-2 px-3 text-emerald-400 font-bold">Approved for NWP</td>
-              </tr>
+              {[
+                {
+                  property: 'Model type',
+                  status: 'Rule-based threshold cascade',
+                  evidence: 'lib/mlAnomalyModel.ts',
+                  tone: 'text-amber-300' },
+                {
+                  property: 'Trained weights',
+                  status: 'None — not a trained model',
+                  evidence: 'getModelMetadata().isTrainedModel === false',
+                  tone: 'text-amber-300' },
+                {
+                  property: 'Determinism',
+                  status: 'Deterministic (no RNG, no clock)',
+                  evidence: 'Unit-tested',
+                  tone: 'text-emerald-300' },
+                {
+                  property: 'Precision / Recall / F1',
+                  status: 'Not measured — no labelled corpus',
+                  evidence: 'Requires an evaluation harness',
+                  tone: 'text-amber-300' },
+                {
+                  property: 'Detection latency',
+                  status: 'Not benchmarked',
+                  evidence: 'Requires profiling on target hardware',
+                  tone: 'text-amber-300' },
+                {
+                  property: 'Storm vs fault discrimination',
+                  status: 'Covered by regression tests',
+                  evidence: '__tests__/qcEngine.test.ts',
+                  tone: 'text-emerald-300' },
+              ].map((row) => (
+                <tr key={row.property} className="bg-slate-900/40">
+                  <td className="py-2 px-3 font-bold text-white">{row.property}</td>
+                  <td className={`py-2 px-3 ${row.tone}`}>{row.status}</td>
+                  <td className="py-2 px-3 text-slate-400">{row.evidence}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
+
+        <p className="text-[10px] text-amber-300/80 leading-relaxed">
+          Precision, recall, F1 and latency figures are deliberately absent. Publishing
+          unmeasured performance numbers for anomaly detection on meteorological
+          telemetry would misrepresent the system&apos;s reliability to anyone relying on it
+          for operational decisions.
+        </p>
       </div>
     </div>
   );

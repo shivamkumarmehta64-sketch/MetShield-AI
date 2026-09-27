@@ -13,22 +13,11 @@ import {
   Cpu,
   Globe,
   Smartphone,
-  CloudLightning,
-  BarChart3,
-  Lock,
-  Wrench,
   Download,
   Award,
-  Layers,
   CheckCircle2,
   AlertTriangle,
-  Compass,
-  TrendingUp,
   FileText,
-  Users,
-  Sparkles,
-  RefreshCw,
-  ExternalLink,
 } from 'lucide-react';
 import { StormVsFaultSimulator } from '@/components/StormVsFaultSimulator';
 import { AIEnginePipeline } from '@/components/AIEnginePipeline';
@@ -76,35 +65,6 @@ function AnimatedGrid() {
         }}
       />
     </div>
-  );
-}
-
-/* ─── Capability Card ─── */
-function CapCard({
-  icon,
-  title,
-  desc,
-  delay,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  delay: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 25 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.4, delay, ease: 'easeOut' }}
-      className="bg-[#0e1730]/80 backdrop-blur-md border border-slate-800/90 rounded-2xl p-4 hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 group"
-    >
-      <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-2.5 group-hover:bg-cyan-500/20 transition-colors">
-        {icon}
-      </div>
-      <h3 className="font-bold text-white text-xs mb-1">{title}</h3>
-      <p className="text-[11px] text-slate-400 leading-snug">{desc}</p>
-    </motion.div>
   );
 }
 
@@ -977,7 +937,7 @@ export default function LandingPage() {
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Key Defensive Message for Evaluators</h3>
               <div className="bg-slate-900/50 border-l-4 border-emerald-500 p-4 rounded-r-lg text-sm text-slate-300 leading-relaxed italic relative">
-                <span className="text-4xl absolute -top-2 -left-3 text-slate-800">"</span>
+                <span className="text-4xl absolute -top-2 -left-3 text-slate-800">&ldquo;</span>
                 Project JATAYU is designed for severe conditions. If communication drops, local 72-hour edge buffers cache telemetry until links recover. If a sensor fails physically, real-time Gaussian moving-average imputation reconstructs the missing stream so numerical prediction models do not diverge. Most critically, during extreme cyclonic landfalls, our thermodynamic coupling logic prevents false-alarm blinding by validating that barometric plunges correspond with humidity surges, passing authentic severe weather directly to forecasters.
               </div>
             </div>
@@ -997,7 +957,7 @@ export default function LandingPage() {
               Thumb-Driven Operations at the Edge
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Designed for single-hand, thumb-first control, the progressive web app (PWA) instantly turns any field technician's smartphone into an active weather node and diagnostic terminal.
+              Designed for single-hand, thumb-first control, the progressive web app (PWA) instantly turns any field technician&apos;s smartphone into an active weather node and diagnostic terminal.
             </p>
           </div>
 
@@ -1043,7 +1003,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-sm font-bold text-white">Single-Tap Auditing</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Field workers can instantly report physical anomalies with auto-filled 30-sample ring buffer snapshots. Tapping <strong className="text-slate-300">"Export QC Audit Log"</strong> pushes standard NIC-formatted CSVs directly to the phone's native file system.
+                Field workers can instantly report physical anomalies with auto-filled 30-sample ring buffer snapshots. Tapping <strong className="text-slate-300">&ldquo;Export QC Audit Log&rdquo;</strong> pushes standard NIC-formatted CSVs directly to the phone&apos;s native file system.
               </p>
             </div>
           </div>

@@ -63,7 +63,7 @@ async function main() {
     try {
       await useCaseButtons.nth(i).click({ timeout: 2000 });
       await sleep(1500);
-    } catch (e) {
+    } catch  {
       // Continue if not clickable
     }
   }
@@ -88,7 +88,7 @@ async function main() {
     try {
       await stationButtons.nth(i).click({ timeout: 2000 });
       await sleep(1800);
-    } catch (e) {
+    } catch  {
       // Continue
     }
   }
@@ -112,7 +112,7 @@ async function main() {
         await sleep(1500);
         await smoothScroll(page, 0, 10, 30);
       }
-    } catch (e) {
+    } catch  {
       // Continue
     }
   }

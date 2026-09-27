@@ -100,6 +100,12 @@ export interface MapNode {
   lon: number;
   isMobile?: boolean;
   isCoreImd?: boolean;
+  /**
+   * True when this node comes from a synthesized registry record (see
+   * lib/dataProvenance.ts). Rendered hollow so a placeholder is never mistaken
+   * for a real district on the map.
+   */
+  isSynthetic?: boolean;
   col: { fill: string; ring?: string; label?: string };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pkt?: any;
@@ -277,7 +283,11 @@ export default function LeafletMap({
               color: isSelected ? '#38bdf8' : (node.isCoreImd ? '#f59e0b' : '#ffffff'),
               weight: isSelected ? 3 : (node.isCoreImd ? 2 : 1),
               fillColor: color,
-              fillOpacity: isSelected ? 1 : 0.88,
+              // Synthesized records are drawn hollow with a dashed edge, so a
+              // placeholder district is visually distinct from a real one even
+              // at high density where labels are hidden.
+              fillOpacity: isSelected ? 1 : (node.isSynthetic ? 0.05 : 0.88),
+              dashArray: node.isSynthetic ? '2,2' : undefined,
             }}
             eventHandlers={{
               click: () => onNodeClick(node),
@@ -295,6 +305,14 @@ export default function LeafletMap({
                   {node.isCoreImd && (
                     <span className="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">
                       IMD Benchmark
+                    </span>
+                  )}
+                  {node.isSynthetic && (
+                    <span
+                      className="text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold whitespace-nowrap"
+                      title="This is a synthesized placeholder record, not a real district. See lib/dataProvenance.ts."
+                    >
+                      Synthetic record
                     </span>
                   )}
                 </div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shield, ShieldCheck, Clock, Globe, Eye, BookOpen, Layers, Server, FileText, Smartphone, Menu, X, Home, Activity, FileCheck, Cpu, Zap } from 'lucide-react';
+import { Shield, ShieldCheck, Clock, Globe, Eye, BookOpen, Layers, Server, FileText, Smartphone, Menu, X, Home, Activity, FileCheck, Cpu } from 'lucide-react';
 import { ActiveModalType } from './GovInfoModals';
 
 interface GovHeaderProps {

@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { X, BookOpen, Cpu, Eye, Server, Layers, CheckCircle2, AlertTriangle, CloudLightning, Wrench, ShieldCheck, Lock, KeyRound, Scale } from 'lucide-react';
+import { IMD_AWS_STATIONS } from '@/lib/stationData';
+import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 
 export type ActiveModalType = 'architecture' | 'methodology' | 'accessibility' | 'provenance' | 'security' | 'legal' | null;
 
@@ -251,13 +253,13 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                 </p>
               </div>
               {[
-                { 
-                  t: 'National Geospatial & WMO Registry Compliance:', 
-                  d: 'All 21 primary observatories and 766 district monitoring nodes reference official World Meteorological Organization (WMO-No. 8) and IMD station directories, guaranteeing complete structural interoperability with India’s operational observation network.' 
+                {
+                  t: 'Registry Scope & Provenance:',
+                  d: `This build ships ${IMD_AWS_STATIONS.length} station profiles and ${DISTRICT_REGISTRY_COUNTS.total} district records (${DISTRICT_REGISTRY_COUNTS.real} real districts, ${DISTRICT_REGISTRY_COUNTS.modified} with adjusted attributes, ${DISTRICT_REGISTRY_COUNTS.synthesized} synthesized placeholders shown hollow on the map). The records are modelled on the shape of the IMD/WMO-No. 8 station directory. They are not an authoritative mirror of it: station metadata such as WMO block numbers and NABL certificate numbers in this repository are illustrative, not registry-issued, and no live handshake with an IMD directory has been performed.`
                 },
-                { 
-                  t: 'Climatological Baseline & Zahumenský Standards:', 
-                  d: 'Atmospheric baseline calculations integrate authentic Indian thermodynamic profiles across varied terrain (Himalayan, Coastal, Gangetic Plains, Deccan, and Desert). Step-change limits, barometric rate-of-change (RoC), and multivariate pressure-humidity coupling adhere strictly to Zahumenský (2004) quality control protocols.' 
+                {
+                  t: 'Climatological Baseline & Zahumenský Standards:',
+                  d: 'The Tier 1-3 quality-control thresholds follow the structure of Zahumenský (2004) and WMO-No. 8: physical plausibility, rate-of-change, and multivariate pressure/humidity coupling. Climatological reference values used for heatwave departure are coarse hand-entered approximations, not IMD gridded climatology, and every non-hilly district is currently treated as 200 m elevation pending a real elevation field.'
                 },
                 { 
                   t: 'Edge-Native Sovereign Cloud Architecture:', 
@@ -275,36 +277,37 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
             <div className="space-y-3">
               <div className="p-3 bg-emerald-50 border border-emerald-300 rounded text-emerald-950">
                 <div className="font-bold text-xs mb-1 flex items-center gap-1.5 text-emerald-900">
-                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                  Sovereign Critical Infrastructure Telemetry Security Standards:
+                  <ShieldCheck className="w-4 h-4 text-amber-700" />
+                  Telemetry Integrity — What This Build Actually Does:
                 </div>
                 <p>
-                  To protect national meteorological infrastructure from sensor spoofing, GPS injection, and state-actor tampering,
-                  Metshield AI implements a hardware-to-cloud Zero-Trust cryptographic envelope across all 1,350+ AWS stations.
+                  Sensor spoofing and payload tampering are real threats to meteorological
+                  networks. This is a <strong>demonstration build</strong>, so it is important to
+                  be precise about which of those controls are implemented and which are not.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   {
-                    icon: <Lock className="w-4 h-4 text-indigo-700" />,
-                    title: '1. INSAT-3D Cryptographic HMAC Seals',
-                    desc: 'Every DCP frame generates an HMAC-SHA256 signature combining physical sensor bits, monotonic sequence nonce, and station private key. Prevents replay and payload alteration.',
+                    icon: <Lock className="w-4 h-4 text-emerald-700" />,
+                    title: '1. Implemented: deterministic checksum',
+                    desc: 'Each packet carries an unkeyed FNV-1a checksum plus a monotonic nonce, so a truncated or partially-written record is detectable. This is a corruption check, NOT a signature — the algorithm is public, so anyone who can write a row can recompute it.',
                   },
                   {
-                    icon: <KeyRound className="w-4 h-4 text-amber-700" />,
-                    title: '2. Immutable Merkle Audit Ledger',
-                    desc: 'All WMO Quality Flag determinations and automated technician work orders are hashed into a tamper-evident cryptographic log with unalterable audit trails.',
+                    icon: <KeyRound className="w-4 h-4 text-emerald-700" />,
+                    title: '2. Implemented: append-only local audit log',
+                    desc: 'Quality-control decisions and generated work orders are written to a bounded in-memory buffer and, when configured, to a Supabase table. This is NOT a cryptographic ledger and offers no immutability guarantee.',
                   },
                   {
-                    icon: <Server className="w-4 h-4 text-sky-700" />,
-                    title: '3. MeitY Sovereign Data Localization',
-                    desc: 'Zero unencrypted telemetry is exported outside Indian borders. Edge compute and assimilation pipelines run exclusively on MeitY-empaneled sovereign government cloud zones.',
+                    icon: <Server className="w-4 h-4 text-amber-700" />,
+                    title: '3. Not implemented: signed envelopes',
+                    desc: 'There is no HMAC-SHA256 signing, no HKDF key derivation, and no station-held private key. A server-side Web Crypto HMAC over a secret is the intended next step.',
                   },
                   {
-                    icon: <Cpu className="w-4 h-4 text-emerald-700" />,
-                    title: '4. Doppler Geofence & Anti-Spoofing Gating',
-                    desc: 'Cross-verifies reported station coordinates against INSAT-3D UHF satellite Doppler vectors and terrestrial BSNL cell-towers to instantly drop spoofed rogue telemetry.',
+                    icon: <Cpu className="w-4 h-4 text-amber-700" />,
+                    title: '4. Not implemented: geofencing / anti-spoofing',
+                    desc: 'There is no INSAT-3D Doppler cross-check and no BSNL cell-tower triangulation. The geofence status shown in the packet seal is a static placeholder, not a computed result.',
                   },
                 ].map((item) => (
                   <div key={item.title} className="p-3 bg-slate-50 border border-slate-200 rounded space-y-1">
@@ -317,10 +320,11 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
                 ))}
               </div>
 
-              <div className="p-2.5 bg-slate-900 text-emerald-400 font-mono text-[10px] rounded border border-slate-800 space-y-0.5">
-                <div className="text-slate-400 font-sans uppercase font-bold text-[9px]">Live Cryptographic Telemetry Pipeline Spec:</div>
-                <div>CIPHER: HMAC-SHA256 • KEY DERIVATION: HKDF-RFC5869 • CARRIER: UHF 402.75 MHz</div>
-                <div>DEFENSE: Sliding Window Rate-Limiter (60 RPM/IP) • BUFFER: 10KB Hard-Capped Rail</div>
+              <div className="p-2.5 bg-slate-900 text-amber-300 font-mono text-[10px] rounded border border-slate-800 space-y-0.5">
+                <div className="text-slate-400 font-sans uppercase font-bold text-[9px]">Ingest Controls Actually Enforced:</div>
+                <div>INGRESS: station-id format check + physical range clamp (WMO Tier 1)</div>
+                <div>RATE LIMIT: 240 req/min per station+IP (in-memory, per instance — not shared)</div>
+                <div>SIGNING: none · LEDGER: none · DEPLOYMENT: Vercel, not MeitY sovereign cloud</div>
               </div>
             </div>
           )}

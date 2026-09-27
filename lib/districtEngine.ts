@@ -16,6 +16,7 @@ import {
   DistrictMeta
 } from './sensorFaultEngine';
 import { useState, useEffect, useCallback } from 'react';
+import type { Provenance } from './dataProvenance';
 
 export type DistrictFetchStatus = 'pending' | 'loading' | 'live' | 'stale' | 'error';
 
@@ -27,6 +28,17 @@ export interface DistrictLiveState {
   history: HistoricalReading[];
   qcReport: SensorReport | null;
   lastUpdated: number | null;
+  /**
+   * Where `reading` came from.
+   *
+   * CRITICAL: a district whose upstream fetch failed is served a synthetic
+   * physical-model reading. Without this flag the UI could not tell that apart
+   * from a real observation, and the old code went further and set
+   * `status: 'live'` unconditionally — so an offline or rate-limited user saw
+   * healthy-looking numbers labelled as live. `status` answers "did the request
+   * succeed"; `provenance` answers "is this a measurement". Both are needed.
+   */
+  provenance: Provenance;
 }
 
 // Global in-memory cache for all 766 districts
@@ -109,7 +121,9 @@ export function initializeDistrictEngine() {
         reading: null,
         history: [],
         qcReport: null,
-        lastUpdated: null
+        lastUpdated: null,
+        // Nothing fetched yet, so nothing is known to be a measurement.
+        provenance: 'SIMULATED'
       });
       queueStatus.set(d.id, 'pending');
     }
@@ -238,6 +252,7 @@ export function generatePhysicalDistrictTelemetry(d: IndiaDistrict): { reading: 
 export async function fetchDistrictFromOpenMeteo(d: IndiaDistrict): Promise<DistrictLiveState> {
   let reading: LiveDistrictReading;
   let history: HistoricalReading[] = [];
+  let provenance: Provenance = 'LIVE';
 
   try {
     const url =
@@ -303,10 +318,13 @@ export async function fetchDistrictFromOpenMeteo(d: IndiaDistrict): Promise<Dist
       }
     }
   } catch {
-    // Graceful physical model fallback
+    // Upstream fetch failed (network, 429, or malformed payload). Serve the
+    // synthetic physical model so the UI still renders, but record that the
+    // data is generated rather than observed.
     const fallback = generatePhysicalDistrictTelemetry(d);
     reading = fallback.reading;
     history = fallback.history;
+    provenance = 'SIMULATED';
   }
 
   // Run all WMO & IMD sensor fault checks
@@ -317,7 +335,7 @@ export async function fetchDistrictFromOpenMeteo(d: IndiaDistrict): Promise<Dist
     lat: d.lat,
     lng: d.lng,
     population: d.population,
-    elevation: 200,
+    elevation: d.elevation ?? 200,
     isCoastal: d.isCoastal
   };
 
@@ -325,16 +343,21 @@ export async function fetchDistrictFromOpenMeteo(d: IndiaDistrict): Promise<Dist
 
   const state: DistrictLiveState = {
     district: d,
-    status: 'live',
+    // A simulated reading must not claim to be live. The request DID succeed
+    // in the sense that we produced a value, but the value is not a
+    // measurement, and 'live' is the one status a dashboard operator would read
+    // as "this is real".
+    status: provenance === 'SIMULATED' ? 'stale' : 'live',
     health: qcReport.overallStatus,
     reading,
     history,
     qcReport,
-    lastUpdated: Date.now()
+    lastUpdated: Date.now(),
+    provenance
   };
 
   districtCache.set(d.id, state);
-  queueStatus.set(d.id, 'live');
+  queueStatus.set(d.id, state.status);
   return state;
 }
 
@@ -376,13 +399,26 @@ function startQueueWorker() {
 
         entry.status = 'loading';
         queueStatus.set(item.districtId, 'loading');
+        // Persist the intermediate state too, so a subscriber notified during
+        // the fetch sees 'loading' rather than the previous value.
+        districtCache.set(item.districtId, { ...entry });
 
         try {
           await fetchDistrictFromOpenMeteo(entry.district);
         } catch (err) {
-          console.warn(`Fetch error for ${entry.district.name}:`, err);
-          entry.status = 'error';
-          entry.health = 'OFFLINE';
+          console.warn(`[DistrictEngine] Fetch failed for ${entry.district.name}:`, err);
+          // The error state MUST be written back to the cache. Previously it
+          // was only set on the local `entry` object, which was discarded —
+          // so `districtCache` kept the last 'live' values and the UI
+          // continued to display stale data as current, with no error shown.
+          districtCache.set(item.districtId, {
+            ...entry,
+            status: 'error',
+            health: 'OFFLINE',
+            lastUpdated: entry.lastUpdated,
+            // We have no observation at all now, so nothing here is measured.
+            provenance: 'SIMULATED',
+          });
           queueStatus.set(item.districtId, 'error');
         }
       })

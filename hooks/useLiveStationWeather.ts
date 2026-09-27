@@ -5,7 +5,12 @@ import { getStationProfile, IMDStationProfile } from '@/lib/stationData';
 import { fetchLiveStationObservation, LiveObservation } from '@/lib/liveWeatherService';
 
 export interface UseLiveStationWeatherResult {
-  station: IMDStationProfile;
+  /**
+   * `null` when `stationId` is not in the registry. Previously this silently
+   * resolved to Safdarjung, so a caller could render Delhi's live weather under
+   * another station's name. Callers must handle the null case.
+   */
+  station: IMDStationProfile | null;
   observation: LiveObservation | null;
   isLoading: boolean;
   error: string | null;
@@ -100,7 +105,7 @@ export function useLiveStationWeather(
   }, [fetchWeather, pollIntervalMs]);
 
   return {
-    station,
+    station: station ?? null,
     observation,
     isLoading,
     error,

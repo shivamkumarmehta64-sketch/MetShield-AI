@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Sparkles, Loader2, Compass, ArrowRight } from 'lucide-react';
 import { searchIndianDistricts, DistrictSearchResult, NOTABLE_INDIAN_EXTREMES, createDynamicStationProfile } from '@/lib/liveDistrictService';
 import { IMDStationProfile } from '@/lib/stationData';
+import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 
 interface Props {
   onSelectStationProfile: (profile: IMDStationProfile) => void;
@@ -87,8 +88,11 @@ export const GovIndiaDistrictSearch = React.memo<Props>(function GovIndiaDistric
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-white tracking-wide uppercase flex items-center gap-2">
               <span>{language === 'hi' ? 'अखिल भारतीय जिला व शहर लाइव मौसम अन्वेषक' : 'All-India District & City Universal Ingestion'}</span>
-              <span className="bg-sky-950 text-sky-400 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold border border-sky-800/60">
-                766 Districts
+              <span
+                className="bg-sky-950 text-sky-400 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold border border-sky-800/60"
+                title={`${DISTRICT_REGISTRY_COUNTS.real} real district records, ${DISTRICT_REGISTRY_COUNTS.modified} with adjusted attributes, ${DISTRICT_REGISTRY_COUNTS.synthesized} synthesized placeholders. Only the first group is a faithful real-district registry.`}
+              >
+                {DISTRICT_REGISTRY_COUNTS.total} district records
               </span>
             </h2>
             <p className="text-[11px] text-slate-400">

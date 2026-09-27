@@ -38,10 +38,13 @@ export const GovEmergencyAlertModal: React.FC<Props> = ({
     alertLevel: alertType === 'STORM' ? 'LEVEL_2_YELLOW' : 'LEVEL_4_RED',
     faultProbability: alertType === 'STORM' ? 0.08 : 0.98,
     xaiAttribution: { tempWeight: 20, pressWeight: 48, humWeight: 32, primaryParameter: 'Pressure', diagnosticNote: 'Convective storm front' },
+    mlPrediction: { mlClassification: alertType === 'STORM' ? 'GENUINE_CONVECTIVE_EVENT' : 'SENSOR_SPIKE', mlConfidence: 0.92, agreesWithRules: true },
     operationalAction: 'Dispatched',
     ticketId: 'TKT-ALERT-01',
-    securitySeal: { hmacSha256: '0x8f2d...', antiReplayNonce: 104821, auditMerkleRoot: '0x7b...', geofenceStatus: 'VERIFIED_IN_BOUNDS', tamperStatus: 'AUTHENTIC' },
-  } as TelemetryPacket), [alertType]);
+    // Placeholder demo checksums on a static sample packet. Not signatures —
+    // see lib/anomalyLogic.ts computeDemoIntegritySeal.
+    securitySeal: { hmacSha256: '0x8f2d...', antiReplayNonce: 104821, auditMerkleRoot: '0x7b...', geofenceStatus: 'VERIFIED_IN_BOUNDS', tamperStatus: 'DEMO_UNVERIFIED' },
+  }), [alertType]);
 
   if (!isOpen) return null;
 

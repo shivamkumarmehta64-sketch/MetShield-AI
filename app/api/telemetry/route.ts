@@ -190,16 +190,37 @@ export async function POST(request: NextRequest) {
       liveIngestedBuffer.pop();
     }
 
-    // Zero-cost asynchronous persistence to Cloudflare D1 / edge RAM
-    persistTelemetryToEdge(evaluatedPacket).catch(() => {});
+    // Asynchronous persistence to Cloudflare D1, with an in-memory fallback.
+    //
+    // This previously used `.catch(() => {})`, which discarded both the failure
+    // and the result. Combined with persistTelemetryToEdge returning
+    // `persisted: true` on fallback, a total storage failure was completely
+    // invisible: the client got 200, the UI showed the packet, and nothing was
+    // durably written. Now the degradation is logged and reported in the
+    // response so an operator can see that the audit trail is not durable.
+    const storageResult = await persistTelemetryToEdge(evaluatedPacket);
+    if (!storageResult.persisted) {
+      console.warn(
+        `[telemetry] Durable storage unavailable for packet ${evaluatedPacket.packetId} ` +
+          `(station ${evaluatedPacket.stationId}). Held in a process-local buffer only; ` +
+          `it will be lost on restart. Check the D1 binding.`
+      );
+    }
 
-    const latencyMs = Math.round((performance.now() - startTime) * 100) / 100;
+    const latencyMs = Math.round((performance.now() - startTime) * 10) / 10;
 
     return NextResponse.json(
       {
         success: true,
         latencyMs,
         compliance: 'WMO Pub No. 8 Quality Management Standards',
+        /**
+         * Whether this packet reached durable storage. `false` means it is
+         * held in a volatile buffer and will not survive a restart — callers
+         * building an audit trail must treat that as a failed write.
+         */
+        persisted: storageResult.persisted,
+        storage: storageResult.storage,
         data: evaluatedPacket,
       },
       { status: 200 }

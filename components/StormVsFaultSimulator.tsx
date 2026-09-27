@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle, ShieldCheck, Cpu, ArrowRight, Zap, CheckCircle2,
-  XCircle, Brain, RefreshCw, BarChart2, Activity, Thermometer, Gauge, Droplets, Sparkles
+  AlertTriangle, ShieldCheck, Brain,
+  BarChart2, Activity, Thermometer, Gauge, Droplets, Sparkles
 } from 'lucide-react';
 
 interface TestCase {
