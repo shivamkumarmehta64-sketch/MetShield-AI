@@ -14,16 +14,12 @@ import {
   Cpu,
   Globe,
   Smartphone,
-  Download,
   Award,
   CheckCircle2,
   AlertTriangle,
   FileText,
 } from 'lucide-react';
-import { StormVsFaultSimulator } from '@/components/StormVsFaultSimulator';
-import { AIEnginePipeline } from '@/components/AIEnginePipeline';
 import { WeatherAtmosphereCanvas } from '@/components/WeatherAtmosphereCanvas';
-import { GovSpatialConsensusPanel } from '@/components/GovSpatialConsensusPanel';
 import { GovInstitutionalConsole } from '@/components/GovInstitutionalConsole';
 
 /* ─── Animated Counter Hook ─── */
@@ -132,9 +128,6 @@ export default function LandingPage() {
               </div>
               <h1 className="text-sm sm:text-lg font-bold tracking-tight text-white flex items-center gap-1.5 sm:gap-2">
                 <span>METSHIELD AI</span>
-                <span className="text-[10px] sm:text-xs font-mono font-normal px-1.5 sm:px-2 py-0.5 rounded bg-blue-500/10 text-sky-300 border border-blue-500/30">
-                  SIH26073 • MoES
-                </span>
               </h1>
             </div>
           </div>
@@ -154,34 +147,10 @@ export default function LandingPage() {
               2. Live 65/35 Stream
             </button>
             <button
-              onClick={() => scrollToSection('storm-simulator')}
-              className="px-2.5 py-1 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors"
-            >
-              3. Physics Proof
-            </button>
-            <button
-              onClick={() => scrollToSection('spatial-consensus')}
-              className="px-2.5 py-1 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors text-cyan-400 font-semibold"
-            >
-              4. Spatial Consensus
-            </button>
-            <button
-              onClick={() => scrollToSection('tech-architecture')}
-              className="px-2.5 py-1 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors"
-            >
-              5. 4-Zone Architecture
-            </button>
-            <button
-              onClick={() => scrollToSection('field-usability')}
-              className="px-2.5 py-1 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors"
-            >
-              6. Field Usability
-            </button>
-            <button
               onClick={() => scrollToSection('why-we-win')}
               className="px-2.5 py-1 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors text-emerald-400 font-bold"
             >
-              7. Solid Finisher
+              3. Solid Finisher
             </button>
           </nav>
 
@@ -297,38 +266,10 @@ export default function LandingPage() {
         </button>
         <button
           type="button"
-          onClick={() => scrollToSection('storm-simulator')}
-          className="shrink-0 px-2.5 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 text-[11px] font-medium active:bg-sky-600"
-        >
-          3. Physics Proof
-        </button>
-        <button
-          type="button"
-          onClick={() => scrollToSection('spatial-consensus')}
-          className="shrink-0 px-2.5 py-1 rounded-full bg-slate-900/90 border border-cyan-500/40 text-cyan-300 text-[11px] font-semibold active:bg-cyan-600"
-        >
-          4. Spatial Consensus
-        </button>
-        <button
-          type="button"
-          onClick={() => scrollToSection('tech-architecture')}
-          className="shrink-0 px-2.5 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 text-[11px] font-medium active:bg-purple-600"
-        >
-          5. 4-Zone Architecture
-        </button>
-        <button
-          type="button"
-          onClick={() => scrollToSection('field-usability')}
-          className="shrink-0 px-2.5 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 text-[11px] font-medium active:bg-emerald-600"
-        >
-          6. Field Usability
-        </button>
-        <button
-          type="button"
           onClick={() => scrollToSection('why-we-win')}
           className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold active:bg-emerald-600"
         >
-          7. Solid Finisher
+          3. Solid Finisher
         </button>
       </div>
 
@@ -371,12 +312,6 @@ export default function LandingPage() {
               <ShieldCheck className="w-9 h-9 sm:w-11 sm:h-11 text-cyan-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.6)] z-10" />
             </div>
 
-            {/* SIH Official Banner Box */}
-            <div className="hidden sm:flex flex-col items-start justify-center h-20 px-5 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-950/40 to-slate-900 shadow-xl shadow-orange-500/10">
-              <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-0.5">Smart India Hackathon 2026</span>
-              <span className="text-sm font-black text-white">Problem Statement: SIH26073</span>
-              <span className="text-[10px] text-slate-300 font-mono mt-1">Ministry of Earth Sciences (MoES) & IMD</span>
-            </div>
           </motion.div>
 
           {/* Hero Title */}
@@ -391,13 +326,6 @@ export default function LandingPage() {
                 METSHIELD AI
               </span>
             </h1>
-            <p className="text-sm sm:text-lg text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
-              National Automatic Weather Station Quality Management System — Real-time telemetry verification, storm discrimination &amp; self-healing data imputation for India&apos;s meteorological grid.
-            </p>
-            <div className="mt-3 inline-flex items-center gap-2 text-xs text-slate-400 font-mono bg-[#0e1730]/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-700/80 shadow-inner">
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-              <span>WMO-No. 8 Open Standard Compliant • Enterprise Weather Telemetry Shield • Team AEROTECH</span>
-            </div>
           </motion.div>
 
           {/* LIVE STATS RIBBON */}
@@ -556,117 +484,7 @@ export default function LandingPage() {
 
         {/* Live Recharts + Incident Stream + Stealth Diagnostic Bench Drawer */}
         <GovInstitutionalConsole lang={lang} />
-      </section>
-
-      {/* ─── SECTION 3: INTERACTIVE PHYSICS PROOF (STORM VS FAULT SIMULATOR) ─── */}
-      <section id="storm-simulator" className="relative z-10 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
-        <div className="text-center mb-6">
-          <span className="text-xs font-bold text-sky-400 uppercase tracking-widest">
-            Interactive Physics Sandbox
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">
-            Severe Convective Storm vs. Sensor Hardware Fault Simulator
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto mt-2">
-            Test the discrimination engine live. Inject isolated thermistor spikes or coupled squall fronts to observe immediate sub-5ms classification.
-          </p>
-        </div>
-
-        <StormVsFaultSimulator />
-      </section>
-
-      {/* ─── SECTION 4: TIER 3 SPATIAL CONSENSUS & NWP GATING GATEWAY ─── */}
-      <section id="spatial-consensus" className="relative z-10 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
-        <GovSpatialConsensusPanel />
-      </section>
-
-      {/* ─── SECTION 5: 4-ZONE ARCHITECTURE & PIPELINE ─── */}
-      <section id="tech-architecture" className="relative z-10 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
-        <div className="text-center mb-6">
-          <span className="text-xs font-bold text-purple-400 uppercase tracking-widest">
-            Engineering Rigor
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">
-            4-Zone Edge-Resilient Architecture &amp; Benchmark Matrix
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto mt-2">
-            Engineered for zero-cost operation on client edge and microcontroller firmware with deterministic WMO envelopes.
-          </p>
-        </div>
-
-        <AIEnginePipeline />
-      </section>
-
-      {/* ─── SECTION 6: PRACTICAL FIELD USABILITY & OPERATIONAL WORKFLOW ─── */}
-      <section id="field-usability" className="relative z-10 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
-        <div className="text-center mb-8">
-          <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest">
-            Field Usability &amp; Human-Centered Engineering
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">
-            Designed for Real-World Meteorological Crews &amp; Field Engineers
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto mt-2">
-            Engineered for rural Indian AWS stations operating in high-humidity coastal strips, Himalayan passes, and arid desert stations with intermittent connectivity.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Persona 1: Duty Meteorologist */}
-          <div className="p-5 rounded-2xl bg-[#0e1730]/90 border border-slate-800 space-y-3 hover:border-sky-500/40 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center border border-sky-500/20">
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] font-mono text-sky-400 uppercase font-bold">Duty Meteorologist</span>
-              <h3 className="font-bold text-white text-sm mt-0.5">NWP Gating &amp; Instant Quarantine</h3>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Provides real-time decision support with 1-click model bypass. Never let a single bad thermistor spike contaminate WRF/GFS numerical forecast runs.
-            </p>
-            <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-300 font-mono flex items-center justify-between">
-              <span>Decision Latency:</span>
-              <span className="text-emerald-400 font-bold">&lt; 5 ms</span>
-            </div>
-          </div>
-
-          {/* Persona 2: Field Technician */}
-          <div className="p-5 rounded-2xl bg-[#0e1730]/90 border border-slate-800 space-y-3 hover:border-emerald-500/40 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">Field Engineer</span>
-              <h3 className="font-bold text-white text-sm mt-0.5">Mobile Hardware Sensor Sync</h3>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Ingests hardware barometric pressure via Web Generic Sensor API (<code className="text-sky-300">window.PressureSensor</code>) on mobile phones to verify station elevation (1 hPa ≈ 8.4m) and generate automated NABL calibration tickets.
-            </p>
-            <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-300 font-mono flex items-center justify-between">
-              <span>Mobile Sensor Link:</span>
-              <span className="text-emerald-400 font-bold">Active Web API</span>
-            </div>
-          </div>
-
-          {/* Persona 3: Quality Auditor */}
-          <div className="p-5 rounded-2xl bg-[#0e1730]/90 border border-slate-800 space-y-3 hover:border-amber-500/40 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-              <Download className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">Regulatory Auditor</span>
-              <h3 className="font-bold text-white text-sm mt-0.5">HMAC Cryptographic Audit Log</h3>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Generates instant CSV and JSON audit exports with WMO-No. 8 compliance flags, Zahumenský XAI feature attributions, and SHA-256 data integrity hashes.
-            </p>
-            <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-300 font-mono flex items-center justify-between">
-              <span>Audit Standard:</span>
-              <span className="text-amber-400 font-bold">WMO-No. 8 § 4.3</span>
-            </div>
-          </div>
-        </div>
-      </section>
+</section>
 
       {/* ─── SECTION 7: SOLID FINISHER & VERDICT (WHY WE WIN) ─── */}
       <section id="why-we-win" className="relative z-10 px-4 sm:px-6 py-14 max-w-6xl mx-auto w-full">
@@ -701,7 +519,7 @@ export default function LandingPage() {
                   <th className="p-3">Architectural Dimension</th>
                   <th className="p-3">Typical SIH Competitors (e.g. NIMBUS)</th>
                   <th className="p-3 text-cyan-400 font-bold bg-cyan-950/30 border-x border-cyan-500/30">
-                    ★ Project JATAYU (Team AEROTECH)
+                    ★ MetShield AI (Team AEROTECH)
                   </th>
                   <th className="p-3 text-emerald-400">Strategic Advantage for MoES</th>
                 </tr>
@@ -857,7 +675,7 @@ export default function LandingPage() {
               Operational Continuity Under Extreme Hazards
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Project JATAYU is engineered to handle extreme operational hazards, communication dropouts, and atmospheric disruptions through dedicated fail-safes across each structural tier.
+              MetShield AI is engineered to handle extreme operational hazards, communication dropouts, and atmospheric disruptions through dedicated fail-safes across each structural tier.
             </p>
           </div>
 
@@ -939,77 +757,12 @@ export default function LandingPage() {
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Key Defensive Message for Evaluators</h3>
               <div className="bg-slate-900/50 border-l-4 border-emerald-500 p-4 rounded-r-lg text-sm text-slate-300 leading-relaxed italic relative">
                 <span className="text-4xl absolute -top-2 -left-3 text-slate-800">&ldquo;</span>
-                Project JATAYU is designed for severe conditions. If communication drops, local 72-hour edge buffers cache telemetry until links recover. If a sensor fails physically, real-time windowed-mean imputation reconstructs the missing stream so numerical prediction models do not diverge. Most critically, during extreme cyclonic landfalls, our thermodynamic coupling logic prevents false-alarm blinding by validating that barometric plunges correspond with humidity surges, passing authentic severe weather directly to forecasters.
+                MetShield AI is designed for severe conditions. If communication drops, local 72-hour edge buffers cache telemetry until links recover. If a sensor fails physically, real-time windowed-mean imputation reconstructs the missing stream so numerical prediction models do not diverge. Most critically, during extreme cyclonic landfalls, our thermodynamic coupling logic prevents false-alarm blinding by validating that barometric plunges correspond with humidity surges, passing authentic severe weather directly to forecasters.
               </div>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ─── SECTION 9: MOBILE PWA FIELD JOURNEY ─── */}
-      <section id="mobile-pwa-journey" className="relative z-10 px-4 sm:px-6 py-12 max-w-6xl mx-auto w-full">
-        <div className="p-6 sm:p-9 rounded-3xl bg-gradient-to-br from-emerald-950/40 to-teal-950/40 border border-emerald-500/30 shadow-2xl relative overflow-hidden space-y-6">
-          <div className="max-w-3xl space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-semibold">
-              <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              <span>FIELD TECHNICIAN &amp; MOBILE PWA JOURNEY</span>
-            </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-              Thumb-Driven Operations at the Edge
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Designed for single-hand, thumb-first control, the progressive web app (PWA) instantly turns any field technician&apos;s smartphone into an active weather node and diagnostic terminal.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3">
-              <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center border border-sky-500/20 text-sky-400 mb-2">
-                <span className="font-bold font-mono">1</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">Instant Load &amp; Ambient Discovery</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Zero layout shifts or rubber-banding. Viewport locks cleanly with auto-zoom disabled. The single-column telemetry view focuses immediately on the local observatory without forcing desktop tables onto mobile screens.
-              </p>
-            </div>
-
-            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl"></div>
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-400 mb-2">
-                <span className="font-bold font-mono">2</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">Live Hardware Recognition</h3>
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                LIVE MOBILE FEED
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Raising the phone registers real physical pressure drops (0.1–0.3 hPa) via the native <code className="text-emerald-300 font-mono">window.PressureSensor</code>. Device motion listeners validate mast buffeting proxies instantly.
-              </p>
-            </div>
-
-            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3">
-              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-400 mb-2">
-                <span className="font-bold font-mono">3</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">Thumb-Driven Map Friction</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Map containers explicitly disable single-finger drag to prevent vertical scroll hijacking. A single segmented mode toggle <code className="text-purple-300 font-mono">[ 🗺️ | 📋 ]</code> swaps to high-contrast station chips and slide-up telemetry bottom sheets.
-              </p>
-            </div>
-
-            <div className="bg-[#0b1329]/80 border border-slate-700/50 p-5 rounded-2xl space-y-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-400 mb-2">
-                <span className="font-bold font-mono">4</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">Single-Tap Auditing</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Field workers can instantly report physical anomalies with auto-filled 30-sample ring buffer snapshots. Tapping <strong className="text-slate-300">&ldquo;Export QC Audit Log&rdquo;</strong> pushes standard NIC-formatted CSVs directly to the phone&apos;s native file system.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+</section>
 
       {/* ─── FOOTER ─── */}
       <footer className="relative z-10 border-t border-slate-800 bg-[#0b1329]/90 backdrop-blur-md">
