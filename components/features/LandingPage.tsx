@@ -227,19 +227,27 @@ export default function LandingPage() {
           {/* Right Navigation & Accessibility */}
           <div className="flex items-center flex-wrap gap-1.5 sm:gap-2.5">
             <Link
-              href="/dashboard"
+              href="/stations"
               className="flex items-center gap-1 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 sm:py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
             >
               <Activity className="w-3.5 h-3.5 text-sky-400" />
-              <span>Full Matrix</span>
+              <span>Stations</span>
             </Link>
 
             <Link
-              href="/audit-report"
+              href="/incidents"
               className="flex items-center gap-1 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 sm:py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
             >
               <FileText className="w-3.5 h-3.5 text-amber-400" />
-              <span>Audit</span>
+              <span>Incidents</span>
+            </Link>
+
+            <Link
+              href="/analytics"
+              className="flex items-center gap-1 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 sm:py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5 text-purple-400" />
+              <span>Analytics</span>
             </Link>
 
             <Link
@@ -247,8 +255,8 @@ export default function LandingPage() {
               className="flex items-center gap-1 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 sm:py-1.5 rounded bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 transition-colors"
             >
               <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Mobile PWA</span>
-              <span className="sm:hidden">PWA</span>
+              <span className="hidden sm:inline">Mobile</span>
+              <span className="sm:hidden">Mobile</span>
             </Link>
 
             {/* Font Size Controls */}
