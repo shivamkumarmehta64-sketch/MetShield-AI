@@ -1,7 +1,8 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Usb, Activity, AlertTriangle, Link as LinkIcon, Unlink } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Usb, AlertTriangle, Link as LinkIcon, Unlink } from 'lucide-react';
 
 export function WebSerialConnector() {
   const [port, setPort] = useState<any>(null);

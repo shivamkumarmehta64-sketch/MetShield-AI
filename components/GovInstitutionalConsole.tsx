@@ -145,6 +145,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         stationId: currentStation.id,
       });
     }
+    // eslint-disable-next-line
     setTelemetryHistory(initialPoints);
   }, [currentStation]);
 
