@@ -158,7 +158,7 @@ export function evaluate3ParamQC(
       deltas: { deltaT, deltaP, deltaRH },
       xai: {
         ...weights,
-        diagnosticExplanation: `Breach detected: ${tLimitBreached ? `Temp ${T}°C outside [${WMO_LIMITS.TEMP_MIN}, ${WMO_LIMITS.TEMP_MAX}]. ` : ''}${pLimitBreached ? `Press ${P} hPa outside [${WMO_LIMITS.PRESS_MIN}, ${WMO_LIMITS.PRESS_MAX}]. ` : ''}${rhLimitBreached ? `Humidity ${RH}% outside [${WMO_LIMITS.HUM_MIN}, ${WMO_LIMITS.HUM_MAX}].` : ''}`,
+        diagnosticExplanation: `Physical Climatological Breach: The ${tLimitBreached ? `Temperature sensor ` : ''}${pLimitBreached ? `Barometer ` : ''}${rhLimitBreached ? `Humidity sensor ` : ''}is broadcasting values outside WMO limits. Hardware malfunction likely.`Temp ${T}°C outside [${WMO_LIMITS.TEMP_MIN}, ${WMO_LIMITS.TEMP_MAX}]. ` : ''}${pLimitBreached ? `Press ${P} hPa outside [${WMO_LIMITS.PRESS_MIN}, ${WMO_LIMITS.PRESS_MAX}]. ` : ''}${rhLimitBreached ? `Humidity ${RH}% outside [${WMO_LIMITS.HUM_MIN}, ${WMO_LIMITS.HUM_MAX}].` : ''}`,
       },
       recommendedAction: 'Immediate transducer recalibration or probe replacement required at AWS node.',
     };
@@ -209,7 +209,7 @@ export function evaluate3ParamQC(
         deltas: { deltaT, deltaP, deltaRH },
         xai: {
           ...weights,
-          diagnosticExplanation: `Static signal locked. Variance stdDev < 0.001 over 6 cycles for ${isTFrozen ? 'Temperature ' : ''}${isPFrozen ? 'Pressure ' : ''}${isRHFrozen ? 'Humidity' : ''}. Mechanical float lock or ADC hang.`,
+          diagnosticExplanation: `Sensor Physically Jammed: The ${isTFrozen ? 'Thermometer ' : ''}${isPFrozen ? 'Barometer ' : ''}${isRHFrozen ? 'Humidity probe ' : ''}is stuck on the exact same value for 6 cycles. Dispatch technician.`,
         },
         recommendedAction: 'Dispatch field engineer for mechanical inspection and sensor power cycling.',
       };
@@ -252,7 +252,7 @@ export function evaluate3ParamQC(
       deltas: { deltaT, deltaP, deltaRH },
       xai: {
         ...weights,
-        diagnosticExplanation: `Genuine convective downdraft signature: Barometric drop ΔP = ${deltaP} hPa accompanied by moisture surge ΔRH = +${deltaRH}%. Zero sensor malfunction.`,
+        diagnosticExplanation: `Severe Convective Storm Confirmed: Deep barometric pressure plunge accompanied by a moisture surge. Genuine weather event; sensors are nominal.`,
       },
       recommendedAction: 'Relay high-priority severe convective storm alert to IMD State Meteorological Centre (SMC).',
     };
@@ -287,7 +287,7 @@ export function evaluate3ParamQC(
       deltas: { deltaT, deltaP, deltaRH },
       xai: {
         ...weights,
-        diagnosticExplanation: `Isolated uncoupled step jump: ${isTempSpike ? `ΔT = ${deltaT}°C. ` : ''}${isPressStep ? `ΔP = ${deltaP} hPa. ` : ''}${isHumStep ? `ΔRH = ${deltaRH}%. ` : ''}Fails thermodynamic multi-sensor cross-validation.`,
+        diagnosticExplanation: `Hardware Open-Circuit Spike: An isolated, massive jump occurred on the ${isTempSpike ? 'Temperature' : ''}${isPressStep ? 'Pressure' : ''}${isHumStep ? 'Humidity' : ''} channel. Quarantined and activated moving-average imputation.`ΔT = ${deltaT}°C. ` : ''}${isPressStep ? `ΔP = ${deltaP} hPa. ` : ''}${isHumStep ? `ΔRH = ${deltaRH}%. ` : ''}Fails thermodynamic multi-sensor cross-validation.`,
       },
       recommendedAction: 'Isolate sensor channel from NWP assimilation pipeline. Auto-impute with synthetic moving average.',
     };
