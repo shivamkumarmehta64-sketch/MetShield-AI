@@ -142,7 +142,7 @@ export default function LeafletMap({
       style={{ height: '100%', width: '100%', minHeight: '440px', zIndex: 0 }}
       zoomControl={true}
       dragging={!isMobile}
-      scrollWheelZoom={!isMobile}
+      scrollWheelZoom={false}
     >
       <TileLayer
         key={basemap}

@@ -125,7 +125,7 @@ export default function GuidedTour({ onTriggerSpike, isOpen, setIsOpen }: Guided
         >
           {/* Header */}
           <div className="bg-[#002147] px-4 py-3 flex items-center justify-between border-b-[3px] border-transparent" 
-               style={{ borderBottomImage: 'linear-gradient(to right, #FF9933, white, #138808) 1' }}>
+               style={{ borderImageSource: 'linear-gradient(to right, #FF9933, white, #138808)', borderImageSlice: 1 }}>
             <div className="text-white font-bold text-sm">Step {currentStep + 1} of {STEPS.length}</div>
             <button onClick={() => setIsOpen(false)} className="text-slate-300 hover:text-white transition-colors">
               <X className="w-4 h-4" />

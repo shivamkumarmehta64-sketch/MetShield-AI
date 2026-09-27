@@ -125,7 +125,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
               className="fixed top-0 right-0 h-full w-full sm:w-[380px] bg-[#0b1329] shadow-2xl z-[9999] border-l border-slate-700/80 flex flex-col"
             >
               {/* Header */}
-              <div className="bg-[#002147] border-b border-slate-700/80 p-4 relative" style={{ borderBottomImage: 'linear-gradient(to right, #FF9933, white, #138808) 1', borderBottomWidth: '2px', borderBottomStyle: 'solid' }}>
+              <div className="bg-[#002147] border-b border-slate-700/80 p-4 relative" style={{ borderImage: 'linear-gradient(to right, #FF9933, white, #138808) 1', borderBottomWidth: '2px', borderBottomStyle: 'solid' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="bg-emerald-500/20 p-1.5 rounded-lg border border-emerald-500/30">
