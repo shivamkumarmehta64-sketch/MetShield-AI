@@ -98,7 +98,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
             </div>
             <MessageSquare className="w-4 h-4 text-emerald-400" />
             <span className="text-sm font-bold tracking-wide">JATAYU-Sahayak</span>
-            <span className="text-[10px] hidden sm:inline ml-1 font-medium text-slate-300">(MoES AI Copilot)</span>
+            <span className="text-[10px] hidden sm:inline ml-1 font-medium text-slate-600">(MoES AI Copilot)</span>
           </motion.button>
         )}
       </AnimatePresence>
@@ -112,7 +112,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9998]"
+              className="fixed inset-0 bg-white/40 backdrop-blur-sm z-[9998]"
               onClick={() => setIsOpen(false)}
             />
 
@@ -122,10 +122,10 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full sm:w-[380px] bg-[#0b1329] shadow-2xl z-[9999] border-l border-slate-700/80 flex flex-col"
+              className="fixed top-0 right-0 h-full w-full sm:w-[380px] bg-white shadow-2xl z-[9999] border-l border-slate-200 flex flex-col"
             >
               {/* Header */}
-              <div className="bg-[#002147] border-b border-slate-700/80 p-4 relative" style={{ borderImage: 'linear-gradient(to right, #FF9933, white, #138808) 1', borderBottomWidth: '2px', borderBottomStyle: 'solid' }}>
+              <div className="bg-[#002147] border-b border-slate-200 p-4 relative" style={{ borderImage: 'linear-gradient(to right, #FF9933, white, #138808) 1', borderBottomWidth: '2px', borderBottomStyle: 'solid' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="bg-emerald-500/20 p-1.5 rounded-lg border border-emerald-500/30">
@@ -133,7 +133,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
                     </div>
                     <div>
                       <h2 className="text-sm font-bold text-white tracking-wide">JATAYU-Sahayak</h2>
-                      <p className="text-[10px] text-slate-300 font-mono flex items-center gap-1">
+                      <p className="text-[10px] text-slate-600 font-mono flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         Edge AI Copilot Connected
                       </p>
@@ -141,7 +141,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
                   </div>
                   <button 
                     onClick={() => setIsOpen(false)}
-                    className="p-1.5 rounded-md text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                    className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100 hover:text-white transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -149,27 +149,27 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
               </div>
 
               {/* Live Context Strip */}
-              <div className="bg-slate-900 px-4 py-2 border-b border-slate-800/80 flex items-center gap-3 overflow-x-auto no-scrollbar">
+              <div className="bg-white px-4 py-2 border-b border-slate-200 flex items-center gap-3 overflow-x-auto no-scrollbar">
                 <span className="shrink-0 text-[10px] font-bold text-slate-400 uppercase">Context:</span>
                 <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 font-mono">
                   {context.station}
                 </span>
-                <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-slate-800 text-amber-400 font-mono">
+                <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-slate-100 text-amber-400 font-mono">
                   {context.telemetry.temp.toFixed(1)}°C
                 </span>
-                <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-slate-800 text-sky-400 font-mono">
+                <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-slate-100 text-sky-400 font-mono">
                   {context.telemetry.press.toFixed(1)}hPa
                 </span>
               </div>
 
               {/* Quick Prompts */}
-              <div className="p-3 border-b border-slate-800/80 bg-[#0e1730]">
+              <div className="p-3 border-b border-slate-200 bg-slate-50">
                 <div className="flex flex-wrap gap-2">
                   {QUICK_PROMPTS.map((qp, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSend(qp.query)}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-medium transition-colors"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-[11px] font-medium transition-colors"
                     >
                       <qp.icon className="w-3 h-3 text-cyan-400" />
                       {qp.label}
@@ -179,13 +179,13 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
               </div>
 
               {/* Chat Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b1329]">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] rounded-2xl p-3 ${
                       msg.role === 'user' 
                         ? 'bg-blue-600 text-white rounded-br-none' 
-                        : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700'
+                        : 'bg-slate-100 text-slate-800 rounded-bl-none border border-slate-300'
                     }`}>
                       <div className="flex items-center gap-2 mb-1">
                         {msg.role === 'assistant' ? (
@@ -204,7 +204,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
                 
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-slate-800 rounded-2xl rounded-bl-none p-3 border border-slate-700 flex items-center gap-2">
+                    <div className="bg-slate-100 rounded-2xl rounded-bl-none p-3 border border-slate-300 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
@@ -216,7 +216,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
               </div>
 
               {/* Input Area */}
-              <div className="p-3 sm:p-4 bg-slate-900 border-t border-slate-800/80">
+              <div className="p-3 sm:p-4 bg-white border-t border-slate-200">
                 <div className="relative flex items-center">
                   <input
                     type="text"
@@ -224,12 +224,12 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
                     onChange={(e) => setInputStr(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend(inputStr)}
                     placeholder="Ask about station health, storms..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-full pl-4 pr-12 py-2.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-slate-100 border border-slate-300 rounded-full pl-4 pr-12 py-2.5 text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => handleSend(inputStr)}
                     disabled={!inputStr.trim() || isLoading}
-                    className="absolute right-1.5 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-full text-white transition-colors"
+                    className="absolute right-1.5 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-200 disabled:text-slate-500 rounded-full text-white transition-colors"
                   >
                     <Send className="w-3.5 h-3.5" />
                   </button>

@@ -375,11 +375,11 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
   return (
     <div className="w-full space-y-4">
       {/* Top Station & DCP Status Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0b1329]/90 p-3 rounded-xl border border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200">
         <div className="flex items-center space-x-3">
-          <ShieldCheck className="w-5 h-5 text-sky-400 animate-pulse" />
+          <ShieldCheck className="w-5 h-5 text-sky-700 animate-pulse" />
           <div>
-            <span className="text-xs uppercase font-bold text-slate-300">
+            <span className="text-xs uppercase font-bold text-slate-700">
               {lang === 'en' ? 'Live Telemetry Stream' : 'लाइव टेलीमेट्री स्ट्रीम'}
             </span>
             <span className="text-[11px] text-slate-500 ml-2">INSAT-3DR DCP Link: 2.5s</span>
@@ -387,13 +387,13 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
             <span>Station:</span>
             <select
               aria-label="Select Automatic Weather Station"
               value={selectedStationIndex}
               onChange={e => setSelectedStationIndex(Number(e.target.value))}
-              className="bg-slate-900 border border-slate-700 text-xs rounded-md px-2 py-1 text-slate-200 font-medium outline-none"
+              className="bg-slate-50 border border-slate-300 text-xs rounded-md px-2 py-1 text-slate-900 font-medium outline-none"
             >
               {STATIONS.map((st, idx) => (
                 <option key={st.id} value={idx}>
@@ -403,7 +403,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             </select>
           </div>
 
-          <span className="text-xs font-mono text-sky-400 bg-sky-950/40 px-2 py-1 rounded border border-sky-800/50">
+          <span className="text-xs font-mono text-sky-700 bg-sky-50 px-2 py-1 rounded border border-sky-200">
             {ingestionCount.toLocaleString()} Pkts
           </span>
         </div>
@@ -411,19 +411,19 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
 
       {/* 3 Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5" data-tour="metrics-strip">
-        <div className="bg-[#0e1730]/95 border border-slate-800/90 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
+        <div className="bg-white border border-slate-200 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
-            <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors flex items-center gap-1.5">
+            <span className="text-xs uppercase font-semibold text-slate-500 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
               {lang === 'en' ? 'Ambient Temperature' : 'तापमान'}
               <span title="Sensor: Class A PT100 RTD | Envelope: -10°C to 55°C">
                 <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" />
               </span>
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black font-mono text-white tracking-tight">
+              <span className="text-3xl font-black font-mono text-slate-900 tracking-tight">
                 {latestTelemetry.temp.toFixed(1)}
               </span>
-              <span className="text-sm font-semibold text-slate-400">°C</span>
+              <span className="text-sm font-semibold text-slate-500">°C</span>
             </div>
             <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -432,7 +432,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             <div className="h-8 w-24 mt-1 opacity-60">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={telemetryHistory}>
-                  <Line type="monotone" dataKey="temperature" stroke="#f59e0b" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="temperature" stroke="#D97706" strokeWidth={2} dot={false} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -442,32 +442,32 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           </div>
         </div>
 
-        <div className="bg-[#0e1730]/95 border border-slate-800/90 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
+        <div className="bg-white border border-slate-200 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors flex items-center gap-1.5">
+              <span className="text-xs uppercase font-semibold text-slate-500 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
                 {lang === 'en' ? 'Atmospheric Pressure' : 'दबाव'}
                 <span title="Sensor: Vaisala PTB110 | Envelope: 920 to 1050 hPa">
                   <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" />
                 </span>
               </span>
               {mobileSensors.isHardwareActive ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 animate-pulse">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border-emerald-300 font-bold border animate-pulse">
                   ● LIVE MOBILE HARDWARE FEED
                 </span>
               ) : (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-sky-400 border border-blue-500/30">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-sky-700 border border-blue-500/30">
                   ● SIMULATED AWS FEED
                 </span>
               )}
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black font-mono text-white tracking-tight">
+              <span className="text-3xl font-black font-mono text-slate-900 tracking-tight">
                 {latestTelemetry.press.toFixed(1)}
               </span>
-              <span className="text-sm font-semibold text-slate-400">hPa</span>
+              <span className="text-sm font-semibold text-slate-500">hPa</span>
             </div>
-            <div className="text-[11px] text-sky-400 font-medium flex items-center gap-1">
+            <div className="text-[11px] text-sky-700 font-medium flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-400" />
               <span>
                 {mobileSensors.isHardwareActive
@@ -476,24 +476,24 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
               </span>
             </div>
           </div>
-          <div className="p-3 bg-sky-500/10 rounded-xl text-sky-400 border border-sky-500/20 shadow-sm group-hover:scale-105 transition-transform">
+          <div className="p-3 bg-sky-500/10 rounded-xl text-sky-700 border border-sky-500/20 shadow-sm group-hover:scale-105 transition-transform">
             <Gauge className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-[#0e1730]/95 border border-slate-800/90 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
+        <div className="bg-white border border-slate-200 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
-            <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors flex items-center gap-1.5">
+            <span className="text-xs uppercase font-semibold text-slate-500 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
               {lang === 'en' ? 'Relative Humidity' : 'आर्द्रता'}
               <span title="Sensor: Humicap Polymer | Envelope: 5% to 100%">
                 <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" />
               </span>
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black font-mono text-white tracking-tight">
+              <span className="text-3xl font-black font-mono text-slate-900 tracking-tight">
                 {latestTelemetry.hum.toFixed(1)}
               </span>
-              <span className="text-sm font-semibold text-slate-400">%</span>
+              <span className="text-sm font-semibold text-slate-500">%</span>
             </div>
             <div className="text-[11px] text-cyan-400 font-medium flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400" />
@@ -502,7 +502,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             <div className="h-8 w-24 mt-1 opacity-60">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={telemetryHistory}>
-                  <Line type="monotone" dataKey="humidity" stroke="#22d3ee" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="humidity" stroke="#16A34A" strokeWidth={2} dot={false} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -516,18 +516,18 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
       {/* 65/35 Split Canvas */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" data-tour="imputation-demo">
         {/* Left 65% Recharts */}
-        <div className="lg:col-span-8 bg-[#0e1730]/95 border border-slate-800 rounded-xl p-4 flex flex-col shadow-sm" data-tour="recharts-canvas">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-slate-800/80">
+        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-4 flex flex-col shadow-sm" data-tour="recharts-canvas">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-slate-200/80">
             <div>
               <h3 className="text-sm font-semibold text-slate-100">
                 Multi-Parameter Telemetry Curve (2.5s Stream)
               </h3>
-              <p className="text-[11px] text-slate-400">
-                Station: <span className="text-slate-200 font-mono">{currentStation.id}</span> ({currentStation.name})
+              <p className="text-[11px] text-slate-500">
+                Station: <span className="text-slate-900 font-mono">{currentStation.id}</span> ({currentStation.name})
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+            <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-lg border border-slate-200 text-xs">
               <button
                 type="button"
                 onClick={() => setShowTemp(t => !t)}
@@ -561,31 +561,31 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           <div className="w-full h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={telemetryHistory} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.6} />
                 <XAxis dataKey="timeIST" stroke="#64748b" fontSize={11} tickLine={false} />
                 <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} domain={['auto', 'auto']} tickLine={false} />
-                <YAxis yAxisId="right" orientation="right" stroke="#38bdf8" fontSize={11} domain={['auto', 'auto']} tickLine={false} />
+                <YAxis yAxisId="right" orientation="right" stroke="#0284C7" fontSize={11} domain={['auto', 'auto']} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0b1329', borderColor: '#334155', borderRadius: '8px', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#0f172a', borderRadius: '8px', fontSize: '12px' }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
 
                 {showTemp && (
                   <>
-                    <Line yAxisId="left" type="monotone" dataKey="temperature" name="Temp (°C)" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
-                    <Line yAxisId="left" type="monotone" dataKey="imputedTemp" name="Imputed Temp" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="temperature" name="Temp (°C)" stroke="#D97706" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="imputedTemp" name="Imputed Temp" stroke="#D97706" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
                   </>
                 )}
                 {showPress && (
                   <>
-                    <Line yAxisId="right" type="monotone" dataKey="pressure" name="Pressure (hPa)" stroke="#38bdf8" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="imputedPress" name="Imputed Press" stroke="#38bdf8" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="pressure" name="Pressure (hPa)" stroke="#0284C7" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="imputedPress" name="Imputed Press" stroke="#0284C7" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
                   </>
                 )}
                 {showHum && (
                   <>
-                    <Line yAxisId="left" type="monotone" dataKey="humidity" name="Humidity (%)" stroke="#22d3ee" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
-                    <Line yAxisId="left" type="monotone" dataKey="imputedHum" name="Imputed Hum" stroke="#22d3ee" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="humidity" name="Humidity (%)" stroke="#16A34A" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="imputedHum" name="Imputed Hum" stroke="#16A34A" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
                   </>
                 )}
               </LineChart>
@@ -594,22 +594,22 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         </div>
 
         {/* Right 35% Real-Time Incident Stream */}
-        <div className="lg:col-span-4 bg-[#0e1730]/95 border border-slate-800 rounded-xl p-4 flex flex-col shadow-sm" data-tour="incident-panel">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-4 flex flex-col shadow-sm" data-tour="incident-panel">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400" />
               <h3 className="text-sm font-semibold text-slate-100">Live Incident & Anomaly Stream</h3>
             </div>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300">
               {incidents.length} Events
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 mt-3 max-h-[320px] pr-1">
             {incidents.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-800 rounded-lg">
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-200 rounded-lg">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-2 opacity-80" />
-                <p className="text-xs font-semibold text-slate-300">All 20 AWS Stations Nominal</p>
+                <p className="text-xs font-semibold text-slate-700">All 20 AWS Stations Nominal</p>
                 <p className="text-[11px] text-slate-500 mt-1">Zero physical limit breaches or uncoupled spikes.</p>
               </div>
             ) : (
@@ -622,16 +622,16 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 return (
                   <div key={inc.id} className={`p-2.5 rounded-lg border ${borderColor} space-y-1.5 text-xs`}>
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-white font-bold">{inc.stationId} ({inc.timestamp} IST)</span>
+                      <span className="font-mono text-slate-900 font-bold">{inc.stationId} ({inc.timestamp} IST)</span>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${badgeStyle}`}>{inc.badgeLabel}</span>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-snug">{inc.xai.explanation}</p>
-                    <div className="w-full h-1.5 bg-slate-800 rounded-full flex overflow-hidden">
+                    <p className="text-[11px] text-slate-700 leading-snug">{inc.xai.explanation}</p>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full flex overflow-hidden">
                       <div style={{ width: `${inc.xai.tempWeight}%` }} className="bg-amber-400 h-full" />
                       <div style={{ width: `${inc.xai.pressWeight}%` }} className="bg-sky-400 h-full" />
                       <div style={{ width: `${inc.xai.humWeight}%` }} className="bg-cyan-400 h-full" />
                     </div>
-                    <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/60">
+                    <div className="text-[10px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-200/60">
                       <span className="truncate max-w-[200px]">🔧 {inc.recommendedAction}</span>
                       <span className="text-emerald-400 font-mono">{inc.status}</span>
                     </div>
@@ -644,26 +644,26 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
       </div>
 
       {/* Stealth Diagnostic Drawer */}
-      <div className="border border-slate-800 bg-[#091124] rounded-xl overflow-hidden shadow-lg">
+      <div className="border border-slate-200 bg-white rounded-xl overflow-hidden shadow-lg">
         <button
           type="button"
           onClick={() => setIsDrawerOpen(prev => !prev)}
-          className="w-full px-4 py-2.5 bg-slate-900/90 hover:bg-slate-800/90 flex items-center justify-between text-left transition-colors"
+          className="w-full px-4 py-2.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-left transition-colors"
         >
           <div className="flex items-center space-x-2">
-            <Wrench className="w-4 h-4 text-sky-400" />
-            <span className="text-xs font-semibold text-slate-200">
+            <Wrench className="w-4 h-4 text-sky-700" />
+            <span className="text-xs font-semibold text-slate-900">
               [🔧 NIC-MoES Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]
             </span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-400 text-xs">
+          <div className="flex items-center space-x-2 text-slate-500 text-xs">
             <span>{isDrawerOpen ? 'Collapse' : 'Expand'}</span>
             {isDrawerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </button>
 
         {isDrawerOpen && (
-          <div className="p-4 border-t border-slate-800/80 bg-slate-950/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 animate-in fade-in duration-200">
+          <div className="p-4 border-t border-slate-200/80 bg-white grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 animate-in fade-in duration-200">
             <button
               type="button"
               onClick={() => setBenchInjectionMode('SPIKE_TEMP')}
@@ -673,7 +673,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 <span className="text-xs font-semibold text-rose-300">Simulate Thermistor Open-Circuit</span>
                 <Zap className="w-4 h-4 text-rose-400" />
               </div>
-              <p className="text-[11px] text-slate-400">Injects +14°C step jump without coupling. Triggers Red Alert.</p>
+              <p className="text-[11px] text-slate-500">Injects +14°C step jump without coupling. Triggers Red Alert.</p>
             </button>
 
             <button
@@ -685,7 +685,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 <span className="text-xs font-semibold text-amber-300">Simulate Signal Wire Disconnect / Freeze</span>
                 <Sliders className="w-4 h-4 text-amber-400" />
               </div>
-              <p className="text-[11px] text-slate-400">Injects zero-variance cycles (σ &lt; 0.001). Triggers Amber Alert.</p>
+              <p className="text-[11px] text-slate-500">Injects zero-variance cycles (σ &lt; 0.001). Triggers Amber Alert.</p>
             </button>
 
             <button
@@ -695,9 +695,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-semibold text-sky-300">Trigger Convective Storm Dynamics</span>
-                <Wind className="w-4 h-4 text-sky-400" />
+                <Wind className="w-4 h-4 text-sky-700" />
               </div>
-              <p className="text-[11px] text-slate-400">Coupled ΔP ≤ -2.5 hPa + ΔRH ≥ +15%. Triggers Blue Status.</p>
+              <p className="text-[11px] text-slate-500">Coupled ΔP ≤ -2.5 hPa + ΔRH ≥ +15%. Triggers Blue Status.</p>
             </button>
 
             <button
@@ -709,7 +709,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 <span className="text-xs font-semibold text-emerald-300">Export QC Audit Log (.csv)</span>
                 <Download className="w-4 h-4 text-emerald-400" />
               </div>
-              <p className="text-[11px] text-slate-400">Generates official NIC/IMD metadata header audit report.</p>
+              <p className="text-[11px] text-slate-500">Generates official NIC/IMD metadata header audit report.</p>
             </button>
 
             <a
@@ -722,7 +722,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
                 <span className="text-xs font-semibold text-purple-300">Edge Certificate (.png)</span>
                 <ShieldCheck className="w-4 h-4 text-purple-400" />
               </div>
-              <p className="text-[11px] text-slate-400">Generates cryptographic inspection card via Vercel Edge Satori.</p>
+              <p className="text-[11px] text-slate-500">Generates cryptographic inspection card via Vercel Edge Satori.</p>
             </a>
             
             <div className="col-span-1 sm:col-span-2 lg:col-span-5 mt-2">
