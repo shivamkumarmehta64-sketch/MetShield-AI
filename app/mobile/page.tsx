@@ -24,7 +24,7 @@ import {
   VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import { getStationProfile } from '@/lib/stationData';
-import { TelemetryPacket } from '@/lib/anomalyLogic';
+import { nicWmoEngineInstance, TelemetryPacket, WorkOrderTicket } from '@/lib/anomalyLogic';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
 import { saveReadingLocally, getQueuedReadings, clearQueuedReading } from '@/lib/offlineStorage';
 import {
@@ -150,7 +150,7 @@ export default function MobileEdgeNodePage() {
   const [packetCounter, setPacketCounter] = useState<number>(0);
   const [lastServerVerdict, setLastServerVerdict] = useState<TelemetryPacket | null>(null);
   const [isSending, setIsSending] = useState<boolean>(false);
-  const [streamIntervalMs] = useState<number>(2500);
+  const [streamIntervalMs, setStreamIntervalMs] = useState<number>(2500);
   const [selectedCity, setSelectedCity] = useState<string>('New Delhi (Safdarjung)');
   const [liveDataStatus, setLiveDataStatus] = useState<string | null>(null);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
@@ -350,7 +350,7 @@ export default function MobileEdgeNodePage() {
           await clearQueuedReading(packet.id);
           successCount++;
         }
-      } catch  {
+      } catch {
         break; // Network failed again
       }
     }
@@ -506,6 +506,7 @@ export default function MobileEdgeNodePage() {
   const handleInjectFreeze = () => {
     triggerHaptic([150, 100, 150]);
     if (!isAudioMuted) playTelemetryChime(600, 0.15);
+    nicWmoEngineInstance.triggerWireDisconnectFreeze(stationId);
     transmitObservation({ t: temp, p: press, h: humidity });
   };
 
@@ -518,9 +519,7 @@ export default function MobileEdgeNodePage() {
   };
 
   const handleResetToNominal = () => {
-    // A field node is not in the station registry, so there may be no profile.
-    // Reset to the live reading we last saw, or to a neutral plains baseline —
-    // never to another station's climatology.
+    nicWmoEngineInstance.resetToNominal(stationId);
     const defaultProfile = getStationProfile(stationId);
     const fallback = defaultProfile?.baseline ?? { tempMean: 28.0, pressureMean: 1008.0, humidityMean: 60.0 };
     setTemp(fallback.tempMean);

@@ -531,7 +531,7 @@ export class NICWMOAnomalyEngine {
     }
 
     const current = this.driftOffset.get(stationId) || 0;
-    const updated = Math.round((current + pressureOffset) * 100) / 100;
+    const updated = Math.round(Math.max(-5, Math.min(5, current + pressureOffset)) * 100) / 100;
     this.driftOffset.set(stationId, updated);
     // Remove active drift bench injection if present
     const inj = this.activeInjections.get(stationId);

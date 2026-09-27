@@ -256,7 +256,7 @@ export function GoogleStitchAIToolsSuite() {
 
       const data = await response.json();
       setAiResponse(data.result || 'Tool executed successfully.');
-    } catch  {
+    } catch {
       setAiResponse('Error executing AI tool. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -277,7 +277,7 @@ export function GoogleStitchAIToolsSuite() {
 
       const data = await response.json();
       setAiResponse(data.result || 'Query processed.');
-    } catch  {
+    } catch {
       setAiResponse('Error processing query. Please try again.');
     } finally {
       setIsProcessing(false);

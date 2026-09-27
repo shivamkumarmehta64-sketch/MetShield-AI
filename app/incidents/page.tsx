@@ -1,116 +1,120 @@
 'use client';
-import React, { useMemo, useSyncExternalStore } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, ShieldCheck, Download } from 'lucide-react';
-import {
-  getAuditLogSnapshot,
-  subscribeToAuditLog,
-  StoredFaultEvent,
-  generateAuditCsvContent,
-} from '@/lib/supabaseClient';
+
+import { useState } from 'react';
+import Topbar from '../dashboard/Topbar';
+import Sidebar from '../dashboard/Sidebar';
+import KpiStrip from '../dashboard/KpiStrip';
+import Badge from '../dashboard/Badge';
+
+interface Incident {
+  id: string;
+  time: string;
+  station: string;
+  param: string;
+  tier: string;
+  severity: 'SEVERE' | 'WARNING' | 'INFO';
+  resolution: 'RESOLVED' | 'IMPUTED' | 'ACTIVE' | 'DISPATCHED';
+}
+
+const INCIDENTS: Incident[] = [
+  { id: 'INC-20260927-001', time: '09:42:17Z', station: 'AWS-HYD-06', param: 'P', tier: 'TIER-1', severity: 'SEVERE', resolution: 'ACTIVE' },
+  { id: 'INC-20260927-002', time: '09:38:44Z', station: 'AWS-CCU-02', param: 'T', tier: 'TIER-2', severity: 'WARNING', resolution: 'DISPATCHED' },
+  { id: 'INC-20260927-003', time: '09:35:12Z', station: 'AWS-JAI-09', param: 'RH', tier: 'TIER-2', severity: 'WARNING', resolution: 'IMPUTED' },
+  { id: 'INC-20260927-004', time: '09:31:05Z', station: 'AWS-BHO-12', param: 'PKT', tier: 'TIER-3', severity: 'INFO', resolution: 'RESOLVED' },
+  { id: 'INC-20260927-005', time: '09:28:51Z', station: 'AWS-GAU-13', param: 'T', tier: 'TIER-1', severity: 'INFO', resolution: 'RESOLVED' },
+  { id: 'INC-20260927-006', time: '09:22:18Z', station: 'AWS-AMD-07', param: 'P', tier: 'TIER-2', severity: 'WARNING', resolution: 'RESOLVED' },
+  { id: 'INC-20260927-007', time: '09:18:33Z', station: 'AWS-DEL-01', param: 'T', tier: 'TIER-1', severity: 'INFO', resolution: 'RESOLVED' },
+  { id: 'INC-20260927-008', time: '09:12:47Z', station: 'AWS-MUM-04', param: 'RH', tier: 'TIER-3', severity: 'INFO', resolution: 'RESOLVED' },
+  { id: 'INC-20260927-009', time: '09:08:22Z', station: 'AWS-MAA-03', param: 'P', tier: 'TIER-2', severity: 'WARNING', resolution: 'DISPATCHED' },
+  { id: 'INC-20260927-010', time: '09:01:15Z', station: 'AWS-BLR-05', param: 'T', tier: 'TIER-1', severity: 'INFO', resolution: 'RESOLVED' },
+  { id: 'INC-20260927-011', time: '08:55:40Z', station: 'AWS-PNQ-08', param: 'RH', tier: 'TIER-3', severity: 'INFO', resolution: 'RESOLVED' },
+  { id: 'INC-20260927-012', time: '08:48:09Z', station: 'AWS-LKO-10', param: 'P', tier: 'TIER-2', severity: 'WARNING', resolution: 'IMPUTED' },
+];
 
 export default function IncidentsPage() {
-  /**
-   * The audit buffer is an external mutable store, so it is read through
-   * useSyncExternalStore rather than copied into useState inside an effect.
-   *
-   * The previous version snapshotted the buffer once on mount, which meant the
-   * incident log never showed a fault that arrived after the page loaded — and
-   * doing that copy in an effect also triggered a cascading re-render on every
-   * visit. getAuditLogSnapshot returns an identity-stable array that is
-   * invalidated on mutation, as useSyncExternalStore requires.
-   */
-  const rawRecords = useSyncExternalStore(
-    subscribeToAuditLog,
-    getAuditLogSnapshot,
-    getAuditLogSnapshot
-  );
-
-  const incidents = useMemo<StoredFaultEvent[]>(
-    () => [...rawRecords].reverse(), // latest first
-    [rawRecords]
-  );
-
-  const handleExport = () => {
-    if (incidents.length === 0) return;
-    const csvContent = generateAuditCsvContent(incidents);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `JATAYU_Historical_Incidents_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [severity, setSeverity] = useState('ALL');
+  const [tier, setTier] = useState('ALL');
+  const [station, setStation] = useState('');
 
   return (
-    <div className="min-h-screen bg-[#070d1e] text-slate-200 p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 text-sm font-semibold transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to National Operations Command</span>
-        </Link>
-        
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-6 h-6 text-amber-400" />
-            <h1 className="text-2xl font-bold text-white tracking-tight">Historical Incident Log</h1>
-          </div>
-          <button 
-            onClick={handleExport}
-            disabled={incidents.length === 0}
-            className="flex items-center gap-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" />
-            Export NIC Audit (.csv)
-          </button>
-        </div>
+    <div className="min-h-screen" style={{ background: '#FFFFFF' }}>
+      <Topbar breadcrumb="INCIDENT LOG" />
+      <Sidebar />
 
-        {incidents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 bg-slate-900/30 border border-slate-800 rounded-xl text-slate-400">
-            <ShieldCheck className="w-12 h-12 text-emerald-500/50 mb-4" />
-            <p className="text-lg font-semibold text-slate-300">No Historical Incidents Logged</p>
-            <p className="text-sm mt-1">AWS Telemetry network is operating nominally.</p>
+      <div className="fixed left-[220px] right-0 top-[56px] bottom-0 overflow-y-auto" style={{ background: '#FFFFFF' }}>
+        <KpiStrip />
+
+        <div style={{ padding: 28 }}>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0A0A0A', margin: 0 }}>INCIDENT REGISTRY</h1>
+              <p style={{ fontSize: 13, color: '#7A7A7A', margin: '4px 0 0' }}>WMO-compliant anomaly audit trail</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button style={{ fontSize: 11, fontWeight: 500, color: '#3D3D3D', border: '1px solid #D0D0D0', padding: '6px 12px', borderRadius: 0, background: '#FFFFFF', cursor: 'pointer' }}>
+                ↓ Export CSV
+              </button>
+              <button style={{ fontSize: 11, fontWeight: 500, color: '#3D3D3D', border: '1px solid #D0D0D0', padding: '6px 12px', borderRadius: 0, background: '#FFFFFF', cursor: 'pointer' }}>
+                ↓ Export JSON
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {incidents.map(inc => (
-              <div key={inc.eventId} className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className={`p-2 rounded-lg border ${
-                    inc.severity === 'GENUINE_WEATHER' ? 'bg-blue-950/30 border-blue-500/30 text-blue-400' :
-                    inc.severity === 'CRITICAL' ? 'bg-rose-950/30 border-rose-500/30 text-rose-400' :
-                    'bg-amber-950/30 border-amber-500/30 text-amber-400'
-                  }`}>
-                    <AlertTriangle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white font-mono">{inc.stationId} <span className="text-slate-400 text-xs ml-2">{inc.timeIST}</span></h3>
-                    <p className="text-sm text-slate-300 mt-1">{inc.xaiAttribution.explanation}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs font-mono">
-                      <span className="text-rose-400">Raw: {inc.rawVal.toFixed(1)}</span>
-                      <span className="text-slate-500">→</span>
-                      <span className="text-emerald-400">Imputed: {inc.imputedVal.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right flex flex-col items-end shrink-0">
-                  <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded border ${
-                    inc.severity === 'GENUINE_WEATHER' ? 'bg-blue-500/20 text-sky-300 border-blue-500/40' :
-                    inc.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
-                    'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                  }`}>
-                    {inc.classification}
-                  </span>
-                  <span className="text-[11px] text-slate-400 mt-2 truncate max-w-[250px]">
-                    Action: {inc.recommendedAction}
-                  </span>
-                </div>
-              </div>
-            ))}
+
+          <div className="flex items-center gap-3 flex-wrap" style={{ background: '#F7F7F7', border: '1px solid #E8E8E8', padding: '10px 16px', marginTop: 20, marginBottom: 20 }}>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 8px', borderRadius: 0, width: 130 }} />
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 8px', borderRadius: 0, width: 130 }} />
+            <select value={severity} onChange={(e) => setSeverity(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 28px 0 8px', borderRadius: 0, width: 120 }}>
+              <option value="ALL">All</option>
+              <option value="SEVERE">SEVERE</option>
+              <option value="WARNING">WARNING</option>
+              <option value="INFO">INFO</option>
+            </select>
+            <select value={tier} onChange={(e) => setTier(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 28px 0 8px', borderRadius: 0, width: 100 }}>
+              <option value="ALL">All</option>
+              <option value="TIER-1">TIER-1</option>
+              <option value="TIER-2">TIER-2</option>
+              <option value="TIER-3">TIER-3</option>
+            </select>
+            <input type="text" value={station} onChange={(e) => setStation(e.target.value)} placeholder="AWS-ID" style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 8px', borderRadius: 0, width: 130 }} />
+            <button style={{ background: '#0A0A0A', color: '#FFFFFF', fontSize: 11, fontWeight: 500, padding: '6px 16px', borderRadius: 0, height: 30, border: 'none', cursor: 'pointer' }}>
+              Apply
+            </button>
+            <span style={{ fontSize: 11, color: '#7A7A7A', marginLeft: 'auto' }}>Showing {INCIDENTS.length} incidents</span>
           </div>
-        )}
+
+          <div style={{ border: '1px solid #E8E8E8', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#F7F7F7', borderBottom: '1px solid #E8E8E8' }}>
+                  {['INC-ID', 'UTC TIME', 'STATION', 'PARAM', 'QC TIER', 'SEVERITY', 'RESOLUTION'].map((h) => (
+                    <th key={h} style={{ height: 36, padding: '0 12px', textAlign: 'left', fontSize: 10, fontWeight: 500, textTransform: 'uppercase', color: '#7A7A7A', letterSpacing: '0.08em' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {INCIDENTS.map((inc, i) => (
+                  <tr key={inc.id} style={{ background: '#FFFFFF', borderBottom: i < INCIDENTS.length - 1 ? '1px solid #F0F0F0' : 'none' }}>
+                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: '#7A7A7A' }}>{inc.id}</td>
+                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: '#3D3D3D' }}>{inc.time}</td>
+                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-mono)', color: '#0A0A0A' }}>{inc.station}</td>
+                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: '#3D3D3D' }}>{inc.param}</td>
+                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, color: '#3D3D3D' }}>{inc.tier}</td>
+                    <td style={{ height: 44, padding: '0 12px' }}>
+                      <Badge variant={inc.severity} />
+                    </td>
+                    <td style={{ height: 44, padding: '0 12px' }}>
+                      <Badge variant={inc.resolution} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

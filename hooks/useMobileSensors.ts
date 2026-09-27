@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+let audioCtx: AudioContext | null = null;
+
 interface PressureSensorInstance {
   pressure?: number;
   start(): void;
@@ -201,6 +203,10 @@ export function useMobileSensors() {
         updateBattery();
         battery.addEventListener('levelchange', updateBattery);
         battery.addEventListener('chargingchange', updateBattery);
+        return () => {
+          battery.removeEventListener('levelchange', updateBattery);
+          battery.removeEventListener('chargingchange', updateBattery);
+        };
       }).catch(() => {
         // Fallback default float voltage
       });
@@ -224,7 +230,10 @@ export function useMobileSensors() {
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      if (!audioCtx) {
+        audioCtx = new AudioCtx();
+      }
+      const ctx = audioCtx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 

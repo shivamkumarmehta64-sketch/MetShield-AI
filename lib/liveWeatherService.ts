@@ -166,11 +166,11 @@ export async function fetchLiveStationObservation(
 
     const json = await response.json();
     const observation = transformOpenMeteoCurrent(
-    json?.current,
-    station.stationId,
-    now,
-    station.elevationM
-  );
+      json?.current,
+      station.stationId,
+      now,
+      station.elevationM
+    );
 
     if (observation) {
       liveCache.set(station.stationId, {
@@ -242,11 +242,11 @@ export async function fetchBatchLiveObservations(
       const station = unexpiredStations[i];
       const entry = dataList[i];
       const obs = transformOpenMeteoCurrent(
-      entry?.current,
-      station.stationId,
-      now,
-      station.elevationM
-    );
+        entry?.current,
+        station.stationId,
+        now,
+        station.elevationM
+      );
 
       if (obs) {
         liveCache.set(station.stationId, {

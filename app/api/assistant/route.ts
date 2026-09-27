@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       reply: fallbackReply,
     });
-  } catch  {
+  } catch {
     return NextResponse.json({ reply: 'An error occurred while processing your query. Please check your telemetry feed.' }, { status: 500 });
   }
 }

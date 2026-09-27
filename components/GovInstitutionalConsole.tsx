@@ -15,7 +15,6 @@ import {
   ChevronUp,
   ShieldCheck,
   Zap } from 'lucide-react';
-import JatayuAssistant from './JatayuAssistant';
 import {
   ResponsiveContainer,
   LineChart,
@@ -690,16 +689,6 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         )}
       </div>
       
-      {/* Jatayu AI Assistant */}
-      <JatayuAssistant 
-        context={{
-          station: `${currentStation.id} (${currentStation.name})`,
-          telemetry: {
-            temp: latestTelemetry.temp,
-            press: latestTelemetry.press,
-            hum: latestTelemetry.hum }
-        }} 
-      />
     </div>
   );
 }

@@ -13,6 +13,28 @@
 
 ---
 
+## Live Demo
+🔴 https://aws2026-nu.vercel.app
+
+## Quick Navigation
+| Page | URL | Description |
+|------|-----|-------------|
+| Landing | `/` | Problem statement + live CLI feed |
+| Dashboard | `/dashboard` | 1,350-station observation matrix |
+| Live Console | `/dashboard?tab=live` | Real-time telemetry + QC |
+| Incidents | `/incidents` | WMO anomaly audit trail |
+| Analytics | `/analytics` | QC performance metrics |
+| Audit Report | `/audit-report` | HMAC-SHA256 ledger |
+| Mobile PWA | `/mobile` | Field technician sensor node |
+
+## Tech Stack
+- Next.js 16 · TypeScript Strict · Tailwind CSS
+- Recharts · Leaflet · Vitest (17/17 passing)
+- Zero paid APIs · ₹0 operating cost
+- WMO-No. 8 · GIGW 3.0 · WCAG 2.1 compliant
+
+---
+
 ## 1. Executive Summary & Problem Alignment
 
 India's national meteorological observing network spans over **1,350+ Automatic Weather Stations (AWS)** and **1,500+ Automated Rain Gauges (ARG)** deployed across extreme topographies—from the trans-Himalayan peaks of Kargil to the coastal cyclone tracks of Visakhapatnam and the Thar desert of Rajasthan.

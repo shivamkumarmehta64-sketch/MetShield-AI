@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 
-const inter = Inter({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
@@ -20,13 +20,26 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Metshield AI | Automated Weather Station Quality Management System (AWS-QMS)',
+  title: 'MetShield AI | AWS-QMS — SIH 2026',
   description:
-    'Metshield AI — Automated Weather Station Quality Management System (AWS-QMS). Real-time WMO Pub 8 Quality Control, edge anomaly detection, and predictive maintenance.',
+    'Real-time WMO Pub 8 Quality Control for India\'s 1,350+ Automatic Weather Stations. Team AEROTECH — SIH26073.',
   keywords: [
-    'Metshield AI', 'Metshield-QMS', 'Automatic Weather Station', 'Weather Telemetry',
-    'Sensor Health Check', 'WMO Pub 8', 'India Weather Network', 'Predictive Maintenance',
+    'MetShield AI', 'AWS-QMS', 'SIH 2026', 'MoES', 'IMD',
+    'Weather Station', 'Quality Management', 'AEROTECH',
   ],
+  authors: [{ name: 'Team AEROTECH', url: 'https://aws2026-nu.vercel.app' }],
+  openGraph: {
+    title: 'MetShield AI — National AWS Telemetry Shield',
+    description: 'SIH26073 · Ministry of Earth Sciences · Team AEROTECH',
+    url: 'https://aws2026-nu.vercel.app',
+    siteName: 'MetShield AI',
+    locale: 'en_IN',
+    type: 'website',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   manifest: '/manifest.json',
   icons: {
     icon: '/metshield-logo.jpg',
@@ -43,8 +56,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans selection:bg-accent-light/30 selection:text-accent-primary">
+    <html lang="en" className={`${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased dark`}>
+      <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans selection:bg-accent-primary selection:text-white">
         {children}
         {process.env.NODE_ENV === 'production' && (
           <Script
@@ -72,4 +85,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-

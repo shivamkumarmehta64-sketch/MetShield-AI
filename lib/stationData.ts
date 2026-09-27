@@ -116,7 +116,7 @@ export const getStationProfile = (id: string): IMDStationProfile | undefined =>
  * behaviour is visible at every call site.
  */
 export function getDefaultStationProfile(): IMDStationProfile {
-  return IMD_AWS_STATIONS[0];
+  return IMD_AWS_STATIONS.find((s) => s.stationId.startsWith('AWS-MOB-')) || IMD_AWS_STATIONS[0];
 }
 
 // Re-export open-access live meteorological services directly from stationData
