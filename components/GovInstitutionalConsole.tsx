@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Zap,
 } from 'lucide-react';
+import GuidedTour from './GuidedTour';
 import {
   ResponsiveContainer,
   LineChart,
@@ -88,6 +89,7 @@ const STATIONS = [
 ];
 
 export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' }) {
+  const [isTourOpen, setIsTourOpen] = useState(false);
   const [selectedStationIndex, setSelectedStationIndex] = useState<number>(0);
   const currentStation = STATIONS[selectedStationIndex];
 
@@ -407,7 +409,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
       </div>
 
       {/* 3 Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5" data-tour="metrics-strip">
         <div className="bg-[#0e1730]/95 border border-slate-800/90 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5 group">
           <div className="space-y-1">
             <span className="text-xs uppercase font-semibold text-slate-400 group-hover:text-slate-300 transition-colors flex items-center gap-1.5">
@@ -505,9 +507,9 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
       </div>
 
       {/* 65/35 Split Canvas */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" data-tour="imputation-demo">
         {/* Left 65% Recharts */}
-        <div className="lg:col-span-8 bg-[#0e1730]/95 border border-slate-800 rounded-xl p-4 flex flex-col shadow-sm">
+        <div className="lg:col-span-8 bg-[#0e1730]/95 border border-slate-800 rounded-xl p-4 flex flex-col shadow-sm" data-tour="recharts-canvas">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-slate-800/80">
             <div>
               <h3 className="text-sm font-semibold text-slate-100">
@@ -585,7 +587,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
         </div>
 
         {/* Right 35% Real-Time Incident Stream */}
-        <div className="lg:col-span-4 bg-[#0e1730]/95 border border-slate-800 rounded-xl p-4 flex flex-col shadow-sm">
+        <div className="lg:col-span-4 bg-[#0e1730]/95 border border-slate-800 rounded-xl p-4 flex flex-col shadow-sm" data-tour="incident-panel">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400" />

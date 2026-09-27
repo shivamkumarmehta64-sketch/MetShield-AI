@@ -301,6 +301,19 @@ export default function LandingPage() {
             >
               {lang === 'en' ? 'हिन्दी' : 'EN'}
             </button>
+
+            {/* System Tour Trigger */}
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new Event('start-system-tour'));
+                document.getElementById('live-console')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded bg-[#002147] hover:bg-blue-900 text-white border border-blue-500/30 transition-all shadow-[0_0_10px_rgba(37,99,235,0.2)]"
+            >
+              <Play className="w-3 h-3 text-cyan-400" />
+              System Tour (60s)
+            </button>
           </div>
         </div>
       </header>
