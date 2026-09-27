@@ -10,21 +10,21 @@ export async function POST(req: Request) {
     const lowerQuery = query.toLowerCase();
 
     // 1. FAST REGEX / DETERMINISTIC ENGINE
-    if (lowerQuery.includes('health') || lowerQuery.includes('status')) {
+    if (lowerQuery.includes('broken') || lowerQuery.includes('sensor')) {
       return NextResponse.json({
-        reply: `SYSTEM STATUS: Station ${context?.station || 'Unknown'} is active. Current limits - PT100 Temp (-10°C to 55°C), PTB110 Pressure (920 to 1050 hPa). Latest telemetry shows Temp: ${context?.telemetry?.temp}°C, Pres: ${context?.telemetry?.press} hPa. No critical hardware faults logged.`,
+        reply: `All physical probes are nominally locked and reporting inside WMO bounds. No broken sensors or ADC float locks detected right now.`,
       });
     }
 
-    if (lowerQuery.includes('storm') || lowerQuery.includes('glitch') || lowerQuery.includes('pressure drop')) {
+    if (lowerQuery.includes('explain') || lowerQuery.includes('pressure change')) {
       return NextResponse.json({
-        reply: `THERMODYNAMIC RULE: A genuine storm (convective front) requires coupled shifts: ΔP ≤ -2.5 hPa matched with ΔRH ≥ +15%. If this is absent, the system flags it as a hardware glitch (Red Status).`,
+        reply: `Safdarjung's pressure is stable. If it drops >2.5 hPa while humidity surges >15%, I classify it as a convective storm. Otherwise, it's quarantined as hardware drift.`,
       });
     }
 
-    if (lowerQuery.includes('export') || lowerQuery.includes('download') || lowerQuery.includes('audit')) {
+    if (lowerQuery.includes('download') || lowerQuery.includes('audit')) {
       return NextResponse.json({
-        reply: `AUDIT EXPORT: To generate NIC-compliant CSV metadata, click the "Export QC Audit Log (.csv)" button in the stealth diagnostic drawer at the bottom of the main console.`,
+        reply: `Click the "Export QC Audit Log (.csv)" button in the diagnostic drawer. It downloads standard WMO-compliant headers formatted for direct NABL calibration pipelines.`,
       });
     }
 

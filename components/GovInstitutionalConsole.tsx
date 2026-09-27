@@ -424,7 +424,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           <div className="space-y-1">
             <span className="text-xs uppercase font-semibold text-slate-500 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
               {lang === 'en' ? 'Ambient Temperature' : 'तापमान'}
-              <span title="Sensor: Class A PT100 RTD | Envelope: -10°C to 55°C">
+              <span title="Ambient heat energy of the environment. | Sensor: Class A PT100 RTD | Envelope: -10°C to 55°C">
                 <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" />
               </span>
             </span>
@@ -456,7 +456,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase font-semibold text-slate-500 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
                 {lang === 'en' ? 'Atmospheric Pressure' : 'दबाव'}
-                <span title="Sensor: Vaisala PTB110 | Envelope: 920 to 1050 hPa">
+                <span title="Atmospheric pressure is the weight of the air pressing down on Earth. | Sensor: Vaisala PTB110 | Envelope: 920 to 1050 hPa">
                   <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" />
                 </span>
               </span>
@@ -494,7 +494,7 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
           <div className="space-y-1">
             <span className="text-xs uppercase font-semibold text-slate-500 group-hover:text-slate-700 transition-colors flex items-center gap-1.5">
               {lang === 'en' ? 'Relative Humidity' : 'आर्द्रता'}
-              <span title="Sensor: Humicap Polymer | Envelope: 5% to 100%">
+              <span title="Moisture capacity of the current air mass. | Sensor: Humicap 100R | Envelope: 5% to 100%">
                 <Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" />
               </span>
             </span>
@@ -520,6 +520,20 @@ export function GovInstitutionalConsole({ lang = 'en' }: { lang?: 'en' | 'hi' })
             <CloudRain className="w-6 h-6" />
           </div>
         </div>
+      </div>
+
+      
+      {/* Layer 1: Human Status Capsule (Material 3 Surface) */}
+      <div className="w-full bg-white border border-slate-200 shadow-sm rounded-xl p-4 flex items-center gap-3">
+        {incidents.length === 0 ? (
+          <span className="text-sm font-semibold text-slate-800">🟢 {currentStation.name} AWS ({currentStation.id}): Air is stable. All three station probes (Heat, Pressure, Moisture) are behaving naturally.</span>
+        ) : incidents[0].severity === 'RED_HARDWARE_FAULT' ? (
+          <span className="text-sm font-semibold text-slate-800">🔧 Probe Discrepancy: Thermal surge isolated from atmospheric pressure. Quarantined & self-healed.</span>
+        ) : incidents[0].severity === 'BLUE_GENUINE_WEATHER' ? (
+          <span className="text-sm font-semibold text-slate-800">⛈️ Natural Storm Front: Barometric pressure drop confirmed by humidity surge. Telemetry verified authentic.</span>
+        ) : (
+          <span className="text-sm font-semibold text-slate-800">⚠️ Probe Lock: Signal variance dropped below threshold.</span>
+        )}
       </div>
 
       {/* 65/35 Split Canvas */}

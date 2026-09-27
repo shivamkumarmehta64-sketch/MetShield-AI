@@ -158,7 +158,7 @@ export function evaluate3ParamQC(
       deltas: { deltaT, deltaP, deltaRH },
       xai: {
         ...weights,
-        diagnosticExplanation: `Physical Climatological Breach: The ${tLimitBreached ? `Temperature sensor ` : ''}${pLimitBreached ? `Barometer ` : ''}${rhLimitBreached ? `Humidity sensor ` : ''}is broadcasting values outside WMO limits. Hardware malfunction likely.`Temp ${T}°C outside [${WMO_LIMITS.TEMP_MIN}, ${WMO_LIMITS.TEMP_MAX}]. ` : ''}${pLimitBreached ? `Press ${P} hPa outside [${WMO_LIMITS.PRESS_MIN}, ${WMO_LIMITS.PRESS_MAX}]. ` : ''}${rhLimitBreached ? `Humidity ${RH}% outside [${WMO_LIMITS.HUM_MIN}, ${WMO_LIMITS.HUM_MAX}].` : ''}`,
+        diagnosticExplanation: `Physical Climatological Breach: The ${tLimitBreached ? `Temperature sensor ` : ''}${pLimitBreached ? `Barometer ` : ''}${rhLimitBreached ? `Humidity sensor ` : ''}is broadcasting values outside WMO limits. Hardware malfunction likely.`,
       },
       recommendedAction: 'Immediate transducer recalibration or probe replacement required at AWS node.',
     };
@@ -287,7 +287,7 @@ export function evaluate3ParamQC(
       deltas: { deltaT, deltaP, deltaRH },
       xai: {
         ...weights,
-        diagnosticExplanation: `Hardware Open-Circuit Spike: An isolated, massive jump occurred on the ${isTempSpike ? 'Temperature' : ''}${isPressStep ? 'Pressure' : ''}${isHumStep ? 'Humidity' : ''} channel. Quarantined and activated moving-average imputation.`ΔT = ${deltaT}°C. ` : ''}${isPressStep ? `ΔP = ${deltaP} hPa. ` : ''}${isHumStep ? `ΔRH = ${deltaRH}%. ` : ''}Fails thermodynamic multi-sensor cross-validation.`,
+        diagnosticExplanation: `Hardware Open-Circuit Spike: An isolated, massive jump occurred on the ${isTempSpike ? 'Temperature' : ''}${isPressStep ? 'Pressure' : ''}${isHumStep ? 'Humidity' : ''} channel. Quarantined and activated moving-average imputation.`,
       },
       recommendedAction: 'Isolate sensor channel from NWP assimilation pipeline. Auto-impute with synthetic moving average.',
     };

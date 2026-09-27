@@ -75,9 +75,9 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
   };
 
   const QUICK_PROMPTS = [
-    { label: 'Sensor Health Check', icon: Zap, query: 'What is the sensor health and status?' },
-    { label: 'Storm vs. Glitch Status', icon: Tornado, query: 'How do you detect a storm vs a glitch?' },
-    { label: 'How to Export Audit Data', icon: Download, query: 'How do I export the audit data?' },
+    { label: 'Check Sensors', icon: Zap, query: 'Is there any broken sensor right now?' },
+    { label: 'Explain Pressure', icon: Tornado, query: 'Explain the latest pressure change.' },
+    { label: 'Download Audit', icon: Download, query: 'How do I download the official audit report?' },
   ];
 
   return (
