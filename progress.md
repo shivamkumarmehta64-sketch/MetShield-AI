@@ -71,7 +71,7 @@ Ground truth, established by runtime probe and by reading every route:
 
 ## In Progress
 
-- [ ] Final verify gate run
+- [ ] Wait for user guidance on next steps
 
 ## Remaining
 
