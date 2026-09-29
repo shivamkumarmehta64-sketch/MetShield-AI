@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { WorkOrderTicket } from '@/lib/anomalyLogic';
-import { ClipboardList, AlertTriangle, CheckCircle2, Wrench, CloudLightning, FileSpreadsheet, BookOpen, Check, Printer, Globe, MapPin } from 'lucide-react';
+import { ClipboardList, AlertTriangle, CheckCircle2, Wrench, CloudLightning, FileSpreadsheet, BookOpen, Check, Printer } from 'lucide-react';
 import Link from 'next/link';
 
 interface Props {
@@ -109,42 +109,18 @@ export const GovAnomalyRegister = React.memo<Props>(function GovAnomalyRegister(
                   <td className="py-1.5 px-2.5 border-r border-slate-200 font-sans font-medium text-slate-800">{wo.parameterInvolved}</td>
                   <td className="py-1.5 px-2.5 border-r border-slate-200 font-sans">
                     {badge && <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${badge.cls} border`}>{badge.icon}{badge.label}</span>}
-                    {wo.spatialValidation && (
-                      <div className="mt-1">
-                        {wo.spatialValidation.verdict === 'REGIONAL_WEATHER' ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                            <Globe className="w-2.5 h-2.5 text-emerald-600" />
-                            Regional Event (KNN Corroborated)
-                          </span>
-                        ) : wo.spatialValidation.verdict === 'SINGLE_NODE_FAULT' ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
-                            <MapPin className="w-2.5 h-2.5 text-amber-600" />
-                            Isolated Node Fault (KNN Verified)
-                          </span>
-                        ) : null}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-right font-bold text-slate-800">{(wo.faultProbability * 100).toFixed(1)}%</td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-[10px] text-slate-700 font-mono w-48">
-                    <div className="flex flex-col gap-1 w-full" title={wo.xaiBreakdown}>
-                      {[
-                        { l: 'T', v: parseFloat(wo.xaiBreakdown.match(/Temp:\s*([0-9.]+)%/)?.[1] || '0'), c: 'bg-[#B45309]' },
-                        { l: 'P', v: parseFloat(wo.xaiBreakdown.match(/Press:\s*([0-9.]+)%/)?.[1] || '0'), c: 'bg-[#0369A1]' },
-                        { l: 'H', v: parseFloat(wo.xaiBreakdown.match(/Hum:\s*([0-9.]+)%/)?.[1] || '0'), c: 'bg-[#047857]' }
-                      ].map(i => (
-                        <div key={i.l} className="flex items-center gap-1.5 w-full">
-                          <span className="w-2 font-bold text-[9px] text-slate-500">{i.l}</span>
-                          <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div className={`h-full ${i.c} transition-all duration-500`} style={{ width: `${i.v}%` }} />
-                          </div>
-                          <span className="w-8 text-right text-[9px] font-semibold">{i.v}%</span>
-                        </div>
-                      ))}
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      <div>Physical Check: {wo.observedVsImputed === 'IMPUTED' ? 'FAIL' : 'PASS'}</div>
+                      <div>Spatial Agreement: {wo.spatialValidation ? 'PASS' : 'FAIL'}</div>
                     </div>
                   </td>
-                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-[10px] font-mono text-slate-800 whitespace-nowrap">{wo.observedVsImputed}</td>
-                  <td className="py-1.5 px-2.5 font-sans text-xs text-slate-700">{wo.operationalAction}</td>
+                  <td className="py-1.5 px-2.5 border-r border-slate-200 text-right font-bold text-slate-800">
+                    <div className="text-[10px] text-slate-500">Heuristic Confidence: {(wo.faultProbability * 100).toFixed(1)}%</div>
+                  </td>
+                  <td className="py-1.5 px-2.5 font-sans text-xs text-slate-700">
+                    <div className="font-bold text-[#002147]">Action: {wo.operationalAction}</div>
+                    <div className="text-[10px] text-slate-500">Final Decision: {wo.classification === 'GENUINE_CONVECTIVE_EVENT' ? 'GENUINE_WEATHER' : 'SENSOR_FAULT'}</div>
+                  </td>
                 </tr>
               );
             })}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
+import ClientProvider from './dashboard/ClientProvider';
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -22,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'MetShield AI | AWS-QMS — SIH 2026',
   description:
-    'Real-time WMO Pub 8 Quality Control for India\'s 1,350+ Automatic Weather Stations. Team AEROTECH — SIH26073.',
+    'Rule-based WMO Pub 8 Quality Control for Automatic Weather Stations. Team AEROTECH — SIH26073.',
   keywords: [
     'MetShield AI', 'AWS-QMS', 'SIH 2026', 'MoES', 'IMD',
     'Weather Station', 'Quality Management', 'AEROTECH',
@@ -50,15 +51,28 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // §23 accessibility: `userScalable: false` and `maximumScale: 1` block
+  // pinch-zoom, which fails WCAG 1.4.4. Zoom is a user right, so the app
+  // stops preventing it. This was the single worst a11y defect found in the
+  // audit: the previous build disabled zooming on every page.
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans selection:bg-accent-primary selection:text-white">
-        {children}
+    <html
+      lang="en"
+      // Operations console is the light theme by default. The public landing
+      // page (/) overrides this to "dark" on its own root element, so the two
+      // surfaces can differ without either hard-coding the other's colours.
+      data-theme="light"
+      className={`${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col font-sans">
+        <ClientProvider>
+          {children}
+        </ClientProvider>
         {process.env.NODE_ENV === 'production' && (
           <Script
             id="register-sw"

@@ -4,36 +4,41 @@ import { nicWmoEngineInstance, TelemetryPacket } from '@/lib/anomalyLogic';
 import { IMD_AWS_STATIONS, getStationProfile } from '@/lib/stationData';
 import { fetchLiveStationObservation } from '@/lib/liveWeatherService';
 import { persistTelemetryToEdge, resolveWorkOrderOnEdge } from '@/lib/d1Adapter';
-
-// In-memory sliding window rate limiter: max 240 requests per minute per station/IP
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+import { authorizeWrite, type AuthResult } from '@/lib/auth';
+import { consume } from '@/lib/rateLimit';
 
 // In-memory ring buffer for live ingested telemetry from mobile phones / ESP32
 const liveIngestedBuffer: TelemetryPacket[] = [];
 
-function isRateLimited(key: string): boolean {
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const maxRequests = 240;
+/** Stations post every 2.5 s, so this leaves ample headroom above the real cadence. */
+const MAX_PACKETS_PER_MINUTE = 240;
 
-  const record = rateLimitMap.get(key);
-  if (!record || record.resetTime < now) {
-    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
-    return false;
-  }
+/** Both AI-adjacent routes and the write path share one limiter implementation. */
+const RATE_WINDOW_MS = 60_000;
 
-  if (record.count >= maxRequests) {
-    return true;
-  }
-
-  record.count++;
-  return false;
+/**
+ * Render an authorisation failure.
+ *
+ * `reason` is a stable machine-readable code; `remediation` is written for the
+ * operator holding the device. Neither reveals whether a different key would
+ * have worked, so the message cannot be used as an oracle.
+ */
+function authErrorResponse(result: Extract<AuthResult, { ok: false }>) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Telemetry write refused.',
+      reason: result.reason,
+      remediation: result.remediation,
+    },
+    { status: result.status }
+  );
 }
 
 /**
  * Metshield AI: Automated Weather Station Quality Management System
  * Metshield-QMS Real-Time Telemetry Ingestion API
- * Provides high-throughput, low-latency (<5ms) validation of 3 primary parameters:
+ * Provides high-throughput validation of 3 primary parameters:
  * - Temperature (°C)
  * - Atmospheric Pressure (hPa)
  * - Relative Humidity (%)
@@ -85,13 +90,14 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting keyed by stationId or clientIp
     const rateLimitKey = `${stationId}_${clientIp}`;
-    if (isRateLimited(rateLimitKey)) {
+    const verdict = consume(rateLimitKey, MAX_PACKETS_PER_MINUTE, RATE_WINDOW_MS);
+    if (!verdict.allowed) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Rate limit exceeded. Maximum 240 requests per minute allowed.',
+          error: `Rate limit exceeded. Maximum ${MAX_PACKETS_PER_MINUTE} packets per minute allowed.`,
         },
-        { status: 429, headers: { 'Retry-After': '60' } }
+        { status: 429, headers: { 'Retry-After': String(verdict.retryAfterSeconds) } }
       );
     }
 
@@ -107,8 +113,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ─── Bidirectional Field Calibration Loopback (OTA) ───
+    // ─── Field Calibration (OTA) ───
+    //
+    // This branch rewrites a station's barometric register, which is the
+    // baseline every later QC verdict for that station is computed against, so
+    // it carries the stronger of the two scopes. `technicianId` is NOT
+    // consulted for authorisation and never was — it is a free-text field in
+    // the body, which means anyone can put any name in it. The decision rests
+    // entirely on the station's provisioned credential.
     if (body.action === 'CALIBRATE_OFFSET') {
+      const calibrationAuth = authorizeWrite(request.headers, stationId, 'calibration');
+      if (!calibrationAuth.ok) return authErrorResponse(calibrationAuth);
+
       const pOffset = typeof body.pressureOffset === 'number' ? body.pressureOffset : 0;
       const tOffset = typeof body.temperatureOffset === 'number' ? body.temperatureOffset : 0;
       const techId = typeof body.technicianId === 'string' ? body.technicianId : 'FIELD-TECH-IMD';
@@ -131,6 +147,18 @@ export async function POST(request: NextRequest) {
         timestamp: Date.now(),
       });
     }
+
+    // ─── Observation ingestion ───
+    //
+    // Everything above this line is unauthenticated request parsing. From here
+    // on the caller is writing into the QC engine's state, so a valid station
+    // credential is required. Without this check, anyone able to reach the URL
+    // could inject readings for any registered station and steer its drift and
+    // fault verdicts — the injection would be indistinguishable from a genuine
+    // sensor failure to every downstream consumer.
+    const writeAuth = authorizeWrite(request.headers, stationId, 'telemetry');
+    if (!writeAuth.ok) return authErrorResponse(writeAuth);
+
 
     // Parse & sanitize numeric values (allowing null for dropped packets)
     const parseParam = (val: unknown, min: number, max: number): number | null => {
@@ -212,7 +240,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        latencyMs,
+        requestLatencyMs: latencyMs,
         compliance: 'WMO Pub No. 8 Quality Management Standards',
         /**
          * Whether this packet reached durable storage. `false` means it is

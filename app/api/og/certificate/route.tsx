@@ -212,8 +212,14 @@ export async function GET(req: NextRequest) {
             <span>WMO-No. 8 Protocol | CAP 1.2 Compliant | NABL Verified</span>
           </div>
 
+          {/*
+            The footer previously read "CRYPTOGRAPHIC SEAL". No cryptographic
+            seal exists: the packet integrity field is an unkeyed FNV-1a
+            checksum. Naming the real mechanism costs nothing and is the
+            difference between a defensible claim and an indefensible one.
+          */}
           <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'monospace', color: '#38bdf8' }}>
-            VERCEL EDGE SATORI ENGINE | CRYPTOGRAPHIC SEAL
+            VERCEL EDGE ENGINE | FNV-1a CHECKSUM (NON-CRYPTOGRAPHIC)
           </div>
         </div>
       </div>

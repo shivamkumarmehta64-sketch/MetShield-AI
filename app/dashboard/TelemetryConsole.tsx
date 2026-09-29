@@ -1,223 +1,436 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
+import { clsx } from 'clsx';
+import type React from 'react';
+import {
+  getNetworkSnapshot,
+  getIncidents,
+  classificationLabel,
+  type StationSnapshot,
+} from '@/lib/networkFeed';
+import { getInitialSeededDataset, type TelemetryPacket } from '@/lib/anomalyLogic';
+import DataModeBadge from './DataModeBadge';
+import WmoFlagBadge from './WmoFlagBadge';
 
-interface TelemetryPoint {
-  t: number;
-  temp: number;
-  pressure: number;
-  rh: number;
+/**
+ * §C — live/network monitoring.
+ *
+ * This panel is rebuilt against the engine. The previous build was the single
+ * worst fabrication in the repo: a `Math.random()` random walk presented under
+ * a `>LIVE<` badge in the retired brand red, a hardcoded packet counter of
+ * 12,847, a station selector offering four ids that do not exist in
+ * `IMD_AWS_STATIONS`, and six hardcoded anomaly rows naming four unregistered
+ * stations. None of it touched `lib/anomalyLogic.ts`.
+ *
+ * The rule this file now follows: every number is read off a real
+ * `TelemetryPacket`, the station list is the real registry, and the packet
+ * counter counts packets the engine actually produced in this buffer — not
+ * packets that never existed.
+ *
+ * There is no timer. Nothing is a live feed; `DATA_MODE` says so and the badge
+ * is rendered from that constant rather than from component state, so it cannot
+ * drift from what `lib/networkFeed.ts` actually does.
+ */
+
+/** WMO Pub No. 8 plausible-range bounds, used for the out-of-range indicator. */
+const RANGES = {
+  temperature: { min: -10, max: 55, unit: '°C', label: 'Temperature' },
+  pressure: { min: 870, max: 1084, unit: 'hPa', label: 'Pressure' },
+  humidity: { min: 0, max: 100, unit: '%', label: 'Humidity' },
+} as const;
+
+type MetricKey = keyof typeof RANGES;
+
+interface Metric {
+  key: MetricKey;
+  value: number | null | undefined;
+  imputed: number | null | undefined;
 }
 
-const WMO_RANGES = {
-  temp: { min: -10, max: 55, unit: '°C', label: 'AMBIENT TEMPERATURE', wmo: 'WMO: -10°C to +55°C' },
-  pressure: { min: 870, max: 1084, unit: 'hPa', label: 'PRESSURE', wmo: 'WMO: 870 to 1084 hPa' },
-  rh: { min: 0, max: 100, unit: '%', label: 'RELATIVE HUMIDITY', wmo: 'WMO: 0 to 100 %' },
-};
+const METRICS: MetricKey[] = ['temperature', 'pressure', 'humidity'];
 
-function generateTelemetry(count: number): TelemetryPoint[] {
-  const data: TelemetryPoint[] = [];
-  let temp = 32.4, pressure = 1008.2, rh = 58.0;
-  for (let i = 0; i < count; i++) {
-    temp += (Math.random() - 0.5) * 0.3;
-    pressure += (Math.random() - 0.5) * 0.4;
-    rh += (Math.random() - 0.5) * 0.8;
-    temp = Math.max(-10, Math.min(55, temp));
-    pressure = Math.max(870, Math.min(1084, pressure));
-    rh = Math.max(0, Math.min(100, rh));
-    data.push({ t: i, temp: +temp.toFixed(1), pressure: +pressure.toFixed(1), rh: +rh.toFixed(1) });
-  }
-  return data;
+/** Where a reading sits inside its WMO range, as a fraction. */
+function inRangeFraction(key: MetricKey, value: number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const { min, max } = RANGES[key];
+  return Math.max(0, Math.min(1, (value - min) / (max - min)));
 }
 
-interface AnomalyEvent {
-  timestamp: string;
-  station: string;
-  description: string;
-  flag: string;
-  severity: 'FLAG_4' | 'FLAG_3' | 'FLAG_5' | 'FLAG_2';
+/** The reading a metrologist wants: corrected value if the engine imputed one. */
+function displayValue(m: Metric): number | null | undefined {
+  return m.imputed ?? m.value;
 }
 
-const ANOMALY_EVENTS: AnomalyEvent[] = [
-  { timestamp: '09:41:33Z', station: 'AWS-HYD-06', description: 'Pressure spike +12hPa in 3 ticks — possible sensor drift', flag: 'FLAG-4 · CORRUPT_HARDWARE', severity: 'FLAG_4' },
-  { timestamp: '09:38:12Z', station: 'AWS-CCU-02', description: 'Temperature step jump +4.2°C — WMO range check failed', flag: 'FLAG-3 · DRIFT', severity: 'FLAG_3' },
-  { timestamp: '09:35:47Z', station: 'AWS-JAI-09', description: 'RH reading stuck at 42.3% for 8 consecutive packets', flag: 'FLAG-3 · STALE_VALUE', severity: 'FLAG_3' },
-  { timestamp: '09:31:05Z', station: 'AWS-BHO-12', description: 'Packet loss detected — 3 consecutive missed cadences', flag: 'FLAG-5 · PACKET_LOSS', severity: 'FLAG_5' },
-  { timestamp: '09:28:51Z', station: 'AWS-GAU-13', description: 'Convective activity detected — T/P/RH coupling anomaly', flag: 'FLAG-2 · STORM', severity: 'FLAG_2' },
-  { timestamp: '09:22:18Z', station: 'AWS-AMD-07', description: 'Calibration drift — pressure offset +2.1hPa from baseline', flag: 'FLAG-3 · CALIBRATION', severity: 'FLAG_3' },
+const CHART_SERIES: { key: string; name: string; axis: string; color: string }[] = [
+  { key: 'pressure', name: 'Pressure (hPa)', axis: 'p', color: 'var(--color-telemetry)' },
+  { key: 'temperature', name: 'Temperature (°C)', axis: 't', color: 'var(--color-weather)' },
+  { key: 'humidity', name: 'Humidity (%)', axis: 'h', color: 'var(--color-teal)' },
 ];
 
-const SEVERITY_COLORS: Record<string, string> = {
-  FLAG_4: '#C0162C',
-  FLAG_3: '#7A5A00',
-  FLAG_5: '#5A5A5A',
-  FLAG_2: '#5588CC',
+interface ChartRow {
+  i: number;
+  time: string;
+  temperature: number | null | undefined;
+  pressure: number | null | undefined;
+  humidity: number | null | undefined;
+  classification: string;
+  storm: boolean;
+}
+
+const TOOLTIP = {
+  contentStyle: {
+    fontSize: 12,
+    border: '1px solid var(--color-hairline)',
+    borderRadius: 6,
+    background: 'var(--color-card)',
+    color: 'var(--color-ink)',
+  },
+  labelStyle: { color: 'var(--color-ink-muted)' },
 };
 
 export default function TelemetryConsole() {
-  const [packetCount, setPacketCount] = useState(12847);
-  const [telemetry, setTelemetry] = useState<TelemetryPoint[]>(() => generateTelemetry(30));
-  const [station, setStation] = useState('AWS-DEL-01');
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const snapshot = getNetworkSnapshot();
+  const incidents = getIncidents();
 
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setPacketCount((c) => c + 1);
-      setTelemetry((prev) => {
-        const last = prev[prev.length - 1];
-        const next: TelemetryPoint = {
-          t: last.t + 1,
-          temp: +(Math.max(-10, Math.min(55, last.temp + (Math.random() - 0.5) * 0.3))).toFixed(1),
-          pressure: +(Math.max(870, Math.min(1084, last.pressure + (Math.random() - 0.5) * 0.4))).toFixed(1),
-          rh: +(Math.max(0, Math.min(100, last.rh + (Math.random() - 0.5) * 0.8))).toFixed(1),
-        };
-        return [...prev.slice(1), next];
-      });
-    }, 2500);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
+  const [selectedId, setSelectedId] = useState<string>(() => {
+    // Open on a station that is actually showing something. Falling back to the
+    // first registered station keeps the panel populated on an all-nominal run.
+    const interesting = snapshot.stations.find((s) => s.health !== 'NOMINAL');
+    return (interesting ?? snapshot.stations[0]).stationId;
+  });
 
-  const latest = telemetry[telemetry.length - 1];
+  const station: StationSnapshot | undefined =
+    snapshot.byId[selectedId] ?? snapshot.stations[0];
 
-  const metrics = [
-    { key: 'temp', value: latest.temp, ...WMO_RANGES.temp, color: '#C0162C', status: 'NOMINAL' },
-    { key: 'pressure', value: latest.pressure, ...WMO_RANGES.pressure, color: '#FFFFFF', status: 'NOMINAL' },
-    { key: 'rh', value: latest.rh, ...WMO_RANGES.rh, color: '#1A7A1A', status: 'NOMINAL' },
-  ];
+  // The real per-station time series, straight out of the engine buffer. The
+  // previous build synthesised this with a random walk; these are the packets
+  // `getInitialSeededDataset()` actually produced, in tick order.
+  const history: TelemetryPacket[] = station
+    ? (getInitialSeededDataset().stationPackets[station.stationId] ?? [])
+    : [];
+
+  const chart = history.map((p, i) => ({
+    i,
+    time: new Date(p.timestamp).toISOString().slice(11, 19),
+    temperature: p.raw.temperature,
+    pressure: p.raw.pressure,
+    humidity: p.raw.humidity,
+    classification: p.classification,
+    // The storm signature is a coupled drop. Marking the tick the engine
+    // classified as convective lets the reader see the event on the curve
+    // instead of inferring it from the axis.
+    storm: p.classification === 'GENUINE_CONVECTIVE_EVENT',
+  }));
+
+  // Flagged packets for the selected station, newest first.
+  const stationIncidents = incidents
+    .filter((i) => i.stationId === station?.stationId)
+    .sort((a, b) => b.timestamp - a.timestamp);
+
+  // Packets are counted from the buffer that produced them, so the figure moves
+  // only when the engine has actually produced more. It is a count of real
+  // packets, not a ticker.
+  const totalPackets = Object.values(getInitialSeededDataset().stationPackets).reduce(
+    (n, arr) => n + arr.length,
+    0
+  );
+
+  const latest = station?.packet;
+
+  const metrics: Metric[] = METRICS.map((key) => ({
+    key,
+    value: latest?.raw[key],
+    imputed: latest?.imputed[key],
+  }));
+
+  if (!station || !latest) {
+    return (
+      <div className="card p-6">
+        <p className="t-body text-ink-muted">No stations in the current run.</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: '#0A0A0A', border: '1px solid #1E1E1E', borderRadius: 0 }}>
-      {/* Console Header (FIX 8) */}
-      <div className="flex items-center justify-between" style={{ height: 44, background: '#141414', borderBottom: '1px solid #1E1E1E', padding: '0 16px' }}>
-        <div className="flex items-center gap-2">
-          <span className="animate-pulse-dot" style={{ width: 6, height: 6, background: '#C0162C', borderRadius: '50%' }} />
-          <span style={{ fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-mono)', color: '#C0162C', textTransform: 'uppercase' }}>LIVE</span>
-          <div style={{ width: 1, height: 12, background: '#2A2A2A' }} />
-          <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#3D3D3D' }}>INSAT-3DR · 2.5s</span>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="t-section-title text-navy">Network monitoring</h2>
+          <p className="t-meta">
+            {history.length} packets in this station&rsquo;s buffer · {totalPackets} across the
+            whole network · newest tick {new Date(latest.timestamp).toISOString().slice(11, 19)} UTC
+          </p>
         </div>
-        <select
-          value={station}
-          onChange={(e) => setStation(e.target.value)}
-          style={{
-            background: '#141414', border: '1px solid #2A2A2A', padding: '4px 28px 4px 10px',
-            fontSize: 10, fontFamily: 'var(--font-mono)', color: '#9A9A9A', width: 180, borderRadius: 0,
-          }}
-        >
-          <option>AWS-DEL-01</option>
-          <option>AWS-MUM-04</option>
-          <option>AWS-CCU-02</option>
-          <option>AWS-MAA-03</option>
-          <option>AWS-BLR-05</option>
-        </select>
+        {/* Rendered from DATA_MODE, not from component state. */}
+        <DataModeBadge />
       </div>
 
-      {/* Packet Counter */}
-      <div className="flex items-center gap-3" style={{ height: 28, background: '#141414', borderBottom: '1px solid #1E1E1E', padding: '0 16px' }}>
-        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#2A2A2A', textTransform: 'uppercase' }}>PKT</span>
-        <span className="mpi-monospaced" style={{ fontSize: 11, fontWeight: 600, color: '#5A5A5A' }}>{packetCount.toLocaleString()}</span>
-        <span style={{ color: '#2A2A2A' }}>·</span>
-        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#2A2A2A' }}>2.5s CADENCE</span>
-      </div>
-
-      {/* Three Metric Rows (FIX 7) */}
-      {metrics.map((m) => {
-        const pct = ((m.value - m.min) / (m.max - m.min)) * 100;
-        const barColor = pct > 90 ? '#C0162C' : pct > 75 ? '#7A5A00' : '#1A7A1A';
-        return (
-          <div key={m.key} className="flex items-center justify-between" style={{ height: 72, borderBottom: '1px solid #1E1E1E', padding: '0 16px', position: 'relative' }}>
-            <div className="flex flex-col gap-1">
-              <span style={{ fontSize: 9, fontWeight: 500, fontFamily: 'var(--font-mono)', color: '#2A2A2A', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                {m.label}
-              </span>
-              <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#1E1E1E' }}>{m.wmo}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="mpi-monospaced" style={{ fontSize: 40, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>
-                {m.value.toFixed(1)}
-              </span>
-              <span className="mpi-monospaced" style={{ fontSize: 16, fontWeight: 400, color: '#3D3D3D', alignSelf: 'flex-end', paddingBottom: 4 }}>
-                {m.unit}
-              </span>
-            </div>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: '#1E1E1E' }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: barColor }} />
-            </div>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[260px_1fr]">
+        {/* Station picker */}
+        <section className="card overflow-hidden" aria-label="Select a station">
+          <div className="border-b border-hairline px-4 py-3">
+            <h3 className="t-card-title">Station</h3>
+            <p className="t-meta">{snapshot.stations.length} registered</p>
           </div>
-        );
-      })}
+          <ul className="max-h-[420px] overflow-y-auto">
+            {snapshot.stations.map((s) => (
+              <li key={s.stationId}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(s.stationId)}
+                  aria-current={s.stationId === station.stationId ? 'true' : undefined}
+                  className={clsx(
+                    'w-full text-left px-4 py-2.5 border-b border-hairline last:border-b-0 transition-colors',
+                    s.stationId === station.stationId ? 'bg-surface-alt' : 'hover:bg-surface-hover'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="t-mono text-[12px] font-semibold text-ink">{s.stationId}</span>
+                    {s.health !== 'NOMINAL' && <WmoFlagBadge flag={s.wmoFlag} />}
+                  </div>
+                  <div className="t-meta truncate">{s.name}</div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      {/* Thermodynamic Status (FIX 9) */}
-      <div className="flex items-center gap-3" style={{ height: 36, background: '#0A0A0A', borderTop: '1px solid #1E1E1E', borderBottom: '1px solid #1E1E1E', padding: '0 16px' }}>
-        <span style={{ width: 6, height: 6, background: '#1A7A1A' }} />
-        <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: '#5A5A5A' }}>
-          {station}: Tri-parameter coupling nominal. All probes stable.
-        </span>
-      </div>
-
-      {/* Sparkline Chart (FIX 10) */}
-      <div style={{ height: 120, background: '#0A0A0A', padding: '12px 16px 8px' }}>
-        <div className="flex items-center justify-between">
-          <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#2A2A2A', textTransform: 'uppercase' }}>
-            MULTI-PARAMETER CURVE · 30 TICKS · 2.5s
-          </span>
-          <div className="flex items-center gap-3">
-            <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#C0162C' }}>━ T</span>
-            <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#5A5A5A' }}>━ P</span>
-            <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#3D3D3D' }}>━ RH</span>
-          </div>
-        </div>
-        <div style={{ height: 90, marginTop: 4 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={telemetry} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-              <XAxis dataKey="t" hide />
-              <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
-              <Tooltip
-                contentStyle={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 0, fontSize: 11, fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}
-                labelStyle={{ color: '#5A5A5A' }}
-              />
-              <Line type="monotone" dataKey="temp" stroke="#C0162C" strokeWidth={1} dot={false} isAnimationActive={false} />
-              <Line type="monotone" dataKey="pressure" stroke="#FFFFFF" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.4} />
-              <Line type="monotone" dataKey="rh" stroke="#1A7A1A" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.6} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Anomaly Event Feed (FIX 11) */}
-      <div>
-        <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#2A2A2A', textTransform: 'uppercase', padding: '8px 16px', borderBottom: '1px solid #1E1E1E' }}>
-          ANOMALY STREAM
-        </div>
-        <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-          {ANOMALY_EVENTS.length === 0 ? (
-            <div className="flex flex-col items-center justify-center" style={{ height: 80 }}>
-              <span style={{ width: 6, height: 6, background: '#1A7A1A', marginBottom: 8 }} />
-              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#2A2A2A' }}>ALL NOMINAL</span>
-            </div>
-          ) : ANOMALY_EVENTS.map((evt, i) => (
-            <div
-              key={i}
-              style={{
-                minHeight: 36, padding: '8px 16px 8px 14px',
-                borderLeft: `2px solid ${SEVERITY_COLORS[evt.severity]}`,
-                borderBottom: '1px solid #141414',
-                background: '#0A0A0A',
-              }}
-            >
+        <div className="flex flex-col gap-5 min-w-0">
+          {/* Latest observation */}
+          <section className="card overflow-hidden" aria-label="Latest observation">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-3">
+              <div className="min-w-0">
+                <h3 className="t-section-title text-navy">{station.name}</h3>
+                <p className="t-meta">
+                  {station.hindiName} · {station.stationId} · {station.state} ·{' '}
+                  {latest.timeIST} IST
+                </p>
+              </div>
               <div className="flex items-center gap-2">
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#3D3D3D' }}>{evt.timestamp}</span>
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#9A9A9A', fontWeight: 500 }}>{evt.station}</span>
-              </div>
-              <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: '#7A7A7A', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {evt.description}
-              </div>
-              <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#3D3D3D', textTransform: 'uppercase', marginTop: 2 }}>
-                {evt.flag}
+                <WmoFlagBadge flag={station.wmoFlag} />
+                <span className="t-label text-ink-muted">
+                  {classificationLabel(station.classification)}
+                </span>
               </div>
             </div>
-          ))}
+
+            <dl className="grid grid-cols-1 divide-y divide-hairline sm:grid-cols-3 sm:divide-y-0">
+              {metrics.map((m) => {
+                const { unit, label, min, max } = RANGES[m.key];
+                const shown = displayValue(m);
+                const frac = inRangeFraction(m.key, shown);
+                const corrected = m.imputed !== undefined && m.imputed !== m.value;
+                const outOfRange = frac !== null && (frac <= 0 || frac >= 1);
+                return (
+                  <div key={m.key} className="px-5 py-4">
+                    <dt className="t-label">{label}</dt>
+                    <dd className="mt-1 flex items-baseline gap-1.5">
+                      <span
+                        className={clsx(
+                          't-mono text-[28px] font-bold leading-none',
+                          outOfRange ? 'text-fault' : 'text-ink'
+                        )}
+                      >
+                        {shown !== undefined && shown !== null ? shown.toFixed(1) : '—'}
+                      </span>
+                      <span className="t-meta">{unit}</span>
+                    </dd>
+                    <p className="t-meta mt-1.5">
+                      {corrected ? (
+                        <span className="text-warning">
+                          corrected from {m.value?.toFixed(1)} {unit}
+                        </span>
+                      ) : outOfRange ? (
+                        <span className="text-fault">outside WMO range {min}–{max} {unit}</span>
+                      ) : (
+                        <span className="text-ink-faint">
+                          within WMO range {min}–{max} {unit}
+                        </span>
+                      )}
+                    </p>
+                    {frac !== null && (
+                      <div className="mt-2 h-1 w-full rounded-full bg-surface-hover" aria-hidden>
+                        <div
+                          className="h-1 rounded-full"
+                          style={{
+                            width: `${frac * 100}%`,
+                            backgroundColor: outOfRange
+                              ? 'var(--color-fault)'
+                              : 'var(--color-healthy)',
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </dl>
+
+            {/* What the engine actually said about this packet. */}
+            <div className="border-t border-hairline bg-surface-alt px-5 py-3">
+              <p className="t-body text-ink">{latest.xaiAttribution.diagnosticNote}</p>
+              <p className="t-meta mt-1">
+                Primary parameter: {latest.xaiAttribution.primaryParameter} · Operational action:{' '}
+                {latest.operationalAction}
+                {latest.ticketId ? ` · ${latest.ticketId}` : ''}
+              </p>
+            </div>
+          </section>
+
+          {/* The real time series */}
+          <section className="card overflow-hidden" aria-label="Station time series">
+            <div className="border-b border-hairline px-5 py-3">
+              <h3 className="t-card-title">Observation history</h3>
+              <p className="t-meta">
+                Every packet the engine produced for {station.stationId} in this run, in tick order.
+                Ticks are {((latest.timestamp - history[0]?.timestamp || 0) / 1000 / Math.max(1, history.length - 1)).toFixed(1)} s
+                apart, not a calendar interval.
+              </p>
+            </div>
+            <div className="p-5">
+              {chart.length === 0 ? (
+                <p className="t-body text-ink-muted">No packets buffered for this station.</p>
+              ) : (
+                <div style={{ height: 260 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chart} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+                      <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="i"
+                        tick={{ fontSize: 11, fill: 'var(--color-ink-muted)' }}
+                        label={{
+                          value: 'Tick',
+                          position: 'insideBottom',
+                          offset: -2,
+                          fontSize: 11,
+                          fill: 'var(--color-ink-faint)',
+                        }}
+                      />
+                      <YAxis
+                        yAxisId="p"
+                        domain={['dataMin - 2', 'dataMax + 2']}
+                        tick={{ fontSize: 11, fill: 'var(--color-ink-muted)' }}
+                      />
+                      <YAxis yAxisId="h" orientation="right" domain={[0, 100]} hide />
+                      <YAxis yAxisId="t" hide domain={['dataMin - 2', 'dataMax + 2']} />
+                      <Tooltip
+                        {...TOOLTIP}
+                        labelFormatter={(
+                          v: React.ReactNode,
+                          payload: ReadonlyArray<{ payload?: ChartRow }>
+                        ) => {
+                          const row = payload?.[0]?.payload;
+                          return `Tick ${String(v)}${row?.storm ? ' · convective event' : ''}`;
+                        }}
+                      />
+                      <ReferenceLine
+                        yAxisId="p"
+                        stroke="var(--color-weather)"
+                        strokeDasharray="4 4"
+                        strokeOpacity={0.7}
+                        label={{ value: 'event', position: 'top', fontSize: 10, fill: 'var(--color-weather)' }}
+                      />
+                      {CHART_SERIES.map((s) => (
+                        <Line
+                          key={s.key}
+                          yAxisId={s.axis}
+                          type="monotone"
+                          dataKey={s.key}
+                          name={s.name}
+                          stroke={s.color}
+                          strokeWidth={2}
+                          dot={(props) =>
+                            chart[props.index]?.storm ? (
+                              <circle
+                                key={`dot-${props.index}`}
+                                cx={props.cx}
+                                cy={props.cy}
+                                r={3.5}
+                                fill="var(--color-weather)"
+                              />
+                            ) : (
+                              <></>
+                            )
+                          }
+                          isAnimationActive={false}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+                    {CHART_SERIES.map((s) => (
+                      <span key={s.key} className="t-meta flex items-center gap-1.5">
+                        <span
+                          aria-hidden
+                          style={{ background: s.color }}
+                          className="inline-block h-0.5 w-4 rounded-full"
+                        />
+                        {s.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* This station's real flagged packets */}
+          <section className="card overflow-hidden" aria-label="Flagged packets">
+            <div className="border-b border-hairline px-5 py-3">
+              <h3 className="t-card-title">Flagged packets for {station.stationId}</h3>
+              <p className="t-meta">
+                {stationIncidents.length === 0
+                  ? 'The engine raised no flag on this station in this run.'
+                  : `${stationIncidents.length} of this station's packets were flagged, newest first.`}
+              </p>
+            </div>
+            {stationIncidents.length === 0 ? (
+              <p className="px-5 py-6 t-body text-ink-muted">
+                Every tick for this station classified as nominal operation.
+              </p>
+            ) : (
+              <ul>
+                {stationIncidents.map((inc) => (
+                  <li
+                    key={inc.id}
+                    className="border-b border-hairline last:border-b-0 px-5 py-3 flex flex-wrap items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="t-mono text-[12px] text-ink-muted">{inc.timeUtc}</span>
+                        <WmoFlagBadge flag={inc.wmoFlag} />
+                        <span
+                          className={clsx(
+                            't-label',
+                            inc.status === 'ACTIVE' ? 'text-fault' : 'text-ink-faint'
+                          )}
+                        >
+                          {inc.status === 'ACTIVE' ? 'ACTIVE' : 'SUPERSEDED'}
+                        </span>
+                      </div>
+                      <p className="t-body mt-1">{inc.diagnosticNote}</p>
+                      <p className="t-meta mt-0.5">
+                        {inc.classificationLabel} · primary {inc.primaryParameter} ·{' '}
+                        {inc.operationalAction}
+                        {inc.ticketId ? ` · ${inc.ticketId}` : ''}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </div>
     </div>

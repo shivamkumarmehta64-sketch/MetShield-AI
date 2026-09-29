@@ -59,7 +59,12 @@ public/walkthrough.html
 *.pptx
 
 # AI assistant & tooling artifacts
-.claude/
-AGENTS.md
+.claude/*
+!.claude/settings.json
+!.claude/commands/
+.claude/settings.local.json
 CLAUDE.md
 skills-lock.json
+
+# Design drafts
+dashboard-desktop.png

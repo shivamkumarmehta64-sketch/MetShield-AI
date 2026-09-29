@@ -24,9 +24,10 @@ import {
   VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import { getStationProfile } from '@/lib/stationData';
-import { nicWmoEngineInstance, TelemetryPacket, WorkOrderTicket } from '@/lib/anomalyLogic';
+import { nicWmoEngineInstance, TelemetryPacket } from '@/lib/anomalyLogic';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
 import { saveReadingLocally, getQueuedReadings, clearQueuedReading } from '@/lib/offlineStorage';
+import { getStationKey, setStationKey, clearStationKey, telemetryAuthHeader } from '@/lib/stationKeyStore';
 import {
   ResponsiveContainer,
   LineChart,
@@ -150,9 +151,18 @@ export default function MobileEdgeNodePage() {
   const [packetCounter, setPacketCounter] = useState<number>(0);
   const [lastServerVerdict, setLastServerVerdict] = useState<TelemetryPacket | null>(null);
   const [isSending, setIsSending] = useState<boolean>(false);
-  const [streamIntervalMs, setStreamIntervalMs] = useState<number>(2500);
+  const [streamIntervalMs] = useState<number>(2500);
   const [selectedCity, setSelectedCity] = useState<string>('New Delhi (Safdarjung)');
   const [liveDataStatus, setLiveDataStatus] = useState<string | null>(null);
+  // Whether the last transmission the server actually accepted. `idle` covers
+  // both "nothing sent yet" and "no key provisioned", which are both states in
+  // which the node is definitively not live.
+  const [uplinkAccepted, setUplinkAccepted] = useState<boolean | null>(null);
+  // The write path requires a per-station pre-shared key (lib/auth.ts). This is
+  // the operator's copy of it, held in this browser only. It is not sent
+  // anywhere except POST /api/telemetry.
+  const [stationKey, setStationKeyInput] = useState('');
+  const [stationKeySaved, setStationKeySaved] = useState(() => getStationKey().length > 0);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isJsonCopied, setIsJsonCopied] = useState<boolean>(false);
   /**
@@ -176,6 +186,16 @@ export default function MobileEdgeNodePage() {
    */
   const isOnline = useSyncExternalStore(subscribeToConnectivity, getConnectivitySnapshot, getServerConnectivitySnapshot);
   const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
+
+  // Derived, not stored. `accepted` is only true when the server returned 2xx
+  // for the most recent write; `refused` once a write has been rejected; and
+  // `idle` before any write has been attempted, or when the node has no key and
+  // therefore cannot attempt one.
+  const uplinkState: 'accepted' | 'refused' | 'idle' = uplinkAccepted === true
+    ? 'accepted'
+    : uplinkAccepted === false
+      ? 'refused'
+      : 'idle';
 
   // Hardware Sensors Hook (Expanded with Compass, Shake-to-Gust, Solar, Battery, Haptics & Audio)
   const {
@@ -335,6 +355,15 @@ export default function MobileEdgeNodePage() {
 
   const syncOfflineQueue = useCallback(async () => {
     if (!isOnline) return;
+    // Queued packets stay queued until the node is provisioned. Sending them
+    // uncredentialed would produce a burst of guaranteed-401s and, more to the
+    // point, would imply a write path that is closed.
+    if (!getStationKey()) {
+      setLiveDataStatus(
+        `${offlineQueueCount} packet(s) held — this node has no station key, so the server would refuse them.`
+      );
+      return;
+    }
     const queued = await getQueuedReadings();
     setOfflineQueueCount(queued.length);
     if (queued.length === 0) return;
@@ -344,7 +373,7 @@ export default function MobileEdgeNodePage() {
       try {
         const res = await fetch('/api/telemetry', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...telemetryAuthHeader() },
           body: JSON.stringify(packet) });
         if (res.ok && packet.id) {
           await clearQueuedReading(packet.id);
@@ -358,8 +387,12 @@ export default function MobileEdgeNodePage() {
     setOfflineQueueCount(remaining.length);
     if (successCount > 0) {
       setLiveDataStatus(`Synced ${successCount} offline packets to edge server.`);
+    } else if (remaining.length > 0) {
+      setLiveDataStatus(
+        `None of the ${remaining.length} queued packet(s) were accepted. The station key may be wrong or revoked.`
+      );
     }
-  }, [isOnline]);
+  }, [isOnline, offlineQueueCount]);
 
   /**
    * Drain the offline queue whenever connectivity returns.
@@ -414,17 +447,38 @@ export default function MobileEdgeNodePage() {
           const q = await getQueuedReadings();
           setOfflineQueueCount(q.length);
           setLastTransmittedTime(new Date().toLocaleTimeString('en-IN', { hour12: false }) + ' (Queued Offline)');
+          // Queued locally, not accepted by the server. The badge must not
+          // read as live — it says queued, and the queue count says how many.
+          setUplinkAccepted(false);
           setIsSending(false);
           return;
         }
 
         const res = await fetch('/api/telemetry', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...telemetryAuthHeader() },
           body: JSON.stringify(payload) });
 
         const data = await res.json();
         setPacketCounter((prev) => prev + 1);
+
+        // A refused write is not a transmitted packet. Before this was handled
+        // the page played its chime, bumped the counter and showed a timestamp
+        // for a request the server had rejected — so the UI reported the node
+        // as healthy precisely when it was not being allowed to write.
+        if (!res.ok) {
+          setIsSending(false);
+          setLastTransmittedTime(null);
+          setUplinkAccepted(false);
+          setLiveDataStatus(
+            data?.remediation
+              ? `Transmission refused (HTTP ${res.status}) — ${data.remediation}`
+              : `Transmission refused (HTTP ${res.status}).`
+          );
+          return;
+        }
+
+        setUplinkAccepted(true);
         setLastTransmittedTime(new Date().toLocaleTimeString('en-IN', { hour12: false }));
 
         if (!isAudioMuted) {
@@ -588,9 +642,40 @@ export default function MobileEdgeNodePage() {
           >
             {isAudioMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
-          <div className="flex items-center gap-1 bg-emerald-950/80 border border-emerald-600 text-emerald-300 text-[10px] font-mono px-2 py-0.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>UPLINK LIVE</span>
+          {/* The uplink state, derived from what the server actually said. This
+              used to be a permanently-painted green "UPLINK LIVE" pill that
+              rendered identically whether or not the node had a pre-shared key
+              — and with no `METSHIELD_STATION_CREDENTIALS` set, POST
+              /api/telemetry refuses every write with 503. The one state that
+              must never read as live is the one where nothing is being
+              accepted. */}
+          <div
+            className={`flex items-center gap-1 border text-[10px] font-mono px-2 py-0.5 rounded-full ${
+              uplinkState === 'accepted'
+                ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300'
+                : uplinkState === 'refused'
+                  ? 'bg-amber-950/80 border-amber-600 text-amber-300'
+                  : 'bg-slate-800 border-slate-700 text-slate-400'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                uplinkState === 'accepted'
+                  ? 'bg-emerald-400 animate-pulse'
+                  : uplinkState === 'refused'
+                    ? 'bg-amber-400'
+                    : 'bg-slate-500'
+              }`}
+            ></span>
+            <span>
+              {uplinkState === 'accepted'
+                ? 'UPLINK ACCEPTED'
+                : uplinkState === 'refused'
+                  ? 'UPLINK REFUSED'
+                  : stationKeySaved
+                    ? 'UPLINK IDLE'
+                    : 'NO STATION KEY'}
+            </span>
           </div>
         </div>
       </header>
@@ -676,6 +761,77 @@ export default function MobileEdgeNodePage() {
                 <span>Offline Mode</span>
               </div>
             )}
+          </div>
+
+          {/* Node provisioning.
+              POST /api/telemetry refuses unauthenticated writes (lib/auth.ts),
+              so an unprovisioned node cannot transmit. The control is shown
+              whatever the state, because a node that is transmitting and a node
+              that has not should not look alike on screen. */}
+          <div className="px-4 pb-3">
+            <label
+              htmlFor="station-key-input"
+              className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-400 mb-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Station Pre-Shared Key
+              <span
+                className={`ml-auto px-1.5 py-0.5 rounded font-mono ${
+                  stationKeySaved
+                    ? 'text-emerald-400 bg-emerald-400/10'
+                    : 'text-amber-400 bg-amber-400/10'
+                }`}
+              >
+                {stationKeySaved ? 'PROVISIONED' : 'NOT PROVISIONED'}
+              </span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="station-key-input"
+                type="password"
+                autoComplete="off"
+                value={stationKey}
+                onChange={(e) => setStationKeyInput(e.target.value)}
+                placeholder={stationKeySaved ? 'Enter to replace the stored key' : `Key provisioned for ${stationId}`}
+                className="flex-1 bg-slate-800 border border-slate-700 text-slate-100 text-xs rounded-lg px-2.5 py-1.5 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const ok = setStationKey(stationKey.trim());
+                  if (ok) {
+                    setStationKeyInput('');
+                    setStationKeySaved(true);
+                    setLiveDataStatus(`Station key stored for ${stationId}. Telemetry writes will now authenticate.`);
+                  } else {
+                    setLiveDataStatus('This browser refused to store the key (private browsing?). Writes will be refused.');
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-[10px] font-bold text-white shrink-0"
+              >
+                SAVE KEY
+              </button>
+              {stationKeySaved && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearStationKey();
+                    setStationKeyInput('');
+                    setStationKeySaved(false);
+                    setLiveDataStatus('Station key cleared from this browser. Telemetry writes will be refused.');
+                  }}
+                  className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 shrink-0"
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+              Held in this browser only, base64-encoded — that is an encoding, not encryption, and any
+              script on this origin can read it. Sent as <code>Authorization: Bearer</code> to
+              <code> /api/telemetry</code> and nowhere else. A production node would keep the key in
+              the device keystore and terminate TLS per station.
+            </p>
           </div>
         </div>
 
@@ -786,33 +942,44 @@ export default function MobileEdgeNodePage() {
               </div>
               <div className="space-y-0.5 min-w-0">
                 <div className="text-[9px] uppercase font-bold text-sky-300 flex items-center gap-1">
-                  <span>Anemometer</span>
+                  <span>Device Motion</span>
                 </div>
                 <div className="text-sm font-bold text-slate-100 font-mono">
-                  {windGustKph.toFixed(1)} <span className="text-[10px] text-slate-400">km/h</span>
+                  {windGustKph.toFixed(1)} <span className="text-[10px] text-slate-400">km/h (derived)</span>
                 </div>
-                <div className="text-[8px] text-amber-300/90 leading-none font-medium truncate">
-                  {isShaking ? '⚠️ Squall Gust Active!' : 'Shake phone for gust'}
+                <div className="text-[8px] text-amber-300/90 leading-none font-medium">
+                  {isShaking ? '⚠️ Motion detected — derived estimate' : 'Derived from accelerometer, not anemometer'}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Solar Irradiance & Battery Float Voltage */}
+          {/*
+            Solar and battery.
+
+            These were labelled "Solar Pyranometer" and "Battery Voltage" and
+            presented as instrument readings. Neither is one:
+              - solarRadiationWm2 is a sine of the wall-clock hour in
+                useMobileSensors.ts, not a pyranometer measurement
+              - batteryLevel IS a real getBattery() reading; batteryVoltage is
+                a linear map of that percentage (11.8 + level * 0.9) invented to
+                look like an AWS pack voltage. A phone cannot measure it.
+            Both are now labelled as what they are.
+          */}
           <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
             <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
               <span className="text-slate-400 flex items-center gap-1">
                 <Sun className="w-3 h-3 text-amber-400" />
-                <span>Solar Pyranometer:</span>
+                <span>Solar (est. from clock):</span>
               </span>
               <span className="text-amber-300 font-bold">{solarRadiationWm2} W/m²</span>
             </div>
             <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
               <span className="text-slate-400 flex items-center gap-1">
                 <BatteryCharging className="w-3 h-3 text-emerald-400" />
-                <span>Battery Voltage:</span>
+                <span>Phone Battery:</span>
               </span>
-              <span className="text-emerald-300 font-bold">{batteryVoltage.toFixed(2)}V ({batteryLevel}%)</span>
+              <span className="text-emerald-300 font-bold">{batteryLevel}% real · {batteryVoltage.toFixed(2)}V est.</span>
             </div>
           </div>
 
@@ -901,26 +1068,52 @@ export default function MobileEdgeNodePage() {
             </div>
           </div>
 
-          {/* Zero-Trust Hardware Cryptographic Envelope HUD */}
+          {/*
+            Telemetry framing panel.
+
+            This used to read "Zero-Trust Security Envelope" with a green
+            "HMAC-SHA256 SIGNED" badge, a "Crypto Nonce", and an "INSAT-3D
+            402.75 MHz" uplink line. None of that was true. The packet is
+            carried over HTTPS, and the integrity value is an unkeyed FNV-1a
+            checksum from computeDemoIntegritySeal — no key, no MAC, no
+            signature, no tamper resistance. The "nonce" was arithmetic on a
+            local counter, and no radio transmission to INSAT-3D happens here;
+            the browser posts to /api/telemetry over TLS.
+
+            What remains is what the page actually does: apply the FNV-1a
+            checksum, label the transport honestly, and mark the observation
+            SIMULATED because wind and radiation here are inferred from
+            DeviceMotion rather than measured by an AWS anemometer.
+          */}
           <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-[10px] space-y-1.5 font-mono">
             <div className="flex items-center justify-between">
               <span className="text-emerald-400 font-bold flex items-center gap-1 font-sans">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Zero-Trust Security Envelope
+                Packet Framing &amp; Integrity
               </span>
-              <span className="bg-emerald-950 text-emerald-300 border border-emerald-700/60 px-1.5 py-0.2 rounded font-bold text-[9px]">
-                HMAC-SHA256 SIGNED
+              <span className="bg-slate-800 text-slate-300 border border-slate-700 px-1.5 py-0.2 rounded font-bold text-[9px]">
+                FNV-1a CHECKSUM · NOT A SIGNATURE
               </span>
             </div>
             <div className="text-[9px] text-slate-400 flex items-center justify-between border-t border-slate-900 pt-1">
-              <span>Crypto Nonce: <strong className="text-emerald-300">#{((packetCounter * 7919 + 104821) % 999999).toString().padStart(6, '0')}</strong></span>
-              <span>Uplink: <strong className="text-sky-300">INSAT-3D 402.75 MHz</strong></span>
+              <span>Anti-replay seq: <strong className="text-slate-300">#{((packetCounter * 7919 + 104821) % 999999).toString().padStart(6, '0')}</strong></span>
+              <span>Transport: <strong className="text-sky-300">HTTPS → /api/telemetry</strong></span>
+            </div>
+            <div className="text-[9px] text-slate-500 leading-relaxed">
+              Unkeyed checksum. Detects accidental corruption only. No secret, no
+              signature, no tamper resistance — anyone able to POST a packet can
+              recompute it.
             </div>
             <div className="bg-slate-900/90 p-1.5 rounded border border-slate-800 text-[9px] text-slate-300 flex items-center justify-between">
-              <span className="text-slate-500 uppercase font-sans">DCP Hex Frame:</span>
+              <span className="text-slate-500 uppercase font-sans">Frame (illustrative):</span>
               <span className="text-amber-300 font-bold tracking-wider">
                 AA 55 01 {stationId.replace('AWS-', '')} {(Math.round((temp + 50) * 10) & 0xffff).toString(16).toUpperCase()} {(Math.round(press * 10) & 0xffff).toString(16).toUpperCase()} 8F
               </span>
+            </div>
+            <div className="text-[9px] text-amber-300/90 leading-relaxed">
+              SIMULATED: wind and radiation on this page are derived from
+              DeviceMotion, not measured by a station anemometer or pyranometer.
+              Barometric pressure is a real device reading where supported.
             </div>
           </div>
 

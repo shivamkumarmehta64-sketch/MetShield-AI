@@ -199,7 +199,12 @@ export const TIME_LOGIC_CASES: TimeLogicCase[] = [
     icon: Radio,
     color: '#7c3aed',
     accentBg: 'bg-purple-50 text-purple-700 border-purple-200',
-    badgeText: 'Kalman & WMO WMA Reconstruction',
+    // Was "Kalman & WMO WMA Reconstruction". No Kalman filter exists in lib/,
+    // and the imputation that does run is `windowedMean` in
+    // lib/anomalyDetector.ts: a flat arithmetic mean over the recent history,
+    // with no Gaussian weighting and no spatial IDW component. The label now
+    // names the function that actually runs.
+    badgeText: 'Windowed-Mean Imputation',
     phenomenon: 'INSAT-3D/3DR 401 MHz TDMA telemetry slot missed due to heavy tropical precipitation attenuation, low battery voltage, or antenna misalignment.',
     phenomenonHi: 'भारी बारिश या कमजोर बैटरी के कारण INSAT-3D उपग्रह अपलिंक स्लॉट में डेटा पैकेट का खो जाना।',
     mathFormula: 'X̂(t) = α · X_autoregressive(t) + (1 - α) · ∑ [w_i · X_spatial_i(t)];  w_i = (1/d_i²) / ∑(1/d_j²)',

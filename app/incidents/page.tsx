@@ -1,121 +1,195 @@
 'use client';
 
-import { useState } from 'react';
-import Topbar from '../dashboard/Topbar';
-import Sidebar from '../dashboard/Sidebar';
+import { useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
+import Shell from '../dashboard/Shell';
 import KpiStrip from '../dashboard/KpiStrip';
-import Badge from '../dashboard/Badge';
+import IncidentTable from '../dashboard/IncidentTable';
+import DataModeBadge from '../dashboard/DataModeBadge';
+import { getIncidents, type IncidentSeverity } from '@/lib/networkFeed';
 
-interface Incident {
-  id: string;
-  time: string;
-  station: string;
-  param: string;
-  tier: string;
-  severity: 'SEVERE' | 'WARNING' | 'INFO';
-  resolution: 'RESOLVED' | 'IMPUTED' | 'ACTIVE' | 'DISPATCHED';
-}
+const SEVERITIES: (IncidentSeverity | 'ALL')[] = ['ALL', 'CRITICAL', 'MAJOR', 'MINOR'];
 
-const INCIDENTS: Incident[] = [
-  { id: 'INC-20260927-001', time: '09:42:17Z', station: 'AWS-HYD-06', param: 'P', tier: 'TIER-1', severity: 'SEVERE', resolution: 'ACTIVE' },
-  { id: 'INC-20260927-002', time: '09:38:44Z', station: 'AWS-CCU-02', param: 'T', tier: 'TIER-2', severity: 'WARNING', resolution: 'DISPATCHED' },
-  { id: 'INC-20260927-003', time: '09:35:12Z', station: 'AWS-JAI-09', param: 'RH', tier: 'TIER-2', severity: 'WARNING', resolution: 'IMPUTED' },
-  { id: 'INC-20260927-004', time: '09:31:05Z', station: 'AWS-BHO-12', param: 'PKT', tier: 'TIER-3', severity: 'INFO', resolution: 'RESOLVED' },
-  { id: 'INC-20260927-005', time: '09:28:51Z', station: 'AWS-GAU-13', param: 'T', tier: 'TIER-1', severity: 'INFO', resolution: 'RESOLVED' },
-  { id: 'INC-20260927-006', time: '09:22:18Z', station: 'AWS-AMD-07', param: 'P', tier: 'TIER-2', severity: 'WARNING', resolution: 'RESOLVED' },
-  { id: 'INC-20260927-007', time: '09:18:33Z', station: 'AWS-DEL-01', param: 'T', tier: 'TIER-1', severity: 'INFO', resolution: 'RESOLVED' },
-  { id: 'INC-20260927-008', time: '09:12:47Z', station: 'AWS-MUM-04', param: 'RH', tier: 'TIER-3', severity: 'INFO', resolution: 'RESOLVED' },
-  { id: 'INC-20260927-009', time: '09:08:22Z', station: 'AWS-MAA-03', param: 'P', tier: 'TIER-2', severity: 'WARNING', resolution: 'DISPATCHED' },
-  { id: 'INC-20260927-010', time: '09:01:15Z', station: 'AWS-BLR-05', param: 'T', tier: 'TIER-1', severity: 'INFO', resolution: 'RESOLVED' },
-  { id: 'INC-20260927-011', time: '08:55:40Z', station: 'AWS-PNQ-08', param: 'RH', tier: 'TIER-3', severity: 'INFO', resolution: 'RESOLVED' },
-  { id: 'INC-20260927-012', time: '08:48:09Z', station: 'AWS-LKO-10', param: 'P', tier: 'TIER-2', severity: 'WARNING', resolution: 'IMPUTED' },
-];
-
+/**
+ * §I — the incident log.
+ *
+ * The rows come from `getIncidents()`, which walks the engine's own buffer. The
+ * previous build showed a hand-written table of twelve rows — including four
+ * station ids that are not in the registry — behind a filter bar whose Apply
+ * button did nothing and two export buttons with no handler.
+ */
 export default function IncidentsPage() {
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [severity, setSeverity] = useState('ALL');
-  const [tier, setTier] = useState('ALL');
+  const all = getIncidents();
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [severity, setSeverity] = useState<IncidentSeverity | 'ALL'>('ALL');
+  const [status, setStatus] = useState<'ALL' | 'ACTIVE' | 'RECOVERED'>('ALL');
   const [station, setStation] = useState('');
 
-  return (
-    <div className="min-h-screen" style={{ background: '#FFFFFF' }}>
-      <Topbar breadcrumb="INCIDENT LOG" />
-      <Sidebar />
+  const rows = useMemo(() => {
+    const q = station.trim().toLowerCase();
+    return all.filter((inc) => {
+      // Date bounds compare against the incident's own UTC timestamp.
+      const day = inc.timeUtc.slice(0, 10);
+      if (from && day < from) return false;
+      if (to && day > to) return false;
+      if (severity !== 'ALL' && inc.severity !== severity) return false;
+      if (status !== 'ALL' && inc.status !== status) return false;
+      if (q && !inc.stationId.toLowerCase().includes(q) && !inc.stationName.toLowerCase().includes(q))
+        return false;
+      return true;
+    });
+  }, [all, from, to, severity, status, station]);
 
-      <div className="fixed left-[220px] right-0 top-[56px] bottom-0 overflow-y-auto" style={{ background: '#FFFFFF' }}>
+  function download(kind: 'csv' | 'json') {
+    const body =
+      kind === 'json'
+        ? JSON.stringify(rows, null, 2)
+        : [
+            'incident_id,packet_id,time_utc,station_id,station_name,classification,wmo_flag,severity,status,operational_action,ticket_id',
+            ...rows.map((r) =>
+              [
+                r.id,
+                r.packetId,
+                r.timeUtc,
+                r.stationId,
+                `"${r.stationName}"`,
+                r.classification,
+                r.wmoFlag,
+                r.severity,
+                r.status,
+                `"${r.operationalAction}"`,
+                r.ticketId ?? '',
+              ].join(',')
+            ),
+          ].join('\n');
+
+    const url = URL.createObjectURL(
+      new Blob([body], { type: kind === 'json' ? 'application/json' : 'text/csv' })
+    );
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `metshield-incidents.${kind}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <Shell breadcrumb="Incident Log">
+      <div className="flex flex-col gap-5">
         <KpiStrip />
 
-        <div style={{ padding: 28 }}>
-          <div className="flex items-start justify-between">
+        <section className="card overflow-hidden" aria-label="Incident registry">
+          <div className="border-b border-hairline px-5 py-3 flex flex-wrap items-center gap-3 justify-between">
             <div>
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0A0A0A', margin: 0 }}>INCIDENT REGISTRY</h1>
-              <p style={{ fontSize: 13, color: '#7A7A7A', margin: '4px 0 0' }}>WMO-compliant anomaly audit trail</p>
+              <h1 className="t-section-title text-navy">Incident registry</h1>
+              <p className="t-meta">
+                Every flagged packet the engine produced during the benchmark run, newest first.
+              </p>
             </div>
             <div className="flex items-center gap-2">
-              <button style={{ fontSize: 11, fontWeight: 500, color: '#3D3D3D', border: '1px solid #D0D0D0', padding: '6px 12px', borderRadius: 0, background: '#FFFFFF', cursor: 'pointer' }}>
-                ↓ Export CSV
+              <DataModeBadge />
+              <button
+                type="button"
+                onClick={() => download('csv')}
+                disabled={rows.length === 0}
+                className="touch-target inline-flex items-center gap-1.5 rounded border border-hairline-strong bg-card px-3 text-[12.5px] font-semibold text-navy hover:bg-surface-alt disabled:opacity-40"
+              >
+                <Download size={14} aria-hidden />
+                CSV
               </button>
-              <button style={{ fontSize: 11, fontWeight: 500, color: '#3D3D3D', border: '1px solid #D0D0D0', padding: '6px 12px', borderRadius: 0, background: '#FFFFFF', cursor: 'pointer' }}>
-                ↓ Export JSON
+              <button
+                type="button"
+                onClick={() => download('json')}
+                disabled={rows.length === 0}
+                className="touch-target inline-flex items-center gap-1.5 rounded border border-hairline-strong bg-card px-3 text-[12.5px] font-semibold text-navy hover:bg-surface-alt disabled:opacity-40"
+              >
+                <Download size={14} aria-hidden />
+                JSON
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap" style={{ background: '#F7F7F7', border: '1px solid #E8E8E8', padding: '10px 16px', marginTop: 20, marginBottom: 20 }}>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 8px', borderRadius: 0, width: 130 }} />
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 8px', borderRadius: 0, width: 130 }} />
-            <select value={severity} onChange={(e) => setSeverity(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 28px 0 8px', borderRadius: 0, width: 120 }}>
-              <option value="ALL">All</option>
-              <option value="SEVERE">SEVERE</option>
-              <option value="WARNING">WARNING</option>
-              <option value="INFO">INFO</option>
-            </select>
-            <select value={tier} onChange={(e) => setTier(e.target.value)} style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 28px 0 8px', borderRadius: 0, width: 100 }}>
-              <option value="ALL">All</option>
-              <option value="TIER-1">TIER-1</option>
-              <option value="TIER-2">TIER-2</option>
-              <option value="TIER-3">TIER-3</option>
-            </select>
-            <input type="text" value={station} onChange={(e) => setStation(e.target.value)} placeholder="AWS-ID" style={{ height: 30, fontSize: 11, color: '#3D3D3D', background: '#FFFFFF', border: '1px solid #D0D0D0', padding: '0 8px', borderRadius: 0, width: 130 }} />
-            <button style={{ background: '#0A0A0A', color: '#FFFFFF', fontSize: 11, fontWeight: 500, padding: '6px 16px', borderRadius: 0, height: 30, border: 'none', cursor: 'pointer' }}>
-              Apply
-            </button>
-            <span style={{ fontSize: 11, color: '#7A7A7A', marginLeft: 'auto' }}>Showing {INCIDENTS.length} incidents</span>
+          {/* The filters apply as they are changed. There is no Apply button,
+              because a button that does nothing is worse than no button. */}
+          <div className="border-b border-hairline px-5 py-3 flex flex-wrap items-end gap-3">
+            <div>
+              <label htmlFor="inc-from" className="t-label block">
+                From
+              </label>
+              <input
+                id="inc-from"
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className="mt-1 rounded border border-hairline bg-card px-2.5 py-1.5 text-[12.5px]"
+              />
+            </div>
+            <div>
+              <label htmlFor="inc-to" className="t-label block">
+                To
+              </label>
+              <input
+                id="inc-to"
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="mt-1 rounded border border-hairline bg-card px-2.5 py-1.5 text-[12.5px]"
+              />
+            </div>
+            <div>
+              <label htmlFor="inc-sev" className="t-label block">
+                Severity
+              </label>
+              <select
+                id="inc-sev"
+                value={severity}
+                onChange={(e) => setSeverity(e.target.value as IncidentSeverity | 'ALL')}
+                className="mt-1 rounded border border-hairline bg-card px-2.5 py-1.5 text-[12.5px]"
+              >
+                {SEVERITIES.map((s) => (
+                  <option key={s} value={s}>
+                    {s === 'ALL' ? 'All' : s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="inc-status" className="t-label block">
+                Status
+              </label>
+              <select
+                id="inc-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as 'ALL' | 'ACTIVE' | 'RECOVERED')}
+                className="mt-1 rounded border border-hairline bg-card px-2.5 py-1.5 text-[12.5px]"
+              >
+                <option value="ALL">All</option>
+                <option value="ACTIVE">Active</option>
+                <option value="RECOVERED">Recovered</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="inc-station" className="t-label block">
+                Station
+              </label>
+              <input
+                id="inc-station"
+                type="search"
+                value={station}
+                onChange={(e) => setStation(e.target.value)}
+                placeholder="AWS-ID or name"
+                className="mt-1 w-44 rounded border border-hairline bg-card px-2.5 py-1.5 text-[12.5px] placeholder:text-ink-faint"
+              />
+            </div>
+            <p className="ml-auto t-meta" role="status">
+              Showing {rows.length} of {all.length} incidents
+            </p>
           </div>
 
-          <div style={{ border: '1px solid #E8E8E8', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#F7F7F7', borderBottom: '1px solid #E8E8E8' }}>
-                  {['INC-ID', 'UTC TIME', 'STATION', 'PARAM', 'QC TIER', 'SEVERITY', 'RESOLUTION'].map((h) => (
-                    <th key={h} style={{ height: 36, padding: '0 12px', textAlign: 'left', fontSize: 10, fontWeight: 500, textTransform: 'uppercase', color: '#7A7A7A', letterSpacing: '0.08em' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {INCIDENTS.map((inc, i) => (
-                  <tr key={inc.id} style={{ background: '#FFFFFF', borderBottom: i < INCIDENTS.length - 1 ? '1px solid #F0F0F0' : 'none' }}>
-                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: '#7A7A7A' }}>{inc.id}</td>
-                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: '#3D3D3D' }}>{inc.time}</td>
-                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-mono)', color: '#0A0A0A' }}>{inc.station}</td>
-                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: '#3D3D3D' }}>{inc.param}</td>
-                    <td style={{ height: 44, padding: '0 12px', fontSize: 11, color: '#3D3D3D' }}>{inc.tier}</td>
-                    <td style={{ height: 44, padding: '0 12px' }}>
-                      <Badge variant={inc.severity} />
-                    </td>
-                    <td style={{ height: 44, padding: '0 12px' }}>
-                      <Badge variant={inc.resolution} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <IncidentTable rows={rows} />
+        </section>
       </div>
-    </div>
+    </Shell>
   );
 }

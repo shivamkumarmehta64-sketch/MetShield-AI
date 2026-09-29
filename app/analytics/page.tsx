@@ -1,146 +1,272 @@
 'use client';
 
-import Topbar from '../dashboard/Topbar';
-import Sidebar from '../dashboard/Sidebar';
+import Shell from '../dashboard/Shell';
 import KpiStrip from '../dashboard/KpiStrip';
+import DataModeBadge from '../dashboard/DataModeBadge';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine, LabelList,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
+import {
+  classificationBreakdown,
+  computeKpis,
+  flagBreakdown,
+  getIncidents,
+  getNetworkSnapshot,
+  qualityTrend,
+} from '@/lib/networkFeed';
+import { wmoFlagMeta } from '../dashboard/WmoFlagBadge';
 
-const QC_TREND = Array.from({ length: 30 }, (_, i) => ({
-  date: `${27 + i - 30} Sep`,
-  rate: 98.8 + Math.sin(i * 0.3) * 0.4 + Math.random() * 0.3,
-}));
+/**
+ * §B — analytics.
+ *
+ * Semantic colour, not brand colour: fault red for hardware corruption, weather
+ * orange for a genuine convective event, warning amber for drift, telemetry
+ * blue for packet loss, healthy green for verified good, purple for the AI
+ * view. This is a migration of meaning, not a global red→blue find-and-replace.
+ */
+const CLASSIFICATION_COLOR: Record<string, string> = {
+  NOMINAL_OPERATION: 'var(--color-healthy)',
+  GENUINE_CONVECTIVE_EVENT: 'var(--color-weather)',
+  SENSOR_SPIKE: 'var(--color-fault)',
+  FROZEN_VALUE: 'var(--color-fault)',
+  CALIBRATION_DRIFT: 'var(--color-warning)',
+  TELEMETRY_PACKET_LOSS: 'var(--color-telemetry)',
+};
 
-const ANOMALY_DATA = [
-  { type: 'STEP_JUMP', count: 342, fill: '#C0162C' },
-  { type: 'RANGE_BREACH', count: 287, fill: '#7A5A00' },
-  { type: 'THERMODYNAMIC', count: 198, fill: '#5588CC' },
-  { type: 'CALIBRATION_DRIFT', count: 256, fill: '#CCA300' },
-  { type: 'PACKET_LOSS', count: 164, fill: '#3D3D3D' },
-];
-
-const QC_TIERS = [
-  { tier: 'TIER-1', desc: 'RANGE CHECK', count: 487, pct: '39.1%' },
-  { tier: 'TIER-2', desc: 'TEMPORAL CONSISTENCY', count: 392, pct: '31.4%' },
-  { tier: 'TIER-3', desc: 'CROSS-PARAMETER', count: 368, pct: '29.5%' },
-];
-
-const LATENCY_DATA = Array.from({ length: 24 }, (_, i) => ({
-  hour: `${i}:00`,
-  p50: 1.5 + Math.random() * 0.8,
-  p95: 3.8 + Math.random() * 1.2,
-  p99: 5.5 + Math.random() * 1.5,
-}));
-
-const CHART_TOOLTIP_STYLE = {
-  contentStyle: { background: '#0A0A0A', border: '1px solid #2A2A2A', borderRadius: 0, fontSize: 11, fontFamily: 'var(--font-mono)', color: '#FFFFFF' },
-  labelStyle: { color: '#5A5A5A' },
+const TOOLTIP = {
+  contentStyle: {
+    fontSize: 12,
+    border: '1px solid var(--color-hairline)',
+    borderRadius: 6,
+    background: 'var(--color-card)',
+    color: 'var(--color-ink)',
+  },
+  labelStyle: { color: 'var(--color-ink-muted)' },
 };
 
 export default function AnalyticsPage() {
-  return (
-    <div className="min-h-screen" style={{ background: '#FFFFFF' }}>
-      <Topbar breadcrumb="QC ANALYTICS" />
-      <Sidebar />
+  const snapshot = getNetworkSnapshot();
+  const kpis = computeKpis(snapshot);
+  const incidents = getIncidents();
 
-      <div className="fixed left-[220px] right-0 top-[56px] bottom-0 overflow-y-auto" style={{ background: '#FFFFFF' }}>
+  // These three are pure functions of the engine's buffer and are themselves
+  // memoised inside `lib/networkFeed`, so they are called directly. Wrapping
+  // them again here in `useMemo(…, [])` bought nothing and tripped the React
+  // Compiler's preserve-manual-memoization rule.
+  const trend = qualityTrend();
+  const byClassification = classificationBreakdown();
+  const byFlag = flagBreakdown();
+
+  const active = incidents.filter((i) => i.status === 'ACTIVE');
+  const peak = trend.reduce((max, p) => Math.max(max, p.goodPct), 0);
+  const trough = trend.reduce((min, p) => Math.min(min, p.goodPct), 100);
+
+  return (
+    <Shell breadcrumb="QC Analytics">
+      <div className="flex flex-col gap-5">
         <KpiStrip />
 
-        <div style={{ padding: 28 }}>
-          {/* Stat Row */}
-          <div className="grid grid-cols-3" style={{ border: '1px solid #E8E8E8' }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="t-section-title text-navy">Network analytics</h1>
+            <p className="t-card-title text-warning">
+              SIMULATED DEMO: no validated dataset loaded
+            </p>
+            <p className="t-body text-ink-muted">
+              {incidents.length} flagged packets across {snapshot.stations.length} stations in this
+              run.
+            </p>
+          </div>
+          <DataModeBadge />
+        </div>
+
+        <section className="card overflow-hidden" aria-label="Quality trend">
+          <div className="border-b border-hairline px-5 py-3">
+            <h2 className="t-card-title">Quality-control pass rate, per tick</h2>
+            <p className="t-meta">
+              Share of stations at WMO Flag 1 on each of the {trend.length} ticks in the run. The
+              interval is 2.5 s of benchmark time, not a calendar day.
+            </p>
+          </div>
+          <div className="p-5">
+            <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1">
+              <span className="t-meta">
+                Range {trough.toFixed(1)}% – {peak.toFixed(1)}%
+              </span>
+              <span className="t-meta">
+                Final tick {trend[trend.length - 1]?.goodPct.toFixed(1) ?? '—'}%
+              </span>
+              <span className="t-meta">
+                {trend[trend.length - 1]?.flagged ?? 0} station(s) not at Flag 1
+              </span>
+            </div>
+            <div style={{ height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trend} margin={{ top: 8, right: 12, bottom: 0, left: -20 }}>
+                  <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="tick"
+                    tick={{ fontSize: 11, fill: 'var(--color-ink-muted)' }}
+                    label={{
+                      value: 'Tick',
+                      position: 'insideBottom',
+                      offset: -2,
+                      fontSize: 11,
+                      fill: 'var(--color-ink-faint)',
+                    }}
+                  />
+                  <YAxis
+                    domain={['dataMin - 2', 100]}
+                    tick={{ fontSize: 11, fill: 'var(--color-ink-muted)' }}
+                    tickFormatter={(v: number) => `${v}%`}
+                  />
+                  <Tooltip
+                    {...TOOLTIP}
+                    formatter={(v) => [`${Number(v).toFixed(1)}%`, 'At Flag 1']}
+                    labelFormatter={(t) => `Tick ${t} · ${trend[Number(t)]?.timeUtc ?? ''} UTC`}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="goodPct"
+                    stroke="var(--color-telemetry)"
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <section className="card overflow-hidden" aria-label="Anomaly classification breakdown">
+            <div className="border-b border-hairline px-5 py-3">
+              <h2 className="t-card-title">Anomalies by root cause</h2>
+              <p className="t-meta">The engine&rsquo;s own classification, counted over every packet.</p>
+            </div>
+            <div className="p-5">
+              {byClassification.every((r) => r.count === 0) ? (
+                <p className="t-body text-ink-muted">No anomalies were raised in this run.</p>
+              ) : (
+                <div style={{ height: Math.max(160, byClassification.length * 44) }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={byClassification}
+                      layout="vertical"
+                      margin={{ top: 0, right: 28, bottom: 0, left: 8 }}
+                    >
+                      <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--color-ink-muted)' }} />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        width={168}
+                        tick={{ fontSize: 11, fill: 'var(--color-ink-muted)' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip {...TOOLTIP} cursor={{ fill: 'var(--color-surface-hover)' }} />
+                      <Bar dataKey="count" radius={3} isAnimationActive={false}>
+                        {byClassification.map((row) => (
+                          <Cell key={row.classification} fill={CLASSIFICATION_COLOR[row.classification]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="card overflow-hidden" aria-label="WMO flag breakdown">
+            <div className="border-b border-hairline px-5 py-3">
+              <h2 className="t-card-title">Anomalies by WMO flag</h2>
+              <p className="t-meta">Counted per flag, using the WMO Pub No. 8 definitions.</p>
+            </div>
+            <ul>
+              {byFlag.map(({ flag, count }) => {
+                const meta = wmoFlagMeta(flag);
+                const total = incidents.length || 1;
+                return (
+                  <li key={flag} className="border-b border-hairline last:border-b-0 px-5 py-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="t-card-title flex items-center gap-2">
+                        <meta.Icon size={15} className={meta.className} aria-hidden />
+                        {meta.name}
+                      </span>
+                      <span className="t-mono text-[15px] font-semibold">{count}</span>
+                    </div>
+                    <p className="t-meta">{meta.meaning}</p>
+                    <div
+                      className="mt-2 h-1.5 rounded-full bg-surface-hover"
+                      role="img"
+                      aria-label={`${count} of ${total} flagged packets (${Math.round((count / total) * 100)}%)`}
+                    >
+                      <div
+                        className="h-1.5 rounded-full"
+                        style={{
+                          width: `${(count / total) * 100}%`,
+                          backgroundColor: 'var(--color-ink-muted)',
+                        }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+              {incidents.length === 0 && (
+                <li className="px-5 py-6 t-body text-ink-muted">
+                  No anomalies were raised in this run.
+                </li>
+              )}
+            </ul>
+          </section>
+        </div>
+
+        <section className="card overflow-hidden" aria-label="State summary">
+          <div className="border-b border-hairline px-5 py-3">
+            <h2 className="t-card-title">Current network state</h2>
+            <p className="t-meta">The same figures as the KPI strip, itemised.</p>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 p-5 md:grid-cols-3 xl:grid-cols-6">
             {[
-              { label: '30-DAY QC AVG', value: '99.1%', sub: '↑ 0.3% vs prior month' },
-              { label: 'TOTAL ANOMALIES', value: '1,247', sub: '247 flagged this week' },
-              { label: 'AVG LATENCY', value: '2.8ms', sub: 'P99: 6.1ms' },
-            ].map((s, i) => (
-              <div key={s.label} style={{ borderRight: i < 2 ? '1px solid #E8E8E8' : 'none', padding: '20px 24px' }}>
-                <div className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', color: '#7A7A7A', letterSpacing: '0.1em' }}>{s.label}</div>
-                <div className="mpi-monospaced" style={{ fontSize: 40, fontWeight: 700, color: '#0A0A0A', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{s.value}</div>
-                <div className="font-mono" style={{ fontSize: 11, color: '#7A7A7A', marginTop: 2 }}>{s.sub}</div>
+              ['Stations', kpis.total],
+              ['Verified good', kpis.nominal],
+              ['Suspect drift', kpis.drift],
+              ['Weather events', kpis.weatherEvents],
+              ['Faults', kpis.faults],
+              ['Telemetry issues', kpis.telemetryIssues],
+            ].map(([label, value]) => (
+              <div key={label as string}>
+                <dt className="t-label">{label}</dt>
+                <dd className="t-mono text-[26px] font-bold">{value}</dd>
               </div>
             ))}
-          </div>
-
-          {/* Chart 1: QC Pass Rate Trend */}
-          <div style={{ marginTop: 32 }}>
-            <div className="mpi-eyebrow" style={{ marginBottom: 12 }}>30-DAY QC PASS RATE</div>
-            <div style={{ height: 180 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={QC_TREND} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#7A7A7A' }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[95, 100]} tick={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#7A7A7A' }} axisLine={false} tickLine={false} />
-                  <Tooltip {...CHART_TOOLTIP_STYLE} />
-                  <ReferenceLine y={99} stroke="#E8E8E8" strokeDasharray="4 2" label={{ value: '99% target', position: 'right', fontSize: 9, fill: '#BBBBBB' }} />
-                  <Line type="monotone" dataKey="rate" stroke="#0A0A0A" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
+          </dl>
+          {active.length > 0 && (
+            <div className="border-t border-hairline px-5 py-4">
+              <h3 className="t-label">Open incidents ({active.length})</h3>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {active.map((inc) => (
+                  <li key={inc.id} className="t-body text-ink-muted">
+                    <span className="t-mono text-ink">{inc.stationId}</span> — {inc.classificationLabel}
+                    <span className="text-ink-faint"> · {inc.diagnosticNote}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-
-          {/* Chart 2 + Stat Stack */}
-          <div className="grid grid-cols-12 gap-6" style={{ marginTop: 32 }}>
-            <div className="col-span-8">
-              <div className="mpi-eyebrow" style={{ marginBottom: 12 }}>ANOMALY TYPE DISTRIBUTION</div>
-              <div style={{ height: 200 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ANOMALY_DATA} layout="vertical" margin={{ top: 0, right: 40, bottom: 0, left: 0 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="type" tick={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#7A7A7A' }} axisLine={false} tickLine={false} width={140} />
-                    <Tooltip {...CHART_TOOLTIP_STYLE} />
-                    <Bar dataKey="count" radius={0} barSize={8}>
-                      {ANOMALY_DATA.map((entry, i) => (
-                        <rect key={i} fill={entry.fill} />
-                      ))}
-                      <LabelList dataKey="count" position="right" style={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#7A7A7A' }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="col-span-4">
-              <div className="mpi-eyebrow" style={{ marginBottom: 12 }}>QC TIER BREAKDOWN</div>
-              {QC_TIERS.map((t) => (
-                <div key={t.tier} className="flex items-center justify-between" style={{ padding: '14px 0', borderBottom: '1px solid #E8E8E8' }}>
-                  <div>
-                    <span style={{ fontSize: 12, color: '#3D3D3D' }}>{t.tier} · {t.desc}</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="mpi-monospaced" style={{ fontSize: 20, fontWeight: 700, color: '#0A0A0A' }}>{t.count}</span>
-                    <span style={{ fontSize: 11, color: '#7A7A7A' }}>{t.pct}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Chart 3: Latency Distribution */}
-          <div style={{ marginTop: 32 }}>
-            <div className="mpi-eyebrow" style={{ marginBottom: 12 }}>DETECTION LATENCY</div>
-            <div className="flex items-center gap-3" style={{ marginBottom: 8 }}>
-              <span className="font-mono" style={{ fontSize: 11, color: '#7A7A7A' }}>P50: 1.8ms</span>
-              <span style={{ color: '#E8E8E8' }}>·</span>
-              <span className="font-mono" style={{ fontSize: 11, color: '#7A7A7A' }}>P95: 4.2ms</span>
-              <span style={{ color: '#E8E8E8' }}>·</span>
-              <span className="font-mono" style={{ fontSize: 11, color: '#7A7A7A' }}>P99: 6.1ms</span>
-            </div>
-            <div style={{ height: 140 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={LATENCY_DATA} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <XAxis dataKey="hour" tick={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#7A7A7A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#7A7A7A' }} axisLine={false} tickLine={false} />
-                  <Tooltip {...CHART_TOOLTIP_STYLE} />
-                  <ReferenceLine y={5} stroke="#E8E8E8" strokeDasharray="4 2" label={{ value: '5ms SLA', position: 'right', fontSize: 9, fill: '#BBBBBB' }} />
-                  <Line type="monotone" dataKey="p99" stroke="#C0162C" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+          )}
+        </section>
       </div>
-    </div>
+    </Shell>
   );
 }

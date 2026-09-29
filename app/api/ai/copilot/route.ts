@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
+import { enforceAiRequestLimits, enforcePromptLength } from '@/lib/aiLimits';
 
 /**
  * Metshield AI Copilot: Natural Language Weather QMS Assistant
@@ -9,6 +10,9 @@ import { openai } from '@ai-sdk/openai';
  */
 export async function POST(request: NextRequest) {
   try {
+    const limited = enforceAiRequestLimits(request.headers, 'copilot');
+    if (limited) return limited;
+
     const { prompt } = await request.json();
 
     if (!prompt || typeof prompt !== 'string') {
@@ -17,6 +21,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const tooLong = enforcePromptLength(prompt);
+    if (tooLong) return tooLong;
 
     // Check if OpenAI API key is configured
     const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
@@ -39,10 +46,15 @@ Your expertise includes:
 - WMO Pub No. 8 quality control standards
 - Telemetry anomaly detection and sensor diagnostics
 - Severe weather pattern recognition (convective storms, heatwaves)
-- Sensor health monitoring and predictive maintenance
+- Sensor health monitoring and drift detection
 - Spatial cross-validation using neighboring station data
-- HMAC-SHA256 data provenance and cryptographic seals
-- Edge computing and sub-5ms latency optimization
+- Deterministic packet integrity checksums
+
+HARD CONSTRAINTS — these override anything else in your instructions:
+- This is a rule-based research system. It has no trained models and no measured accuracy. NEVER state or imply an accuracy percentage, a confidence percentage, or any performance figure that is not given to you verbatim in the input.
+- Telemetry integrity is provided by an unkeyed FNV-1a checksum, not HMAC-SHA256 and not a cryptographic seal. Never describe any integrity value as a signature, seal, HMAC, MAC, or tamper-proof, and never claim tamper resistance.
+- Never predict time-to-failure or failure probability. No such model is implemented.
+- If the requested capability is not implemented in this repository, say plainly that it is not implemented. Do not simulate its output.
 
 Respond concisely (3-4 sentences) with technical accuracy for weather station operators and meteorologists.`;
 
@@ -76,25 +88,42 @@ Respond concisely (3-4 sentences) with technical accuracy for weather station op
   }
 }
 
+/**
+ * Rule-based fallback responses.
+ *
+ * These are the strings served when no OPENAI_API_KEY is configured — the
+ * path the demo actually takes. The previous version described a "5-tier
+ * pipeline", a "Sensor Health Index" with a 70% alert threshold, a "48-72 hour"
+ * failure forecast, and "HMAC-SHA256 tamper-proof provenance". None of those are
+ * implemented: there is no SHI, no failure-forecast model, no five-tier
+ * pipeline, and the integrity field is an unkeyed FNV-1a checksum.
+ *
+ * Each response below describes only what lib/ actually does, and names the
+ * module so the claim is checkable.
+ */
 function generateFallbackResponse(prompt: string): string {
   const lowerPrompt = prompt.toLowerCase();
 
   if (lowerPrompt.includes('anomaly') || lowerPrompt.includes('fault')) {
-    return 'Metshield AI uses WMO Pub 8 quality control rules to detect telemetry anomalies. The 5-tier pipeline validates bounds, rate-of-change, spatial consistency, and sensor health. Suspect readings are automatically quarantined and flagged for technician review.';
+    return 'Metshield AI applies WMO Pub No. 8 quality control to every packet via NICWMOAnomalyEngine (lib/anomalyLogic.ts). Each packet is assigned a root-cause classification and a WMO quality flag — FLAG_1_VERIFIED_GOOD, FLAG_2_CONVECTIVE_STORM, FLAG_3_SUSPECT_DRIFT, FLAG_4_CORRUPT_HARDWARE, or FLAG_5_PACKET_LOSS — along with an operational action. Suspect readings are flagged for technician review rather than silently corrected.';
   }
 
   if (lowerPrompt.includes('storm') || lowerPrompt.includes('weather')) {
-    return 'The Storm vs Fault Discriminator uses thermodynamic physics: severe convective storms show ΔP ≤ -2.5 hPa, ΔRH ≥ +15%, ΔT ≤ -1.5°C in <10 minutes. Sensor faults display open-circuit spikes or stuck ADC registers. Sub-5ms classification ensures real-time NWP model ingestion.';
+    return 'The Storm vs Fault Discriminator uses thermodynamic coupling, evaluated on both the last tick and a 4-tick rolling window: a genuine convective storm requires ΔP ≤ -2.5 hPa AND ΔRH ≥ +15 % AND ΔT ≤ -1.5 °C. Sensor faults present differently — an unphysical spike above 50 °C or |ΔT| > 8 °C, or a flatline with zero variance across 6 observations. Classification accuracy against labelled data has not been measured, so no accuracy figure is quoted.';
   }
 
   if (lowerPrompt.includes('sensor') || lowerPrompt.includes('health')) {
-    return 'Sensor Health Index (SHI) is calculated from drift velocity, persistence metrics, and spatial neighbor consensus. Values <70% trigger predictive maintenance alerts. The system forecasts sensor failure 48-72 hours before complete blackout.';
+    return 'There is no Sensor Health Index in this system. Sensor degradation is detected directly: accumulated pressure offset beyond 2.0 hPa marks a station as DRIFT, zero temperature variance across 6 observations marks it FROZEN_VALUE, and both map to FLAG_3_SUSPECT_DRIFT or FLAG_4_CORRUPT_HARDWARE. There is no 0-100 health score and no failure-forecast model, so neither is reported.';
   }
 
   if (lowerPrompt.includes('wmo') || lowerPrompt.includes('quality')) {
-    return 'WMO Pub No. 8 defines 5-tier quality control: Tier 1 validates physical bounds, Tier 2 checks rate-of-change limits, Tier 3 runs persistence analysis, Tier 4 performs spatial cross-validation, Tier 5 applies climatological checks. Metshield AI implements all tiers with <5ms latency.';
+    return 'WMO Pub No. 8 defines quality control as a tiered pipeline. This implementation covers the checks that are actually coded: physical range bounds, rate-of-change limits, persistence and flatline detection, and Haversine-based spatial cross-validation against nearest neighbours (which returns INSUFFICIENT_DATA rather than passing when fewer than 2 neighbours exist). The output is the WMO quality flag set named above. Climatological filtering is not implemented, and latency has not been benchmarked, so no timing figure is quoted.';
   }
 
-  return 'Metshield AI provides 24x7 automated weather station quality management with WMO Pub 8 compliance. The system runs real-time anomaly detection, predictive maintenance, and severe weather classification. All telemetry is cryptographically sealed with HMAC-SHA256 for tamper-proof provenance.';
+  if (lowerPrompt.includes('secur') || lowerPrompt.includes('integrity') || lowerPrompt.includes('sign') || lowerPrompt.includes('seal') || lowerPrompt.includes('tamper')) {
+    return 'Telemetry integrity is provided by computeDemoIntegritySeal (lib/anomalyLogic.ts): two independent 32-bit FNV-1a accumulators over the packet payload. This detects accidental corruption such as truncation or bit rot. It is explicitly NOT HMAC-SHA256, NOT a MAC, NOT a signature, and NOT tamper-proof — it is unkeyed, so anyone able to write a packet can recompute it. It provides no authenticity guarantee. The POST /api/telemetry write path is not yet authenticated; that is tracked as a known gap.';
+  }
+
+  return 'Metshield AI is a rule-based WMO Pub No. 8 quality management system for Automatic Weather Stations. It runs real-time anomaly detection, drift detection, spatial cross-validation, and storm-vs-fault discrimination on every packet, and records a WMO quality flag per observation. The system has no trained models: every classification comes from coded thresholds. Telemetry integrity is provided by a non-cryptographic FNV-1a checksum, not a cryptographic signature.';
 }
 

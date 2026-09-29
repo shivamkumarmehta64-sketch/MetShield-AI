@@ -464,10 +464,14 @@ export class NICWMOAnomalyEngine {
     if (mappedMlCls === 'CONVECTIVE_STORM') mappedMlCls = 'GENUINE_CONVECTIVE_EVENT';
     if (mappedMlCls === 'PACKET_LOSS') mappedMlCls = 'TELEMETRY_PACKET_LOSS';
 
+    // Carried on the packet as `mlPrediction.agreesWithRules`, and surfaced in
+    // the UI (see `aiConfidenceOf` in lib/networkFeed.ts, and the classifier card
+    // in app/dashboard/QcPanel.tsx, which shows "this packet disagrees with the
+    // rules"). This used to be logged here as well, which meant one line per
+    // station per tick: building a snapshot of 21 stations x 14 ticks emitted
+    // dozens of warnings on every render, unbounded and unreadable. A fact that
+    // is displayed in the product does not also need to be printed to console.
     const agreesWithRules = mappedMlCls === cls;
-    if (!agreesWithRules) {
-      console.warn(`[ML Disagreement] Station ${stationId}: Rule=${cls}, ML=${mappedMlCls}`);
-    }
 
     // Reduce station pressure to mean-sea-level using the station's own
     // elevation. For an unregistered node the elevation is unknown, so no
@@ -578,11 +582,31 @@ export interface SeededTelemetryDataset {
   workOrders: WorkOrderTicket[];
 }
 
-// Pre-seeded anomaly injections for demo resilience
+/**
+ * Pre-seeded anomaly injections for demo resilience.
+ *
+ * Two constraints govern every entry here, and both were violated by the
+ * original table (audited fix, see the notes per entry):
+ *
+ *  1. TICK BUDGET. `getInitialSeededDataset` runs exactly 14 ticks (0..13) and
+ *     the console reports tick 13 — the newest packet. A trigger whose
+ *     `maxTicks` is smaller than `14 - tick` has already expired by the time
+ *     anyone looks at the station, so the seeded fault is invisible. The
+ *     thermistor spike (maxTicks 2) injected at tick 9 finished at tick 10 and
+ *     the console showed Delhi as NOMINAL. It is now injected at tick 12.
+ *
+ *  2. PHYSICAL HEADROOM. The detector requires a *coupled* signature
+ *     (dP <= -2.5 AND dRH >= +15 AND dT <= -1.5). The storm injection adds a
+ *     fixed +19.6 to relative humidity, so on a station already at 90% the
+ *     result saturates at 100% and dRH collapses to +9 — the engine correctly
+ *     reports NOMINAL because the humidity did not actually jump 15 points.
+ *     Alipore (KOL-02) sits on 87.1% and could not carry the storm it was
+ *     assigned; it is now CHN-03 Meenambakkam, which has the headroom.
+ */
 const SEED_INJECTIONS: Record<string, { tick: number; fn: (e: NICWMOAnomalyEngine) => void }> = {
-  'AWS-DEL-04': { tick: 9, fn: (e) => e.triggerThermistorSpike('AWS-DEL-04') },
-  'AWS-KOL-02': { tick: 8, fn: (e) => e.triggerConvectiveStorm('AWS-KOL-02') },
-  'AWS-PUN-08': { tick: 7, fn: (e) => e.triggerBarometerDrift('AWS-PUN-08') },
+  'AWS-DEL-04': { tick: 12, fn: (e) => e.triggerThermistorSpike('AWS-DEL-04') },
+  'AWS-CHN-03': { tick: 8, fn: (e) => e.triggerConvectiveStorm('AWS-CHN-03') },
+  'AWS-PUN-08': { tick: 3, fn: (e) => e.triggerBarometerDrift('AWS-PUN-08') },
 };
 
 export function getInitialSeededDataset(): SeededTelemetryDataset {

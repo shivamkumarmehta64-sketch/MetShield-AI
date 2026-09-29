@@ -120,14 +120,14 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
               <div className="space-y-2">
                 <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                   <Cpu className="w-4 h-4 text-[#002147]" />
-                  National Scale Architecture — 1,350+ IMD AWS Nodes:
+                  Ingestion &amp; QC Architecture — as implemented in this repository:
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
-                    { t: '1. Ingestion Layer (Distributed Streaming)', d: 'Kafka/MQTT message brokers ingest dual-uplink DCP packets (INSAT-3D UHF 402.75 MHz + 4G GPRS VPN fallback). Handles 1,350+ stations transmitting every 15 minutes with sub-second latency.' },
-                    { t: '2. Line-Rate Edge QC Filter (<5ms)', d: 'Stateless stream processors apply WMO Pub No. 8 (Zahumenský 2004 guidelines) physical limits and Rate of Change (RoC) tests in <5ms per packet before database commit.' },
-                    { t: '3. AI/ML Convective Discriminator (XAI)', d: 'Multivariate XAI attribution (temp + pressure + humidity z-scores) separates genuine severe convective storm fronts from PT100 thermistor hardware failures. Eliminates false field dispatches.' },
-                    { t: '4. Spatial KNN Neighborhood Cross-Validation', d: 'IDW-weighted checks against neighboring AWS nodes within 50km radius confirm regional microclimatic anomalies vs single-node hardware failure, feeding spatial QC reports back to 6 RMCs.' },
+                    { t: '1. Ingestion (HTTP)', d: 'Telemetry arrives as JSON over HTTPS at POST /api/telemetry, with a per-station pre-shared key required. There is no Kafka/MQTT broker and no INSAT-3D radio path in this build; DCP framing shown elsewhere on the page is illustrative.' },
+                    { t: '2. QC Filter (synchronous, in-process)', d: 'NICWMOAnomalyEngine (lib/anomalyLogic.ts) applies WMO Pub No. 8 physical limits, rate-of-change and persistence tests to every packet in-process. Latency has not been benchmarked, so no timing figure is claimed.' },
+                    { t: '3. Storm vs Fault Discriminator', d: 'A three-channel thermodynamic conjunction — ΔP ≤ -2.5 hPa AND ΔRH ≥ +15 % AND ΔT ≤ -1.5 °C — separates genuine convective fronts from thermistor faults. This is a deterministic rule, not a trained model; no accuracy figure is quoted because none has been measured.' },
+                    { t: '4. Spatial Cross-Validation', d: 'Haversine nearest-neighbour lookup (spatialCrossValidate) classifies a reading as SINGLE_NODE_FAULT or REGIONAL_WEATHER. It returns INSUFFICIENT_DATA rather than passing silently when fewer than 2 neighbours are in range.' },
                   ].map(item => (
                     <div key={item.t} className="p-3 bg-slate-50 border border-slate-200 rounded">
                       <div className="font-bold text-slate-800 mb-1">{item.t}</div><p className="text-slate-600 text-[11px]">{item.d}</p>
@@ -138,7 +138,7 @@ export const GovInfoModals: React.FC<Props> = ({ activeModal, onClose, language 
 
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { v: '1,350+', l: 'IMD AWS Stations Nationally', c: 'bg-blue-50 border-blue-200 text-[#002147]' },
+                  { v: String(IMD_AWS_STATIONS.length), l: 'AWS Stations In This Build', c: 'bg-blue-50 border-blue-200 text-[#002147]' },
                   { v: '900M+', l: 'People Dependent on IMD Forecasts', c: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
                   { v: '₹0 / yr', l: 'External API Cost (Zero-Cost Architecture)', c: 'bg-amber-50 border-amber-200 text-amber-800' },
                 ].map(s => (

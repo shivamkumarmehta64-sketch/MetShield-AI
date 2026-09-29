@@ -1,3 +1,22 @@
+/**
+ * QUARANTINED — not imported by anything. Do not restore without fixing claims.
+ *
+ * This component was orphaned: no file in the repository referenced it, so it
+ * never rendered, yet it still carried live copy asserting a
+ * "HMAC-SHA256 Data Seal Generator" offering "tamper-proof cryptographic data
+ * verification". Unreachable code with false claims is still a liability — it
+ * reads as a specification of what the system does, and anyone re-wiring it
+ * back in would ship those claims straight to a user.
+ *
+ * It is parked here rather than deleted so the UI work is not lost. If it is
+ * ever reconnected, its tool names and descriptions must be corrected first:
+ * the integrity mechanism is an unkeyed FNV-1a checksum, and no SHI, Kalman
+ * filter, or failure-prediction model exists.
+ *
+ * The claim audit test (__tests__/claimsAudit.test.ts) excludes this directory,
+ * so restoring the file will NOT fail the test. Fix the copy first.
+ */
+
 'use client';
 
 import React, { useState } from 'react';

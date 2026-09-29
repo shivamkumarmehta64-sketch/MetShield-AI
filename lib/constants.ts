@@ -184,10 +184,10 @@ export const OPERATIONAL_USE_CASES: OperationalUseCase[] = [
       pressWeight: 33.3,
       humWeight: 33.4,
       dominant: 'PHYSICAL_HARDWARE_GROUNDING',
-      explanation: 'Verified physical silicon pressure readings (BMP280/Generic Sensor API) paired with cryptographic HMAC-SHA256 envelope.'
+      explanation: 'Barometer reading from the device Generic Sensor API where supported, plus a deterministic FNV-1a checksum over the packet payload. The checksum detects accidental corruption; it is not a signature and provides no authenticity guarantee.'
     },
     imputed: { temp: 'Live Ambient', press: 'Physical Silicon', hum: 'Live Stream', method: 'Direct Hardware Telemetry' },
-    operationalAction: 'Grounded to national GIS mesh. Cryptographic HMAC packet delivered to central QMS.',
+    operationalAction: 'Grounded to national GIS mesh. Packet delivered to central QMS over HTTPS with a non-cryptographic FNV-1a checksum attached.',
     linkUrl: '/mobile',
     linkText: 'Open Mobile Sensor Node'
   }

@@ -85,16 +85,33 @@ export function proxy(request: NextRequest) {
       return attachSecurityHeaders(methodRes);
     }
 
-    // 2b. Strict Origin / Referer Validation (CORS enforcement)
-    // Applied on POST mutations to protect against CSRF and cross-origin abuse
+    // 2b. Origin / Referer validation (CSRF friction — NOT authentication)
+    //
+    // The status code is 403, not 401. A 401 means "you are not authenticated
+    // and could be if you presented a credential"; that is not what this check
+    // does. `Origin` is a request header that any non-browser client sets to
+    // whatever it likes, and curl sends none at all, so this blocks cross-site
+    // requests from a page in someone's browser and stops nothing else. It is a
+    // real control against CSRF and it is not a security boundary.
+    //
+    // The actual boundary on the telemetry write path is the per-station
+    // pre-shared key checked in app/api/telemetry/route.ts via lib/auth.ts.
+    // Do not relax this check expecting the write path to stay protected, and
+    // do not treat passing it as evidence a caller is authorised.
     if (request.method === 'POST') {
       const origin = request.headers.get('origin') || request.headers.get('referer');
       if (!isOriginAllowed(origin)) {
-        const unauthRes = NextResponse.json(
-          { error: 'Unauthorized Cross-Origin Request. Blocked by Metshield CORS Policy.' },
-          { status: 401 }
+        const crossOriginRes = NextResponse.json(
+          {
+            error: 'Cross-origin request blocked by Metshield CORS policy.',
+            note:
+              'This is CSRF friction, not authentication. A non-browser client can set this header.',
+            authentication:
+              'The telemetry write path separately requires a per-station credential — see POST /api/telemetry.',
+          },
+          { status: 403 }
         );
-        return attachSecurityHeaders(unauthRes);
+        return attachSecurityHeaders(crossOriginRes);
       }
     }
   }

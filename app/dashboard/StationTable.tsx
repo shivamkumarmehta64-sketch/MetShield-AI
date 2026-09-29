@@ -1,192 +1,285 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
-import Badge from './Badge';
+import { Search, Download } from 'lucide-react';
+import { clsx } from 'clsx';
+import { getNetworkSnapshot, type StationHealth, type StationSnapshot } from '@/lib/networkFeed';
+import { useSystem } from './SystemContext';
+import WmoFlagBadge from './WmoFlagBadge';
 
-type QCStatus = 'NOMINAL' | 'FLAGGED' | 'QUARANTINED' | 'OFFLINE' | 'IMPUTED';
+const PAGE_SIZE = 12;
 
-interface Station {
-  id: string;
-  district: string;
-  temp: number;
-  pressure: number;
-  rh: number;
-  qc: QCStatus;
-  lastSync: string;
-}
-
-const STATIONS: Station[] = [
-  { id: 'AWS-DEL-01', district: 'New Delhi, DL', temp: 32.4, pressure: 1008.2, rh: 58.0, qc: 'NOMINAL', lastSync: '09:42:17Z' },
-  { id: 'AWS-MUM-04', district: 'Mumbai, MH', temp: 31.8, pressure: 1009.5, rh: 72.3, qc: 'NOMINAL', lastSync: '09:42:15Z' },
-  { id: 'AWS-CCU-02', district: 'Kolkata, WB', temp: 33.1, pressure: 1007.8, rh: 65.4, qc: 'FLAGGED', lastSync: '09:41:58Z' },
-  { id: 'AWS-MAA-03', district: 'Chennai, TN', temp: 34.2, pressure: 1006.9, rh: 61.2, qc: 'NOMINAL', lastSync: '09:42:10Z' },
-  { id: 'AWS-BLR-05', district: 'Bengaluru, KA', temp: 29.6, pressure: 1010.3, rh: 55.8, qc: 'NOMINAL', lastSync: '09:42:12Z' },
-  { id: 'AWS-HYD-06', district: 'Hyderabad, TS', temp: 33.8, pressure: 1008.7, rh: 52.1, qc: 'QUARANTINED', lastSync: '09:38:44Z' },
-  { id: 'AWS-AMD-07', district: 'Ahmedabad, GJ', temp: 35.1, pressure: 1007.2, rh: 48.6, qc: 'NOMINAL', lastSync: '09:42:08Z' },
-  { id: 'AWS-PNQ-08', district: 'Pune, MH', temp: 30.9, pressure: 1009.8, rh: 60.4, qc: 'NOMINAL', lastSync: '09:42:14Z' },
-  { id: 'AWS-JAI-09', district: 'Jaipur, RJ', temp: 36.2, pressure: 1006.5, rh: 42.3, qc: 'FLAGGED', lastSync: '09:40:33Z' },
-  { id: 'AWS-LKO-10', district: 'Lucknow, UP', temp: 33.5, pressure: 1008.1, rh: 57.9, qc: 'NOMINAL', lastSync: '09:42:16Z' },
-  { id: 'AWS-PAT-11', district: 'Patna, BR', temp: 34.0, pressure: 1007.6, rh: 63.7, qc: 'NOMINAL', lastSync: '09:42:11Z' },
-  { id: 'AWS-BHO-12', district: 'Bhopal, MP', temp: 32.7, pressure: 1008.9, rh: 54.2, qc: 'OFFLINE', lastSync: '08:55:22Z' },
-  { id: 'AWS-GAU-13', district: 'Guwahati, AS', temp: 31.2, pressure: 1009.1, rh: 78.5, qc: 'NOMINAL', lastSync: '09:42:13Z' },
-  { id: 'AWS-CHN-14', district: 'Chandigarh, CH', temp: 33.9, pressure: 1008.4, rh: 50.8, qc: 'IMPUTED', lastSync: '09:42:09Z' },
-  { id: 'AWS-BPL-15', district: 'Bhubaneswar, OD', temp: 32.8, pressure: 1007.9, rh: 66.1, qc: 'NOMINAL', lastSync: '09:42:15Z' },
-  { id: 'AWS-AGR-16', district: 'Agra, UP', temp: 35.5, pressure: 1006.8, rh: 45.7, qc: 'NOMINAL', lastSync: '09:42:07Z' },
-  { id: 'AWS-NAG-17', district: 'Nagpur, MH', temp: 34.6, pressure: 1007.4, rh: 49.3, qc: 'NOMINAL', lastSync: '09:42:10Z' },
-  { id: 'AWS-VNS-18', district: 'Varanasi, UP', temp: 33.3, pressure: 1008.3, rh: 59.6, qc: 'NOMINAL', lastSync: '09:42:12Z' },
-  { id: 'AWS-IXC-19', district: 'Imphal, MN', temp: 28.4, pressure: 1010.7, rh: 81.2, qc: 'NOMINAL', lastSync: '09:42:14Z' },
-  { id: 'AWS-SHJ-20', district: 'Shillong, ML', temp: 24.1, pressure: 1011.2, rh: 85.7, qc: 'NOMINAL', lastSync: '09:42:16Z' },
+const HEALTH_OPTIONS: { value: 'ALL' | StationHealth; label: string }[] = [
+  { value: 'ALL', label: 'All states' },
+  { value: 'NOMINAL', label: 'Verified good' },
+  { value: 'DRIFT', label: 'Suspect drift' },
+  { value: 'WEATHER_EVENT', label: 'Weather event' },
+  { value: 'FAULT', label: 'Fault' },
+  { value: 'TELEMETRY', label: 'Packet loss' },
 ];
 
-const PAGE_SIZE = 50;
+/** The header row, and the CSV column order, from one place. */
+const COLUMNS = [
+  'Station ID',
+  'Station',
+  'State',
+  'RMC division',
+  'Latitude',
+  'Longitude',
+  'Elevation (m)',
+  'Temp (°C)',
+  'Pressure (hPa)',
+  'Humidity (%)',
+  'Wind (km/h)',
+  'Rain 10min (mm)',
+  'WMO flag',
+  'Root cause',
+  'Health',
+  'Alert',
+  'Observation (UTC)',
+] as const;
 
+function csvCell(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function round(v: number | null | undefined, dp = 1): number | null {
+  return v === null || v === undefined ? null : Math.round(v * 10 ** dp) / 10 ** dp;
+}
+
+function downloadCsv(rows: StationSnapshot[], filename: string) {
+  const body = [
+    COLUMNS.join(','),
+    ...rows.map((s) =>
+      [
+        s.stationId,
+        csvCell(s.name),
+        csvCell(s.state),
+        csvCell(s.rmcDivision),
+        s.latitude,
+        s.longitude,
+        s.elevationM,
+        round(s.packet.raw.temperature),
+        round(s.packet.raw.pressure),
+        round(s.packet.raw.humidity),
+        round(s.packet.raw.windSpeedKph),
+        round(s.packet.raw.rainfallMm10min),
+        s.wmoFlag,
+        s.classification,
+        s.health,
+        s.alertLevel,
+        new Date(s.packet.timestamp).toISOString(),
+      ].join(',')
+    ),
+  ].join('\n');
+
+  const url = URL.createObjectURL(new Blob([body], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * The dashboard's station matrix.
+ *
+ * Two defects in the previous build are fixed here. The `↓ CSV` button had no
+ * `onClick` at all — a dead control that looked like an export; it now exports
+ * the rows actually on screen, with the real registry fields. And an empty
+ * result set rendered "Showing 1–0 of 0", because the range was computed
+ * unconditionally from a zero-length slice.
+ *
+ * Every figure is read from the engine's own buffer. Styling goes through the
+ * design tokens like the rest of the console, not raw hex.
+ */
 export default function StationTable() {
+  const snapshot = getNetworkSnapshot();
+  const { selectStation } = useSystem();
+
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('ALL');
+  const [filter, setFilter] = useState<'ALL' | StationHealth>('ALL');
   const [page, setPage] = useState(0);
 
-  const filtered = STATIONS.filter((s) => {
-    const matchSearch = !search || s.id.toLowerCase().includes(search.toLowerCase()) || s.district.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'ALL' || s.qc === filter;
-    return matchSearch && matchFilter;
+  const q = search.trim().toLowerCase();
+  const filtered = snapshot.stations.filter((s) => {
+    if (filter !== 'ALL' && s.health !== filter) return false;
+    if (!q) return true;
+    return (
+      s.stationId.toLowerCase().includes(q) ||
+      s.name.toLowerCase().includes(q) ||
+      s.state.toLowerCase().includes(q)
+    );
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages - 1);
   const start = currentPage * PAGE_SIZE;
   const pageItems = filtered.slice(start, start + PAGE_SIZE);
+  const last = Math.min(start + PAGE_SIZE, filtered.length);
 
   return (
-    <div style={{ background: '#FFFFFF', padding: '24px 28px' }}>
-      <div className="flex items-end justify-between" style={{ borderBottom: '1px solid #E8E8E8', paddingBottom: 16 }}>
-        <div className="flex items-center gap-2">
-          <span style={{ fontSize: 15, fontWeight: 600, color: '#0A0A0A' }}>ALL STATIONS</span>
-          <span style={{ color: '#D0D0D0' }}>|</span>
-          <span style={{ fontSize: 12, color: '#7A7A7A' }}>1,350 nodes</span>
+    <section className="card overflow-hidden" aria-label="Station matrix">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-hairline px-5 py-3">
+        <div>
+          <h2 className="t-card-title">All stations</h2>
+          <p className="t-meta">
+            {snapshot.stations.length} registered nodes · latest observation per station
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-end gap-2">
           <div className="relative">
-            <Search size={12} color="#BBBBBB" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+            <label htmlFor="station-table-search" className="sr-only">
+              Search stations by id, name or state
+            </label>
+            <Search
+              size={13}
+              aria-hidden
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint"
+            />
             <input
-              type="text"
+              id="station-table-search"
+              type="search"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-              placeholder="AWS-ID, district, state…"
-              style={{
-                width: 220, height: 32, background: '#FFFFFF', border: '1px solid #D0D0D0',
-                borderRadius: 0, padding: '0 10px 0 28px', fontSize: 11, fontFamily: 'var(--font-mono)',
-                color: '#3D3D3D', outline: 'none',
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
               }}
+              placeholder="AWS-ID, name, state…"
+              className="w-48 rounded border border-hairline bg-card py-1.5 pl-8 pr-2.5 text-[12.5px] placeholder:text-ink-faint"
             />
           </div>
-          <select
-            value={filter}
-            onChange={(e) => { setFilter(e.target.value); setPage(0); }}
-            style={{
-              width: 140, height: 32, background: '#FFFFFF', border: '1px solid #D0D0D0',
-              borderRadius: 0, padding: '0 28px 0 10px', fontSize: 11, color: '#3D3D3D', outline: 'none',
-            }}
-          >
-            <option value="ALL">All Status</option>
-            <option value="NOMINAL">NOMINAL</option>
-            <option value="FLAGGED">FLAGGED</option>
-            <option value="QUARANTINED">QUARANTINED</option>
-            <option value="OFFLINE">OFFLINE</option>
-          </select>
+          <div>
+            <label htmlFor="station-table-filter" className="sr-only">
+              Filter stations by QC state
+            </label>
+            <select
+              id="station-table-filter"
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value as 'ALL' | StationHealth);
+                setPage(0);
+              }}
+              className="rounded border border-hairline bg-card px-2.5 py-1.5 text-[12.5px]"
+            >
+              {HEALTH_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
-            style={{
-              fontSize: 11, fontWeight: 500, color: '#3D3D3D', border: '1px solid #D0D0D0',
-              padding: '6px 12px', borderRadius: 0, background: '#FFFFFF', cursor: 'pointer',
-            }}
+            type="button"
+            onClick={() => downloadCsv(pageItems, 'metshield-stations-page.csv')}
+            disabled={pageItems.length === 0}
+            className="touch-target inline-flex items-center gap-1.5 rounded border border-hairline-strong bg-card px-2.5 text-[12.5px] font-semibold text-navy hover:bg-surface-alt disabled:opacity-40"
           >
-            ↓ CSV
+            <Download size={13} aria-hidden />
+            CSV
           </button>
         </div>
       </div>
 
-      <div style={{ border: '1px solid #E8E8E8', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] border-collapse text-left">
+          <caption className="sr-only">
+            Registered stations with their latest observation and QC state
+          </caption>
           <thead>
-            <tr style={{ background: '#F7F7F7', borderBottom: '1px solid #E8E8E8' }}>
-              {['STATION ID', 'DISTRICT', 'TEMP', 'PRESSURE', 'RH', 'QC STATUS', 'LAST SYNC', ''].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    height: 36, padding: '0 12px', textAlign: 'left', fontSize: 10, fontWeight: 500,
-                    textTransform: 'uppercase', color: '#7A7A7A', letterSpacing: '0.08em',
-                  }}
-                >
+            <tr className="border-b border-hairline bg-surface-alt">
+              {['Station', 'Temp', 'Pressure', 'RH', 'QC status', 'Observed (UTC)', ''].map((h) => (
+                <th key={h} scope="col" className="t-label whitespace-nowrap px-4 py-2.5">
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {pageItems.map((s, i) => (
-              <tr
-                key={s.id}
-                style={{
-                  background: '#FFFFFF',
-                  borderBottom: i < pageItems.length - 1 ? '1px solid #F0F0F0' : 'none',
-                }}
-                className="hover:bg-content-bg-hover"
-              >
-                <td style={{ height: 44, padding: '0 12px', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-mono)', color: '#0A0A0A' }}>{s.id}</td>
-                <td style={{ height: 44, padding: '0 12px', fontSize: 12, color: '#3D3D3D' }}>{s.district}</td>
-                <td style={{ height: 44, padding: '0 12px', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: '#0A0A0A' }}>
-                  {s.temp.toFixed(1)}<span style={{ fontSize: 10, color: '#7A7A7A' }}>°C</span>
+            {pageItems.map((s) => (
+              <tr key={s.stationId} className="border-b border-hairline last:border-b-0 hover:bg-surface-hover">
+                <td className="px-4 py-2.5">
+                  <div className="t-mono text-[12px] font-semibold">{s.stationId}</div>
+                  <div className="t-meta truncate">{s.name}</div>
                 </td>
-                <td style={{ height: 44, padding: '0 12px', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: '#0A0A0A' }}>
-                  {s.pressure.toFixed(1)}<span style={{ fontSize: 10, color: '#7A7A7A' }}> hPa</span>
+                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                  {s.packet.raw.temperature?.toFixed(1) ?? '—'}
+                  <span className="ml-0.5 text-[10px] text-ink-faint">°C</span>
                 </td>
-                <td style={{ height: 44, padding: '0 12px', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: '#0A0A0A' }}>
-                  {s.rh.toFixed(1)}<span style={{ fontSize: 10, color: '#7A7A7A' }}> %</span>
+                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                  {s.packet.raw.pressure?.toFixed(1) ?? '—'}
+                  <span className="ml-0.5 text-[10px] text-ink-faint">hPa</span>
                 </td>
-                <td style={{ height: 44, padding: '0 12px' }}>
-                  <Badge variant={s.qc} />
+                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                  {s.packet.raw.humidity?.toFixed(1) ?? '—'}
+                  <span className="ml-0.5 text-[10px] text-ink-faint">%</span>
                 </td>
-                <td style={{ height: 44, padding: '0 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: s.qc === 'OFFLINE' ? '#C0162C' : '#7A7A7A' }}>
-                  {s.lastSync}
+                <td className="px-4 py-2.5">
+                  <WmoFlagBadge flag={s.wmoFlag} />
                 </td>
-                    <td style={{ height: 44, padding: '0 12px', fontSize: 12, color: '#7A7A7A', cursor: 'pointer' }}>
-                      <button aria-label={`Open station detail for ${s.id}`} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 12, padding: 0 }}>→</button>
-                    </td>
+                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[12px] text-ink-muted">
+                  {new Date(s.packet.timestamp).toISOString().slice(11, 19)}Z
+                </td>
+                <td className="px-4 py-2.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => selectStation(s.stationId)}
+                    aria-label={`Investigate ${s.stationId}, ${s.name}`}
+                    className="touch-target rounded px-2 text-[13px] text-navy hover:bg-surface-alt"
+                  >
+                    Investigate →
+                  </button>
+                </td>
               </tr>
             ))}
+            {pageItems.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center t-body text-ink-muted">
+                  No station matches the current search and filter.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
-      <div className="flex items-center justify-between" style={{ paddingTop: 12 }}>
-        <span style={{ fontSize: 11, color: '#7A7A7A' }}>
-          Showing {start + 1}–{Math.min(start + PAGE_SIZE, filtered.length)} of {filtered.length}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline px-5 py-3">
+        <p className="t-meta" role="status">
+          {filtered.length === 0
+            ? 'No matches'
+            : `Showing ${start + 1}–${last} of ${filtered.length}`}
+        </p>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => setPage(Math.max(0, currentPage - 1))}
             disabled={currentPage === 0}
-            style={{
-              fontSize: 11, fontWeight: 500, color: currentPage === 0 ? '#BBBBBB' : '#3D3D3D',
-              border: `1px solid ${currentPage === 0 ? '#F0F0F0' : '#D0D0D0'}`,
-              padding: '5px 12px', borderRadius: 0, background: '#FFFFFF', cursor: currentPage === 0 ? 'default' : 'pointer',
-            }}
+            className={clsx(
+              'touch-target rounded border px-3 py-1.5 text-[12.5px] font-semibold',
+              currentPage === 0
+                ? 'cursor-default border-hairline text-ink-faint'
+                : 'border-hairline-strong text-navy hover:bg-surface-alt'
+            )}
           >
             ← Prev
           </button>
           <button
+            type="button"
             onClick={() => setPage(Math.min(totalPages - 1, currentPage + 1))}
             disabled={currentPage >= totalPages - 1}
-            style={{
-              fontSize: 11, fontWeight: 500, color: currentPage >= totalPages - 1 ? '#BBBBBB' : '#3D3D3D',
-              border: `1px solid ${currentPage >= totalPages - 1 ? '#F0F0F0' : '#D0D0D0'}`,
-              padding: '5px 12px', borderRadius: 0, background: '#FFFFFF', cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer',
-            }}
+            className={clsx(
+              'touch-target rounded border px-3 py-1.5 text-[12.5px] font-semibold',
+              currentPage >= totalPages - 1
+                ? 'cursor-default border-hairline text-ink-faint'
+                : 'border-hairline-strong text-navy hover:bg-surface-alt'
+            )}
           >
             Next →
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

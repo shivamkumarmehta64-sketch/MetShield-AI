@@ -1,79 +1,165 @@
 'use client';
 
-'use client';
-
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutGrid, Radio, AlertTriangle, BarChart2, Shield, Smartphone } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Radio,
+  Map,
+  Cpu,
+  AlertTriangle,
+  Wrench,
+  FlaskConical,
+  BarChart3,
+  FileCheck2,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
+import { clsx } from 'clsx';
+import { getNetworkSnapshot, computeKpis } from '@/lib/networkFeed';
 
-const SECTIONS = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  /** Matching the path alone is ambiguous, so an optional query key disambiguates. */
+  tabKey?: string;
+}
+
+const SECTIONS: { label: string; items: NavItem[] }[] = [
   {
-    label: 'MONITOR',
+    label: 'Monitor',
     items: [
-      { name: 'Station Matrix', href: '/dashboard', icon: LayoutGrid },
-      { name: 'Live Feed', href: '/dashboard?tab=live', icon: Radio },
-      { name: 'Incident Log', href: '/incidents', icon: AlertTriangle },
+      { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+      { name: 'Live Operations', href: '/dashboard?tab=live', icon: Radio, tabKey: 'live' },
+      { name: 'National Map', href: '/stations', icon: Map },
     ],
   },
   {
-    label: 'ANALYSIS',
+    label: 'Quality',
     items: [
-      { name: 'QC Analytics', href: '/analytics', icon: BarChart2 },
-      { name: 'Audit Report', href: '/audit-report', icon: Shield },
+      { name: 'Rule-based classification', href: '/dashboard?tab=qc', icon: Cpu, tabKey: 'qc' },
+      { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
+      { name: 'Field Operations', href: '/mobile', icon: Wrench },
+      { name: 'Testbench', href: '/dashboard?tab=testbench', icon: FlaskConical, tabKey: 'testbench' },
     ],
   },
   {
-    label: 'FIELD',
-    items: [{ name: 'Mobile PWA', href: '/mobile', icon: Smartphone }],
+    label: 'Analysis',
+    items: [
+      { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+      { name: 'Audit Reports', href: '/audit-report', icon: FileCheck2 },
+    ],
   },
 ];
 
-export default function Sidebar() {
+/**
+ * The previous build compared `item.href === pathname`, which can never be
+ * true for a link carrying a query string — `/dashboard?tab=live` was
+ * permanently unhighlighted. Active state is therefore resolved against the
+ * path plus the tab key.
+ */
+function isActive(pathname: string, search: URLSearchParams | null, item: NavItem): boolean {
+  const [base] = item.href.split('?');
+  if (base !== pathname) return false;
+  if (!item.tabKey) return !search || !search.get('tab');
+  return search?.get('tab') === item.tabKey;
+}
+
+interface SidebarProps {
+  /** Mobile drawer state, owned by the shell so the toggle lives in one place. */
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const search = useSearchParams();
+  const kpis = computeKpis(getNetworkSnapshot());
 
   return (
-    <aside
-      className="fixed left-0 bottom-0 overflow-y-auto"
-      style={{ width: 220, background: '#0A0A0A', borderRight: '1px solid #1E1E1E', top: 56 }}
-    >
-      <div className="flex flex-col min-h-full">
-        {SECTIONS.map((section) => (
-          <div key={section.label}>
-            <div className="font-sans" style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', color: '#2A2A2A', letterSpacing: '0.14em', padding: '20px 16px 6px' }}>
-              {section.label}
-            </div>
-            {section.items.map((item) => {
-              const isActive = item.href === pathname;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-2.5 cursor-pointer"
-                  style={{
-                    height: 36,
-                    padding: '0 16px',
-                    fontSize: 12,
-                    fontWeight: 400,
-                    color: isActive ? '#FFFFFF' : '#5A5A5A',
-                    borderLeft: `2px solid ${isActive ? '#C0162C' : 'transparent'}`,
-                    background: isActive ? '#0F0F0F' : 'transparent',
-                    transition: 'color 100ms',
-                  }}
-                >
-                  <Icon size={14} strokeWidth={1.5} color={isActive ? '#FFFFFF' : '#5A5A5A'} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+    <>
+      {/* Scrim: mobile only, and only while the drawer is open. */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-navy/40 lg:hidden"
+        />
+      )}
 
-        <div className="mt-auto" style={{ borderTop: '1px solid #1E1E1E', padding: '12px 16px' }}>
-          <div className="font-mono" style={{ fontSize: 10, color: '#2A2A2A' }}>MoES / IMD</div>
-          <div className="font-mono" style={{ fontSize: 10, color: '#2A2A2A' }}>SIH 2026 · AEROTECH</div>
+      <aside
+        aria-label="Primary"
+        className={clsx(
+          'fixed top-0 bottom-0 left-0 z-50 w-[248px] flex flex-col border-r border-hairline bg-card',
+          'transition-transform duration-150 lg:translate-x-0',
+          open ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex items-center justify-between border-b border-hairline px-4" style={{ height: 56 }}>
+          <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
+            <span className="w-2.5 h-2.5 bg-navy" aria-hidden />
+            <span className="t-card-title text-navy tracking-wide">METSHIELD AI</span>
+          </Link>
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={onClose}
+            className="touch-target -mr-2 flex items-center justify-center lg:hidden text-ink-muted"
+          >
+            <X size={18} />
+          </button>
         </div>
-      </div>
-    </aside>
+
+        <nav className="flex-1 overflow-y-auto py-2">
+          {SECTIONS.map((section) => (
+            <div key={section.label}>
+              <div className="t-label px-4 pt-5 pb-2">{section.label}</div>
+              {section.items.map((item) => {
+                const active = isActive(pathname, search, item);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    aria-current={active ? 'page' : undefined}
+                    className={clsx(
+                      'flex items-center gap-3 border-l-2 px-4 text-[13.5px] transition-colors',
+                      active
+                        ? 'border-l-navy bg-surface-alt font-semibold text-navy'
+                        : 'border-l-transparent text-ink-muted hover:bg-surface-hover hover:text-ink'
+                    )}
+                    style={{ height: 40 }}
+                  >
+                    <Icon size={16} strokeWidth={1.75} aria-hidden />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* §D: the status block is computed from the engine, not typed in. */}
+        <div className="border-t border-hairline px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2 h-2 rounded-full bg-healthy"
+              style={kpis.activeFaults > 0 ? { backgroundColor: 'var(--color-fault)' } : undefined}
+              aria-hidden
+            />
+            <span className="t-label">
+              {kpis.activeFaults > 0 ? 'DEGRADED' : 'OPERATIONAL'}
+            </span>
+          </div>
+          <div className="t-meta mt-1 font-mono">
+            {kpis.nominal}/{kpis.total} stations verified good
+          </div>
+          <div className="t-meta mt-2 font-mono text-[10px]">MoES / IMD · SIH 2026 · AEROTECH</div>
+        </div>
+      </aside>
+    </>
   );
 }
