@@ -193,15 +193,29 @@ export default function StationTable() {
         </div>
       </div>
 
+      {/* Seven columns at the desktop widths do not fit a 390 px phone. The
+          min-width kept the numbers legible by letting the row scroll sideways,
+          but a horizontally scrolling row is unusable with one thumb, and it
+          widened the whole document. Below md the three secondary channels fold
+          into a single line under the station name, so the two columns an
+          operator actually scans — which station, and what state — stay put. */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-left">
+        <table className="w-full border-collapse text-left">
           <caption className="sr-only">
             Registered stations with their latest observation and QC state
           </caption>
           <thead>
             <tr className="border-b border-hairline bg-surface-alt">
               {['Station', 'Temp', 'Pressure', 'RH', 'QC status', 'Observed (UTC)', ''].map((h) => (
-                <th key={h} scope="col" className="t-label whitespace-nowrap px-4 py-2.5">
+                <th
+                  key={h}
+                  scope="col"
+                  className={clsx(
+                    't-label whitespace-nowrap px-4 py-2.5',
+                    (h === 'Temp' || h === 'Pressure' || h === 'RH' || h === 'Observed (UTC)') &&
+                      'max-md:hidden'
+                  )}
+                >
                   {h}
                 </th>
               ))}
@@ -229,23 +243,42 @@ export default function StationTable() {
                     )}
                     <div className="t-mono text-[12px] font-semibold text-ink">{s.stationId}</div>
                     <div className="t-meta truncate">{s.name}</div>
+                    {/* The phone layout's substitute for the three hidden
+                        columns. Same values, same units, same em-dash for a
+                        missing channel — folded, not dropped, because a QC
+                        console must never hide a channel it holds. */}
+                    <div className="t-mono mt-0.5 flex flex-wrap gap-x-2.5 text-[11.5px] text-ink-muted max-md:flex">
+                      <span>
+                        {s.packet.raw.temperature?.toFixed(1) ?? '—'}
+                        <span className="text-[10px]"> °C</span>
+                      </span>
+                      <span>
+                        {s.packet.raw.pressure?.toFixed(1) ?? '—'}
+                        <span className="text-[10px]"> hPa</span>
+                      </span>
+                      <span>
+                        {s.packet.raw.humidity?.toFixed(1) ?? '—'}
+                        <span className="text-[10px]"> %RH</span>
+                      </span>
+                      <span>{new Date(s.packet.timestamp).toISOString().slice(11, 19)}Z</span>
+                    </div>
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px] max-md:hidden">
                     {s.packet.raw.temperature?.toFixed(1) ?? '—'}
                     <span className="ml-0.5 text-[10px] text-ink-faint">°C</span>
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px] max-md:hidden">
                     {s.packet.raw.pressure?.toFixed(1) ?? '—'}
                     <span className="ml-0.5 text-[10px] text-ink-faint">hPa</span>
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px] max-md:hidden">
                     {s.packet.raw.humidity?.toFixed(1) ?? '—'}
                     <span className="ml-0.5 text-[10px] text-ink-faint">%</span>
                   </td>
                   <td className="px-4 py-2.5">
                     <WmoFlagBadge flag={s.wmoFlag} />
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[12px] text-ink-muted">
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[12px] text-ink-muted max-md:hidden">
                     {new Date(s.packet.timestamp).toISOString().slice(11, 19)}Z
                   </td>
                   <td className="px-4 py-2.5 text-right">
