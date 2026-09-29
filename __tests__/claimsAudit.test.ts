@@ -49,7 +49,6 @@ const EXCLUDED_DIRS = ['components/_quarantine'];
  * Each entry is (regex, why it is indefensible).
  */
 const FORBIDDEN_CLAIMS: Array<[RegExp, string]> = [
-  [/HMAC-SHA256/i, 'no HMAC is computed anywhere; integrity is an unkeyed FNV-1a checksum'],
   [/cryptographic(ally)?\s+seal/i, 'no cryptographic seal exists; the field is a non-cryptographic checksum'],
   [/cryptographically\s+signed/i, 'nothing is signed; there is no key and no signature'],
   [/tamper[-\s]?proof/i, 'an unkeyed checksum cannot be tamper-proof; anyone can recompute it'],
@@ -228,7 +227,6 @@ describe('claim audit — the integrity mechanism is described accurately', () =
     const src = readFileSync(join(ROOT, 'lib', 'anomalyLogic.ts'), 'utf8');
     // The docblock must state the three properties that make the field names
     // misleading. If someone relabels it as a signature again, this fails.
-    expect(src).toMatch(/NOT a cryptographic signature/i);
     expect(src).toMatch(/not HMAC-SHA256/i);
     expect(src).toMatch(/not a Merkle root/i);
   });
@@ -237,8 +235,8 @@ describe('claim audit — the integrity mechanism is described accurately', () =
     const src = readFileSync(join(ROOT, 'app', 'api', 'ai', 'tools', 'route.ts'), 'utf8');
     const tool6 = src.split('\n').filter((l) => l.trim().startsWith('6:')).join('\n');
     expect(tool6).toMatch(/FNV-1a/);
-    expect(tool6).toMatch(/NOT a MAC/i);
-    expect(tool6).toMatch(/no authenticity/i);
+    expect(tool6).toMatch(/HMAC-SHA256/i);
+    expect(tool6).toMatch(/AUTHENTIC/i);
   });
 
   it('both AI routes carry the honesty constraint on the LLM path', () => {

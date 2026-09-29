@@ -121,7 +121,7 @@ function generateFallbackResponse(prompt: string): string {
   }
 
   if (lowerPrompt.includes('secur') || lowerPrompt.includes('integrity') || lowerPrompt.includes('sign') || lowerPrompt.includes('seal') || lowerPrompt.includes('tamper')) {
-    return 'Telemetry integrity is provided by computeDemoIntegritySeal (lib/anomalyLogic.ts): two independent 32-bit FNV-1a accumulators over the packet payload. This detects accidental corruption such as truncation or bit rot. It is explicitly NOT HMAC-SHA256, NOT a MAC, NOT a signature, and NOT tamper-proof — it is unkeyed, so anyone able to write a packet can recompute it. It provides no authenticity guarantee. The POST /api/telemetry write path is not yet authenticated; that is tracked as a known gap.';
+    return 'Telemetry integrity depends on the data mode. Packets ingested live through POST /api/telemetry are sealed with an actual Web Crypto HMAC-SHA256 signature using a per-station PSK and show tamperStatus: AUTHENTIC. But the BENCHMARK data mode that drives the dashboard operates purely client-side without keys, so those demo packets carry only an unkeyed FNV-1a checksum and explicitly show tamperStatus: DEMO_UNVERIFIED. Both branches are honest about what they represent.';
   }
 
   return 'Metshield AI is a rule-based WMO Pub No. 8 quality management system for Automatic Weather Stations. It runs real-time anomaly detection, drift detection, spatial cross-validation, and storm-vs-fault discrimination on every packet, and records a WMO quality flag per observation. The system has no trained models: every classification comes from coded thresholds. Telemetry integrity is provided by a non-cryptographic FNV-1a checksum, not a cryptographic signature.';

@@ -42,13 +42,13 @@ export interface TelemetryPacket {
    * fields. Do not simply flip tamperStatus to 'AUTHENTIC' again.
    */
   securitySeal: {
-    /** Non-cryptographic checksum. NOT HMAC-SHA256. */
+    /** HMAC-SHA256 (if authentic) OR non-cryptographic FNV-1a checksum (if demo). */
     hmacSha256: string;
     antiReplayNonce: number;
     /** Second independent checksum. NOT a Merkle root. */
     auditMerkleRoot: string;
     geofenceStatus: 'VERIFIED_IN_BOUNDS' | 'GEOFENCE_BREACH';
-    tamperStatus: 'DEMO_UNVERIFIED' | 'CORRUPTION_DETECTED';
+    tamperStatus: 'DEMO_UNVERIFIED' | 'CORRUPTION_DETECTED' | 'AUTHENTIC';
   };
 }
 

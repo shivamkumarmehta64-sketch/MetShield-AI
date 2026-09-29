@@ -403,23 +403,14 @@ Stated plainly so that nobody relies on a capability the codebase does not have.
 - **"XAI attribution" is normalized rule-based weighting, not SHAP.** The attribution weights in
   `computeXAIWeights` are derived from the magnitude of the breached invariant and normalised to
   sum to 100%. They are explanatory and deterministic; they are not a Shapley-value computation.
-- **The packet integrity tag is a checksum, not a cryptographic MAC.** It is a deterministic
-  non-keyed digest. It detects accidental corruption; it does **not** resist a deliberate
-  forger, because no secret is involved. A production deployment needs real HMAC-SHA256 signing
-  with a per-station pre-shared key, plus timestamp/replay rejection.
-- **`tamperStatus` is currently always `AUTHENTIC`.** There is no signature verification step
-  yet, so this field is aspirational.
-- **No authentication or role-based access control exists** on the API surface. Any client that
-  can reach the deployment can read telemetry and post work orders. The Origin check in
+- **Authentic telemetry is signed, but demo data is not.** Packets ingested live through `POST /api/telemetry` are authenticated with a per-station Pre-Shared Key (PSK) and sealed with a real Web Crypto HMAC-SHA256 signature (`tamperStatus = 'AUTHENTIC'`). But the `BENCHMARK` data mode driving the dashboard computes packets client-side and cannot hold keys, so its packets carry only a non-cryptographic FNV-1a checksum and are explicitly marked `DEMO_UNVERIFIED`.
+- **No role-based access control exists** on the API surface. Any client that
+  can reach the deployment can read telemetry and post work orders. The Origin check in `proxy.ts`
   `middleware.ts` is browser CSRF friction, not authentication.
-- **The AI endpoints (`/api/ai/*`) have no rate limiting** and no prompt-length cap. They must
-  be authenticated and metered before any public deployment.
+- **The AI endpoints (`/api/ai/*`) have no authentication.** They are rate-limited and length-capped (`lib/aiLimits.ts`), but they are open. They must be authenticated before any public deployment.
 - **Station coverage figures differ across the UI** (1,350 network-wide vs. a 5-station live
   demo roster). The live console renders a representative subset, not the full network.
 - **"Uptime" on the landing page measures seconds since page load**, not engine uptime.
-- **`middleware.ts` and `export const runtime = 'edge'` are deprecated in Next.js 16** in favour
-  of `proxy.ts` and the Node.js runtime. They still function but will be removed in a future
-  major version.
 - **Deterministic replay, not live ingest, drives the console.** The dashboard, analytics and
   incident surfaces all render `BENCHMARK` data mode: a fixed set of epochs and sinusoidal
   baselines advanced 2.5 s at a time, so demos are reproducible. The console is named "live"

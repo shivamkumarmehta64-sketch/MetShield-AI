@@ -46,7 +46,7 @@ interface AuditRow {
   checksumA: string;
   checksumB: string;
   nonce: number;
-  tamperStatus: 'DEMO_UNVERIFIED' | 'CORRUPTION_DETECTED';
+  tamperStatus: 'DEMO_UNVERIFIED' | 'CORRUPTION_DETECTED' | 'AUTHENTIC';
   ticketId: string | null;
 }
 

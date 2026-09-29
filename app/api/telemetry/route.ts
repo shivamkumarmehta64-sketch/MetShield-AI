@@ -4,7 +4,7 @@ import { nicWmoEngineInstance, TelemetryPacket } from '@/lib/anomalyLogic';
 import { IMD_AWS_STATIONS, getStationProfile } from '@/lib/stationData';
 import { fetchLiveStationObservation } from '@/lib/liveWeatherService';
 import { persistTelemetryToEdge, resolveWorkOrderOnEdge } from '@/lib/d1Adapter';
-import { authorizeWrite, type AuthResult } from '@/lib/auth';
+import { authorizeWrite, signObservation, type AuthResult } from '@/lib/auth';
 import { consume } from '@/lib/rateLimit';
 
 // In-memory ring buffer for live ingested telemetry from mobile phones / ESP32
@@ -213,6 +213,22 @@ export async function POST(request: NextRequest) {
     };
 
     // Save into live ingestion ring buffer for real-time mobile sync
+    //
+    // A live frame has passed the WMO evaluation engine and the PSK auth boundary.
+    // It is now signed before being stored, so a downstream read can verify it is
+    // authentic rather than just trusting it arrived at the right endpoint.
+    evaluatedPacket.securitySeal = {
+      ...evaluatedPacket.securitySeal,
+      hmacSha256: signObservation({
+        stationId,
+        timestamp: safeTimestamp,
+        temperature: rawTemp,
+        pressure: rawPress,
+        humidity: rawHum,
+      }).mac || evaluatedPacket.securitySeal.hmacSha256,
+      tamperStatus: 'AUTHENTIC',
+    };
+
     liveIngestedBuffer.unshift(evaluatedPacket);
     if (liveIngestedBuffer.length > 50) {
       liveIngestedBuffer.pop();

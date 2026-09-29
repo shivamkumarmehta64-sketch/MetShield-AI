@@ -35,7 +35,7 @@
  * credential.
  */
 
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 /** Outcome of authenticating a write-path request. */
 export type AuthResult =
@@ -224,4 +224,110 @@ export function authorizeWrite(
  */
 export function isWriteAuthConfigured(): boolean {
   return loadCredentials() !== null;
+}
+
+/**
+ * The MAC on an accepted write, plus what it covers.
+ *
+ * `authenticated` is false when no key table is configured. That is not a
+ * degraded mode to paper over — it is the fail-closed case from above, and a
+ * receipt that claimed to be authenticated without a key would be exactly the
+ * fabricated claim this module exists to prevent.
+ */
+export interface PacketSeal {
+  /** HMAC-SHA256 hex digest, or null when no key is provisioned. */
+  mac: string | null;
+  /** True only when a real key produced this digest. */
+  authenticated: boolean;
+  /** The station whose key signed it — never the key itself. */
+  stationId: string;
+  /** Epoch ms the seal was computed over, for replay reasoning. */
+  signedAt: number;
+}
+
+/**
+ * Canonical byte-string a station's observations are signed over.
+ *
+ * Field order is fixed and the timestamp is pinned to whole seconds, so the
+ * same observation signed twice yields the same MAC — which is what lets a
+ * verifier recompute it rather than trust the sender's word.
+ *
+ * Numbers are pinned to the same 2-decimal form `POST /api/telemetry` parses
+ * them into. Signing the raw request instead would mean a station that sent
+ * `27.2` and `27.20` produced different MACs for the same observation.
+ */
+function canonicalPayload(
+  stationId: string,
+  timestamp: number,
+  temperature: number | null,
+  pressure: number | null,
+  humidity: number | null
+): string {
+  const num = (v: number | null) => (v === null ? 'null' : v.toFixed(2));
+  const ts = Math.floor(timestamp / 1000);
+  return `${stationId}|${ts}|${num(temperature)}|${num(pressure)}|${num(humidity)}`;
+}
+
+/**
+ * HMAC-SHA256 a station's observation with that station's own pre-shared key.
+ *
+ * WHY THIS LIVES HERE AND NOT IN `lib/anomalyLogic.ts`
+ * ---------------------------------------------------
+ * The benchmark packets the console renders are built in the browser — every
+ * caller of `getNetworkSnapshot()` is a `'use client'` module. Signing those
+ * with a station key would put every PSK in the client bundle, which is strictly
+ * worse than the unkeyed checksum it replaced. So the MAC is computed only on
+ * the write path, where the station has already proved possession of its key
+ * and the server is the one holding it.
+ *
+ * A client can therefore *display* a seal but can never *mint* one. That is the
+ * entire security property, and it is why this function is not exported into
+ * any UI module.
+ */
+export function signObservation(params: {
+  stationId: string;
+  timestamp: number;
+  temperature: number | null;
+  pressure: number | null;
+  humidity: number | null;
+}): PacketSeal {
+  const { stationId, timestamp, temperature, pressure, humidity } = params;
+  const table = loadCredentials();
+  const credential = table?.get(stationId);
+
+  if (!credential) {
+    // No key provisioned: return an honest, unauthenticated seal. The write path
+    // has already refused this station by this point — reaching here means the
+    // packet is not going to be persisted as trusted anyway.
+    return { mac: null, authenticated: false, stationId, signedAt: Date.now() };
+  }
+
+  const payload = canonicalPayload(stationId, timestamp, temperature, pressure, humidity);
+  const mac = createHmac('sha256', credential.psk).update(payload, 'utf8').digest('hex');
+
+  return { mac, authenticated: true, stationId, signedAt: Date.now() };
+}
+
+/**
+ * Recompute and compare a seal.
+ *
+ * Constant-time on the comparison, and a missing seal or missing key both return
+ * false rather than throwing — a verifier must not be able to distinguish "no
+ * key configured" from "bad MAC", or it becomes an enumeration oracle for which
+ * stations are provisioned.
+ */
+export function verifyObservation(
+  seal: Pick<PacketSeal, 'mac' | 'stationId'>,
+  params: Omit<Parameters<typeof signObservation>[0], 'stationId'>
+): boolean {
+  if (!seal.mac) return false;
+
+  const table = loadCredentials();
+  const credential = table?.get(seal.stationId);
+  if (!credential) return false;
+
+  const payload = canonicalPayload(seal.stationId, params.timestamp, params.temperature, params.pressure, params.humidity);
+  const expected = createHmac('sha256', credential.psk).update(payload, 'utf8').digest('hex');
+
+  return secretsMatch(expected, seal.mac);
 }
