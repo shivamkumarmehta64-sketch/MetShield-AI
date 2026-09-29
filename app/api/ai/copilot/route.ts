@@ -73,7 +73,7 @@ Respond concisely (3-4 sentences) with technical accuracy for weather station op
       timestamp: Date.now(),
       model: 'gpt-4o-mini',
       provider: 'Vercel AI SDK + OpenAI',
-      compliance: 'WMO Pub No. 8 Standards',
+      compliance: 'Aligned with WMO-No. 8 QC guidance',
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

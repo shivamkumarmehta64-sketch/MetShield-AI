@@ -381,10 +381,9 @@ export default function LeafletMap() {
     <section className="card overflow-hidden" aria-label="National station map">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3">
         <div className="min-w-0">
-          <h2 className="t-card-title">National station map</h2>
+          <h2 className="t-card-title">Station Network Map</h2>
           <p className="t-meta">
-            {visible.length} of {snapshot.stations.length} registered observatories · positions and
-            states come from the station registry and the QC engine
+            {visible.length} of {snapshot.stations.length} AWS stations · interactive geographic QC
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">

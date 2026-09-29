@@ -378,7 +378,7 @@ export class NICWMOAnomalyEngine {
     let cls: RootCauseClassification = 'NOMINAL_OPERATION';
     let flag: WMOQualityFlag = 'FLAG_1_VERIFIED_GOOD';
     let alert: GovAlertLevel = 'LEVEL_0_NOMINAL';
-    let action = 'Observation verified compliant with WMO Pub No. 8 & IMD Quality Standards.';
+    let action = 'Observation verified against applicable WMO-No. 8 & IMD quality guidance.';
     let fp = 0.02;
     let tid: string | null = null;
 

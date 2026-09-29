@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         requestLatencyMs: latencyMs,
-        compliance: 'WMO Pub No. 8 Quality Management Standards',
+        compliance: 'Aligned with WMO-No. 8 QC guidance',
         /**
          * Whether this packet reached durable storage. `false` means it is
          * held in a volatile buffer and will not survive a restart — callers
@@ -332,7 +332,7 @@ export async function GET(request: NextRequest) {
     {
       system: 'Metshield AI: Automated Weather Station Quality Management System (AWS-QMS)',
       version: '4.2.8',
-      compliance: 'WMO Pub No. 8 & CIMO Standards',
+      compliance: 'Aligned with WMO-No. 8 QC guidance',
       liveDataSource: 'Open-Meteo Free Public Satellite & Surface API',
       qualityFlags: {
         FLAG_1_VERIFIED_GOOD: 'Observation nominal, within step limits and verified for NWP ingestion.',

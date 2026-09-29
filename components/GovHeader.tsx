@@ -134,7 +134,7 @@ export const GovHeader = React.memo<GovHeaderProps>(function GovHeader({
                   AWS-QMS
                 </span>
                 <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-emerald-400/40 hidden sm:inline">
-                  WMO Pub 8 Compliant
+                  WMO-No. 8 Aligned
                 </span>
               </div>
               <p className="text-[11px] text-slate-300 hidden sm:block">

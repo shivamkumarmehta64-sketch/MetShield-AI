@@ -37,33 +37,33 @@ export default function MobileError({
     );
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#070d1e] p-6 text-slate-200">
-      <div className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#0e1730] p-6 shadow-xl">
+    <main className="flex min-h-screen items-center justify-center bg-page p-6 text-ink">
+      <div className="w-full max-w-lg rounded-xl border border-warning/30 bg-card p-6 shadow-lg">
         <div className="flex items-center gap-2">
-          <Satellite className="h-5 w-5 text-amber-400" aria-hidden="true" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">
+          <Satellite className="h-5 w-5 text-warning-text" aria-hidden="true" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-warning-text">
             Field node fault
           </p>
         </div>
 
-        <h1 className="mt-2 text-xl font-bold text-white">The field node stopped</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+        <h1 className="mt-2 text-xl font-bold text-navy">The field node stopped</h1>
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
           {platformGap
             ? 'A required browser API is unavailable or was denied. This is a device or browser-permission problem, not a transient fault — retrying will not help. Check location permission and whether the page is running in a secure context (HTTPS).'
             : 'The field node hit an unexpected fault while running. Queued observations held in IndexedDB are not lost; they will transmit when connectivity returns.'}
         </p>
 
         {error.digest && (
-          <p className="mt-3 font-mono text-[11px] text-slate-500">
-            Trace ID: <span className="text-slate-400">{error.digest}</span>
+          <p className="mt-3 font-mono text-[11px] text-ink-faint">
+            Trace ID: <span className="text-ink-muted">{error.digest}</span>
           </p>
         )}
 
-        <details className="mt-3 rounded-lg border border-slate-700 bg-slate-950/60 p-2">
-          <summary className="cursor-pointer text-[11px] text-slate-400">
+        <details className="mt-3 rounded-lg border border-hairline bg-surface-alt p-2">
+          <summary className="cursor-pointer text-[11px] text-ink-muted">
             Technical detail
           </summary>
-          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] text-slate-500">
+          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] text-ink-faint">
             {message}
           </pre>
         </details>
@@ -73,7 +73,7 @@ export default function MobileError({
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-[#070d1e] transition-colors hover:bg-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+              className="inline-flex items-center gap-2 rounded-lg bg-sky-deep px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-deep focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
             >
               <RotateCw className="h-4 w-4" aria-hidden="true" />
               Restart node
@@ -81,14 +81,14 @@ export default function MobileError({
           )}
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="inline-flex items-center gap-2 rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-ink-muted transition-colors hover:border-hairline-strong hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
             <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
             Operations command
           </Link>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="inline-flex items-center gap-2 rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-ink-muted transition-colors hover:border-hairline-strong hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
             <Home className="h-4 w-4" aria-hidden="true" />
             Home

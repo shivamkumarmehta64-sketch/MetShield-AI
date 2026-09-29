@@ -685,7 +685,7 @@ export default function MobileEdgeNodePage() {
         {/* Hardware Status Strip */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 text-xs">
           <div className="flex items-center justify-between text-slate-300">
-            <span className="font-bold flex items-center gap-1.5 text-[#38bdf8]">
+            <span className="font-bold flex items-center gap-1.5 text-sky-400">
               <MapPin className="w-3.5 h-3.5" />
               On-Site Geolocation &amp; Coordinates
             </span>
@@ -1036,7 +1036,7 @@ export default function MobileEdgeNodePage() {
             </div>
 
             {/* Recharts Container */}
-            <div className="w-full h-[160px] bg-[#070d1e] rounded-lg p-1 border border-slate-800/80">
+            <div className="w-full h-[160px] bg-slate-950 rounded-lg p-1 border border-slate-800/80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sensorHistory} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.5} />

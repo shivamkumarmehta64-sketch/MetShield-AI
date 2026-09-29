@@ -31,7 +31,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
     label: 'Monitor',
     items: [
       { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-      { name: 'Live Operations', href: '/dashboard?tab=live', icon: Radio, tabKey: 'live' },
+      { name: 'Station Telemetry', href: '/dashboard?tab=live', icon: Radio, tabKey: 'live' },
       { name: 'National Map', href: '/stations', icon: Map },
     ],
   },
@@ -128,12 +128,17 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                     className={clsx(
                       'flex items-center gap-3 border-l-2 px-4 text-[13.5px] transition-colors',
                       active
-                        ? 'border-l-navy bg-surface-alt font-semibold text-navy'
+                        ? 'border-l-sky-deep bg-sky-50/60 font-semibold text-navy'
                         : 'border-l-transparent text-ink-muted hover:bg-surface-hover hover:text-ink'
                     )}
                     style={{ height: 40 }}
                   >
-                    <Icon size={16} strokeWidth={1.75} aria-hidden />
+                    <Icon
+                      size={16}
+                      strokeWidth={1.75}
+                      className={active ? 'text-sky-deep' : 'text-ink-muted'}
+                      aria-hidden
+                    />
                     {item.name}
                   </Link>
                 );

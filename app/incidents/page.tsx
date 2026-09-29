@@ -82,9 +82,9 @@ export default function IncidentsPage() {
         <section className="card overflow-hidden" aria-label="Incident registry">
           <div className="border-b border-hairline px-5 py-3 flex flex-wrap items-center gap-3 justify-between">
             <div>
-              <h1 className="t-section-title text-navy">Incident registry</h1>
+              <h1 className="t-section-title text-navy">Incident log</h1>
               <p className="t-meta">
-                Every flagged packet the engine produced during the benchmark run, newest first.
+                Flagged observations from the QC engine · newest first
               </p>
             </div>
             <div className="flex items-center gap-2">

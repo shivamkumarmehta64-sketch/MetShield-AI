@@ -23,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'MetShield AI | AWS-QMS — SIH 2026',
   description:
-    'Rule-based WMO Pub 8 Quality Control for Automatic Weather Stations. Team AEROTECH — SIH26073.',
+    'QC rules aligned with applicable WMO-No. 8 guidance for Automatic Weather Stations. Team AEROTECH — SIH26073.',
   keywords: [
     'MetShield AI', 'AWS-QMS', 'SIH 2026', 'MoES', 'IMD',
     'Weather Station', 'Quality Management', 'AEROTECH',
@@ -63,9 +63,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="en"
-      // Operations console is the light theme by default. The public landing
-      // page (/) overrides this to "dark" on its own root element, so the two
-      // surfaces can differ without either hard-coding the other's colours.
+      // The operations console is the light theme, and it is the only theme.
+      // There is no dark override: app/globals.css ships a single light ramp
+      // and every surface reads from those tokens.
       data-theme="light"
       className={`${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >

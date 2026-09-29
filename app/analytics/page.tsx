@@ -78,8 +78,8 @@ export default function AnalyticsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="t-section-title text-navy">Network analytics</h1>
-            <p className="t-card-title text-warning">
-              SIMULATED DEMO: no validated dataset loaded
+            <p className="t-card-title text-ink-muted">
+              BENCHMARK REPLAY: 14-tick deterministic dataset over 21 registered station profiles
             </p>
             <p className="t-body text-ink-muted">
               {incidents.length} flagged packets across {snapshot.stations.length} stations in this
@@ -91,10 +91,9 @@ export default function AnalyticsPage() {
 
         <section className="card overflow-hidden" aria-label="Quality trend">
           <div className="border-b border-hairline px-5 py-3">
-            <h2 className="t-card-title">Quality-control pass rate, per tick</h2>
+            <h2 className="t-card-title">Quality pass rate per tick</h2>
             <p className="t-meta">
-              Share of stations at WMO Flag 1 on each of the {trend.length} ticks in the run. The
-              interval is 2.5 s of benchmark time, not a calendar day.
+              Share of stations at WMO Flag 1 across {trend.length} benchmark ticks.
             </p>
           </div>
           <div className="p-5">

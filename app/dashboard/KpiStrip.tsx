@@ -48,41 +48,39 @@ export default function KpiStrip() {
 
   const kpis: Kpi[] = [
     {
-      label: 'Observatories online',
+      label: 'AWS Stations',
       value: `${k.nominal} / ${k.total}`,
-      status: k.nominal === k.total ? 'All stations reporting' : 'Partial degradation',
-      detail: `${k.total - k.nominal} station(s) not at WMO Flag 1`,
+      status: k.nominal === k.total ? 'All reporting' : `${k.total - k.nominal} flagged`,
+      detail: `${k.nominal} nominal of ${k.total}`,
       Icon: Radio,
       tone: k.nominal === k.total ? 'healthy' : 'warning',
       mode: DATA_MODE,
     },
     {
-      label: 'Data quality score',
+      label: 'Quality Yield',
       value: `${k.qualityScore.toFixed(1)}%`,
-      status: k.qualityScore >= 95 ? 'Within target' : 'Below target',
-      detail: 'Share of stations at WMO Flag 1',
+      status: k.qualityScore >= 95 ? 'Target met' : 'Below target',
+      detail: 'WMO Flag 1 yield',
       Icon: ShieldCheck,
       tone: k.qualityScore >= 95 ? 'healthy' : 'warning',
       mode: DATA_MODE,
     },
     {
-      label: 'Active anomalies',
+      label: 'Active Anomalies',
       value: String(k.activeAnomalies),
       status:
         k.activeAnomalies === 0
-          ? 'No anomalies open'
-          : `${k.weatherEvents} weather · ${k.drift} drift · ${k.faults} fault · ${k.telemetryIssues} telemetry`,
-      detail: 'Stations above Flag 1 at the newest tick',
+          ? '0 active'
+          : `${k.weatherEvents} storm · ${k.drift} drift · ${k.faults} fault`,
+      detail: 'Non-nominal detections',
       Icon: Activity,
       tone: k.activeAnomalies === 0 ? 'healthy' : k.faults > 0 ? 'fault' : 'weather',
       mode: DATA_MODE,
     },
     {
-      label: 'Engine pass time',
+      label: 'Engine Time',
       value: `${snapshot.buildDurationMs.toFixed(1)} ms`,
-      // Deliberately not called "latency". This times the QC pass, not a
-      // station-to-console delivery, and no such measurement exists here.
-      status: 'Measured, not a delivery SLA',
+      status: 'Deterministic QC pass',
       detail: `${snapshot.stations.length} stations · ${snapshot.stations[0]?.historyDepth ?? 0} ticks`,
       Icon: Gauge,
       tone: 'telemetry',
@@ -97,30 +95,45 @@ export default function KpiStrip() {
           <div
             key={kpi.label}
             className={clsx(
-              'relative flex flex-col gap-1 px-4 py-3.5',
+              'relative flex flex-col gap-1 px-5 py-4',
               i < kpis.length - 1 && 'border-b border-hairline sm:border-b-0 sm:border-r'
             )}
           >
-            <div className="flex items-center gap-1.5">
-              <kpi.Icon size={13} className={TONE_TEXT[kpi.tone]} aria-hidden />
-              <span className="t-label">{kpi.label}</span>
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <kpi.Icon size={14} className={TONE_TEXT[kpi.tone]} aria-hidden />
+                <span className="t-label text-ink-muted">{kpi.label}</span>
+              </div>
+              <span className="t-label font-mono px-1.5 py-0.5 rounded border border-hairline bg-surface-alt text-ink-faint text-[10px]">
+                {kpi.mode}
+              </span>
             </div>
             <span
-              className={clsx('t-mono text-[26px] leading-tight font-bold', TONE_TEXT[kpi.tone])}
-              // The engine pass timing (`buildDurationMs`) is measured with
-              // `performance.now()` and therefore differs between the SSR
-              // prerender and the client hydration. The mismatch is real and
-              // expected; the value the client sees is the correct one.
+              className={clsx('t-mono text-[28px] leading-tight font-bold my-0.5', TONE_TEXT[kpi.tone])}
               suppressHydrationWarning
             >
               {kpi.value}
             </span>
-            <span className="t-body text-[12.5px] text-ink-muted">{kpi.status}</span>
-            <span className="t-meta">{kpi.detail}</span>
-            {/* §30: every figure carries the mode it came from. */}
-            <span className="t-label mt-1 inline-flex w-fit items-center gap-1 rounded border border-hairline px-1.5 py-0.5 text-ink-faint">
-              {kpi.mode}
-            </span>
+            <div className="flex items-center gap-1.5 text-[12.5px]">
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor:
+                    kpi.tone === 'healthy'
+                      ? 'var(--color-healthy)'
+                      : kpi.tone === 'fault'
+                        ? 'var(--color-fault)'
+                        : kpi.tone === 'weather'
+                          ? 'var(--color-weather)'
+                          : kpi.tone === 'warning'
+                            ? 'var(--color-warning)'
+                            : 'var(--color-telemetry)',
+                }}
+                aria-hidden
+              />
+              <span className="font-medium text-ink">{kpi.status}</span>
+            </div>
+            <span className="t-meta text-[11.5px] text-ink-muted">{kpi.detail}</span>
             {kpi.tone === 'fault' && (
               <>
                 <span
@@ -139,8 +152,8 @@ export default function KpiStrip() {
       </div>
 
       {k.activeFaults > 0 && (
-        <p className="flex items-center gap-2 border-t border-hairline bg-surface-alt px-4 py-2 t-body text-fault">
-          <AlertTriangle size={14} aria-hidden />
+        <p className="flex items-center gap-2 border-t border-hairline bg-surface-alt px-4 py-2 t-body text-fault-text">
+          <AlertTriangle size={14} className="text-fault-text" aria-hidden />
           {k.activeFaults} station(s) report a hardware fault. Not weather — see the incident log.
         </p>
       )}

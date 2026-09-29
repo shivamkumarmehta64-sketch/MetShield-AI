@@ -128,7 +128,7 @@ function RateOfChangeTrace({ station }: { station: StationSnapshot }) {
             vectorEffect="non-scaling-stroke"
           />
         )}
-        <path d={path} fill="none" stroke="var(--color-telemetry)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+        <path d={path} fill="none" stroke="var(--color-met-pressure)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
       </svg>
       <p className="t-meta" style={{ marginTop: 3 }}>
         Pressure rate of change, last {points.length} engine packet{points.length === 1 ? '' : 's'} · now {newest} hPa/tick
@@ -255,7 +255,7 @@ export default function OperationsBand() {
       {/* ── Stations needing attention ── */}
       <div style={{ borderBottom: '1px solid var(--hairline)' }}>
         <div className="flex items-baseline justify-between" style={{ padding: '10px 14px 8px' }}>
-          <h3 className="t-card-title">Stations not currently nominal</h3>
+          <h3 className="t-card-title">Active Anomalies</h3>
           <span className="t-meta t-mono">{attention.length} of {snapshot.stations.length}</span>
         </div>
 

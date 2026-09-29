@@ -42,7 +42,7 @@ function ScenarioControls() {
  */
 const TABS = [
   { key: 'matrix', label: 'Station Matrix' },
-  { key: 'live', label: 'Live Operations' },
+  { key: 'live', label: 'Station Telemetry' },
   { key: 'qc', label: 'Rule-based classification' },
   { key: 'testbench', label: 'Testbench' },
 ] as const;
@@ -78,7 +78,7 @@ function DashboardTabs() {
               }
               className={
                 selected
-                  ? 'border-b-2 border-navy text-navy font-semibold'
+                  ? 'border-b-2 border-sky-deep text-sky-deep font-semibold'
                   : 'border-b-2 border-transparent text-ink-muted hover:text-ink'
               }
               style={{ padding: '10px 14px' }}

@@ -18,6 +18,16 @@ const HEALTH_OPTIONS: { value: 'ALL' | StationHealth; label: string }[] = [
   { value: 'TELEMETRY', label: 'Packet loss' },
 ];
 
+/** Row accent: a left-edge bar + faint tint so a non-nominal row reads as a
+ *  state without a full fill. Nominal rows stay neutral. */
+const ROW_TINT: Record<StationHealth, { bar: string; row: string }> = {
+  NOMINAL: { bar: 'transparent', row: 'hover:bg-surface-hover' },
+  DRIFT: { bar: 'var(--color-warning)', row: 'bg-warning-bg' },
+  WEATHER_EVENT: { bar: 'var(--color-weather)', row: 'bg-weather-bg' },
+  FAULT: { bar: 'var(--color-fault)', row: 'bg-fault-bg' },
+  TELEMETRY: { bar: 'var(--color-telemetry)', row: 'bg-telemetry-bg' },
+};
+
 /** The header row, and the CSV column order, from one place. */
 const COLUMNS = [
   'Station ID',
@@ -97,7 +107,7 @@ function downloadCsv(rows: StationSnapshot[], filename: string) {
  */
 export default function StationTable() {
   const snapshot = getNetworkSnapshot();
-  const { selectStation } = useSystem();
+  const { selectStation, state } = useSystem();
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'ALL' | StationHealth>('ALL');
@@ -124,9 +134,9 @@ export default function StationTable() {
     <section className="card overflow-hidden" aria-label="Station matrix">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-hairline px-5 py-3">
         <div>
-          <h2 className="t-card-title">All stations</h2>
+          <h2 className="t-card-title">Station Matrix</h2>
           <p className="t-meta">
-            {snapshot.stations.length} registered nodes · latest observation per station
+            {snapshot.stations.length} AWS stations · latest observation
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
@@ -198,42 +208,59 @@ export default function StationTable() {
             </tr>
           </thead>
           <tbody>
-            {pageItems.map((s) => (
-              <tr key={s.stationId} className="border-b border-hairline last:border-b-0 hover:bg-surface-hover">
-                <td className="px-4 py-2.5">
-                  <div className="t-mono text-[12px] font-semibold">{s.stationId}</div>
-                  <div className="t-meta truncate">{s.name}</div>
-                </td>
-                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
-                  {s.packet.raw.temperature?.toFixed(1) ?? '—'}
-                  <span className="ml-0.5 text-[10px] text-ink-faint">°C</span>
-                </td>
-                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
-                  {s.packet.raw.pressure?.toFixed(1) ?? '—'}
-                  <span className="ml-0.5 text-[10px] text-ink-faint">hPa</span>
-                </td>
-                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
-                  {s.packet.raw.humidity?.toFixed(1) ?? '—'}
-                  <span className="ml-0.5 text-[10px] text-ink-faint">%</span>
-                </td>
-                <td className="px-4 py-2.5">
-                  <WmoFlagBadge flag={s.wmoFlag} />
-                </td>
-                <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[12px] text-ink-muted">
-                  {new Date(s.packet.timestamp).toISOString().slice(11, 19)}Z
-                </td>
-                <td className="px-4 py-2.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => selectStation(s.stationId)}
-                    aria-label={`Investigate ${s.stationId}, ${s.name}`}
-                    className="touch-target rounded px-2 text-[13px] text-navy hover:bg-surface-alt"
-                  >
-                    Investigate →
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {pageItems.map((s) => {
+              const tint = ROW_TINT[s.health];
+              const selected = state.selectedStationId === s.stationId;
+              return (
+                <tr
+                  key={s.stationId}
+                  className={clsx(
+                    'border-b border-hairline last:border-b-0',
+                    selected ? 'bg-telemetry-bg' : tint.row
+                  )}
+                >
+                  <td className="relative px-4 py-2.5">
+                    {tint.bar !== 'transparent' && (
+                      <span
+                        className="absolute inset-y-0 left-0 w-1"
+                        style={{ backgroundColor: tint.bar }}
+                        aria-hidden
+                      />
+                    )}
+                    <div className="t-mono text-[12px] font-semibold text-ink">{s.stationId}</div>
+                    <div className="t-meta truncate">{s.name}</div>
+                  </td>
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                    {s.packet.raw.temperature?.toFixed(1) ?? '—'}
+                    <span className="ml-0.5 text-[10px] text-ink-faint">°C</span>
+                  </td>
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                    {s.packet.raw.pressure?.toFixed(1) ?? '—'}
+                    <span className="ml-0.5 text-[10px] text-ink-faint">hPa</span>
+                  </td>
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px]">
+                    {s.packet.raw.humidity?.toFixed(1) ?? '—'}
+                    <span className="ml-0.5 text-[10px] text-ink-faint">%</span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <WmoFlagBadge flag={s.wmoFlag} />
+                  </td>
+                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[12px] text-ink-muted">
+                    {new Date(s.packet.timestamp).toISOString().slice(11, 19)}Z
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => selectStation(s.stationId)}
+                      aria-label={`Investigate ${s.stationId}, ${s.name}`}
+                      className="touch-target rounded px-2 text-[13px] text-sky-deep hover:bg-surface-hover"
+                    >
+                      Investigate →
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
             {pageItems.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center t-body text-ink-muted">

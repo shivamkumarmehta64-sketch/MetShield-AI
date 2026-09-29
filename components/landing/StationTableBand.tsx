@@ -72,8 +72,8 @@ export default function StationTableBand() {
         className="flex flex-wrap items-baseline justify-between gap-2"
         style={{ borderBottom: '1px solid var(--hairline)', padding: '10px 14px', background: 'var(--surface-alt)' }}
       >
-        <h3 className="t-card-title">Registered stations</h3>
-        <span className="t-meta t-mono">{snapshot.stations.length} in this build · non-nominal first</span>
+        <h3 className="t-card-title">AWS Stations</h3>
+        <span className="t-meta t-mono">{snapshot.stations.length} stations · non-nominal first</span>
       </div>
 
       {/* Wide screens get the full registry. Narrow screens get a two-column

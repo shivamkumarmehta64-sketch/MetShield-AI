@@ -178,7 +178,7 @@ export default function Testbench() {
                       type="monotone"
                       dataKey="pressure"
                       name="Pressure (hPa)"
-                      stroke="var(--color-telemetry)"
+                      stroke="var(--color-met-pressure)"
                       strokeWidth={2}
                       dot={false}
                     />
@@ -187,7 +187,7 @@ export default function Testbench() {
                       type="monotone"
                       dataKey="humidity"
                       name="Humidity (%)"
-                      stroke="var(--color-weather)"
+                      stroke="var(--color-met-humidity)"
                       strokeWidth={2}
                       dot={false}
                     />

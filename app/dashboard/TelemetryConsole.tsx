@@ -73,9 +73,9 @@ function displayValue(m: Metric): number | null | undefined {
 }
 
 const CHART_SERIES: { key: string; name: string; axis: string; color: string }[] = [
-  { key: 'pressure', name: 'Pressure (hPa)', axis: 'p', color: 'var(--color-telemetry)' },
-  { key: 'temperature', name: 'Temperature (°C)', axis: 't', color: 'var(--color-weather)' },
-  { key: 'humidity', name: 'Humidity (%)', axis: 'h', color: 'var(--color-teal)' },
+  { key: 'pressure', name: 'Pressure (hPa)', axis: 'p', color: 'var(--color-met-pressure)' },
+  { key: 'temperature', name: 'Temperature (°C)', axis: 't', color: 'var(--color-met-temperature)' },
+  { key: 'humidity', name: 'Humidity (%)', axis: 'h', color: 'var(--color-met-humidity)' },
 ];
 
 interface ChartRow {

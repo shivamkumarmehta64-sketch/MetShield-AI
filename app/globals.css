@@ -36,11 +36,24 @@
   /* ── Brand / institution ── */
   --color-navy: #0B1F3A;
   --color-navy-deep: #123B63;
-  --color-sky: #1683D8;
+  --color-sky: #38BDF8;
+  --color-sky-deep: #0EA5E9;
+  --color-blue-deep: #1E88E5;
   --color-teal: #0E9F9A;
 
-  /* ── Semantic status (the only place colour encodes meaning) ── */
-  --color-healthy: #16A34A;
+  /* ── Meteorological Parameters ── */
+  --color-met-temp-cool: #38BDF8;
+  --color-met-temp-normal: #FACC15;
+  --color-met-temp-hot: #FB923C;
+  --color-met-temp-extreme: #EF4444;
+  --color-met-temperature: var(--color-met-temp-hot); /* chart series alias */
+  --color-met-pressure: #8B5CF6;
+  --color-met-humidity: #22D3EE;
+  --color-met-wind: #34D399;
+  --color-met-rain: #3B82F6;
+
+  /* ── Semantic status ── */
+  --color-healthy: #22C55E;
   --color-healthy-bg: #ECFDF3;
   --color-healthy-border: #A7F3D0;
 
@@ -48,37 +61,33 @@
   --color-warning-bg: #FFFBEB;
   --color-warning-border: #FDE68A;
 
-  --color-weather: #F97316;
+  --color-weather: #FB923C;
   --color-weather-bg: #FFF7ED;
   --color-weather-border: #FED7AA;
 
-  --color-fault: #DC2626;
+  --color-critical: #EF4444;
+  --color-fault: #EF4444;
   --color-fault-bg: #FEF2F2;
   --color-fault-border: #FECACA;
 
-  --color-ai: #7C3AED;
+  --color-ai: #8B5CF6;
   --color-ai-bg: #F5F3FF;
   --color-ai-border: #DDD6FE;
 
-  --color-telemetry: #1683D8;
+  --color-info: #38BDF8;
+  --color-selected: #0EA5E9;
+  --color-telemetry: #0EA5E9;
   --color-telemetry-bg: #EFF6FF;
   --color-telemetry-border: #BFDBFE;
 
-  /* ── Text-weight status ramp ────────────────────────────────────────────
-     The values above are tuned for BADGE FILLS: a 500-weight chip on a
-     tinted background needs a saturated colour to read as a chip. They are
-     too light to carry meaning as 12px TEXT on white — #F59E0B at body
-     weight on #FFFFFF is 2.0:1, well under WCAG AA.
-
-     These three are the same three meanings at a weight that passes AA as
-     text, and they are deliberately one step darker in the same hue so the
-     two ramps read as the same colour at a glance. One ramp, two weights,
-     two tokens each. Do not add a third. */
-  --color-healthy-text: #15803D;
-  --color-warning-text: #B45309;
-  --color-fault-text: #B91C1C;
-  --color-ai-text: #6D28D9;
-  --color-telemetry-text: #0369A1;
+  /* ── Text-weight status ramp (Passes AA as text) ── */
+  --color-healthy-text: #16A34A;
+  --color-warning-text: #D97706;
+  --color-critical-text: #DC2626;
+  --color-fault-text: #DC2626;
+  --color-ai-text: #7C3AED;
+  --color-info-text: #0284C7;
+  --color-telemetry-text: #0284C7;
 
   /* ── Light surfaces (operations console) ── */
   --color-page: #F8FAFC;
@@ -86,13 +95,34 @@
   --color-surface-alt: #F1F5F9;
   --color-surface-hover: #F8FAFC;
 
-  --color-ink: #0B1F33;
-  --color-ink-muted: #475569;
-  --color-ink-faint: #94A3B8;
+  --color-ink: #0F172A; /* Primary text */
+  --color-ink-muted: #475569; /* Secondary */
+  --color-ink-faint: #64748B; /* Muted — AA on white */
   --color-ink-inverse: #FFFFFF;
 
   --color-hairline: #E2E8F0;
   --color-hairline-strong: #CBD5E1;
+
+  /* ── Semantic aliases (§B) ──
+     These are purpose aliases, not a third ramp. `--color-brand` is the
+     institution navy (chrome, titles, active rail), `--color-accent` is the
+     primary action blue, and the `--weather-*` aliases map onto the
+     meteorological parameter tokens already defined above. They exist so a
+     component can ask for "brand" or "temperature" without knowing which
+     underlying hex carries it — flip one token and the whole surface moves. */
+  --color-brand: var(--color-navy);
+  --color-brand-deep: var(--color-navy-deep);
+  --color-accent: var(--color-sky-deep);
+  --color-accent-fg: #FFFFFF;
+
+  --color-weather-cool: var(--color-met-temp-cool);
+  --color-weather-normal: var(--color-met-temp-normal);
+  --color-weather-hot: var(--color-met-temp-hot);
+  --color-weather-extreme: var(--color-met-temp-extreme);
+  --color-weather-pressure: var(--color-met-pressure);
+  --color-weather-humidity: var(--color-met-humidity);
+  --color-weather-wind: var(--color-met-wind);
+  --color-weather-rain: var(--color-met-rain);
 }
 
 /* ---------------------------------------------------------------------------
@@ -119,10 +149,22 @@
   --brand: var(--color-navy);
   --brand-deep: var(--color-navy-deep);
   --accent: var(--color-sky);
-  --accent-hover: #1170BD;
+  --accent-hover: var(--color-blue-deep);
   --accent-fg: #FFFFFF;
 
   --focus-ring: var(--color-sky);
+
+  /* Meteorological parameter aliases, exposed at runtime so chart code and
+     inline styles can ask for `var(--weather-temp)` instead of reaching for
+     a literal. These are aliases, not a second palette. */
+  --weather-temp-cool: var(--color-met-temp-cool);
+  --weather-temp-normal: var(--color-met-temp-normal);
+  --weather-temp-hot: var(--color-met-temp-hot);
+  --weather-temp-extreme: var(--color-met-temp-extreme);
+  --weather-pressure: var(--color-met-pressure);
+  --weather-humidity: var(--color-met-humidity);
+  --weather-wind: var(--color-met-wind);
+  --weather-rain: var(--color-met-rain);
 }
 
 /* `data-theme` is retained as a hook but there is no second palette behind

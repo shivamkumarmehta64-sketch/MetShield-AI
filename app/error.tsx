@@ -24,28 +24,28 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#070d1e] p-6 text-slate-200">
-      <div className="w-full max-w-lg rounded-2xl border border-rose-500/30 bg-[#0e1730] p-6 shadow-xl">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-400">
+    <main className="flex min-h-screen items-center justify-center bg-page p-6 text-ink">
+      <div className="w-full max-w-lg rounded-xl border border-fault/30 bg-card p-6 shadow-lg">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fault">
           Display fault
         </p>
-        <h1 className="mt-2 text-xl font-bold text-white">This view could not render</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+        <h1 className="mt-2 text-xl font-bold text-navy">This view could not render</h1>
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
           The console hit an unexpected error while drawing. Your data has not been
           affected. Retrying re-runs this view only.
         </p>
 
         {error.digest && (
-          <p className="mt-3 font-mono text-[11px] text-slate-500">
-            Trace ID: <span className="text-slate-400">{error.digest}</span>
+          <p className="mt-3 font-mono text-[11px] text-ink-faint">
+            Trace ID: <span className="text-ink-muted">{error.digest}</span>
           </p>
         )}
 
-        <details className="mt-3 rounded-lg border border-slate-700 bg-slate-950/60 p-2">
-          <summary className="cursor-pointer text-[11px] text-slate-400">
+        <details className="mt-3 rounded-lg border border-hairline bg-surface-alt p-2">
+          <summary className="cursor-pointer text-[11px] text-ink-muted">
             Technical detail
           </summary>
-          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] text-slate-500">
+          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] text-ink-faint">
             {error.message}
           </pre>
         </details>
@@ -54,19 +54,19 @@ export default function Error({
           <button
             type="button"
             onClick={reset}
-            className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-[#070d1e] transition-colors hover:bg-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="rounded-lg bg-sky-deep px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-deep focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
             Retry
           </button>
           <Link
             href="/dashboard"
-            className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-ink-muted transition-colors hover:border-hairline-strong hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
-            Operations command
+            Operations console
           </Link>
           <Link
             href="/"
-            className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-ink-muted transition-colors hover:border-hairline-strong hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
             Home
           </Link>

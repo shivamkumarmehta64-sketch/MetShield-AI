@@ -133,7 +133,7 @@ export default function LandingPage() {
                 display: 'inline-block',
               }}
             >
-              Open live console
+              Open console
             </Link>
           </nav>
 
@@ -201,7 +201,7 @@ export default function LandingPage() {
                   to the numerical weather prediction stream or raises a work order against a named station.
                 </p>
                 <p className="t-body" style={{ marginTop: 10, color: 'var(--ink-muted)' }}>
-                  The decision is a deterministic threshold cascade — WMO Pub No. 8 quality flags, no trained model, no
+                  The decision is a deterministic threshold cascade — QC rules aligned with applicable WMO-No. 8 guidance, no trained model, no
                   inference service. Every threshold is stated in the code and reproduced on this page.
                 </p>
               </div>
@@ -219,7 +219,7 @@ export default function LandingPage() {
                     borderRadius: 4,
                   }}
                 >
-                  Open live console
+                  Open benchmark console
                 </Link>
                 <Link href="/stations" className="t-body" style={{ color: 'var(--color-telemetry-text)' }}>
                   Station registry

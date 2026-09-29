@@ -24,35 +24,35 @@ export default function DashboardError({
   reset: () => void;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#070d1e] p-6 text-slate-200">
-      <div className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#0e1730] p-6 shadow-xl">
+    <main className="flex min-h-screen items-center justify-center bg-page p-6 text-ink">
+      <div className="w-full max-w-lg rounded-xl border border-warning/30 bg-card p-6 shadow-lg">
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-amber-400" aria-hidden="true" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">
+          <AlertTriangle className="h-5 w-5 text-warning-text" aria-hidden="true" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-warning-text">
             Operations console fault
           </p>
         </div>
 
-        <h1 className="mt-2 text-xl font-bold text-white">
+        <h1 className="mt-2 text-xl font-bold text-navy">
           The operations console stopped rendering
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
           A component on this screen threw during render. Common causes on this route are
           a map tile failure, a zero-size chart container, or a dropped telemetry
           socket. No observations were altered.
         </p>
 
         {error.digest && (
-          <p className="mt-3 font-mono text-[11px] text-slate-500">
-            Trace ID: <span className="text-slate-400">{error.digest}</span>
+          <p className="mt-3 font-mono text-[11px] text-ink-faint">
+            Trace ID: <span className="text-ink-muted">{error.digest}</span>
           </p>
         )}
 
-        <details className="mt-3 rounded-lg border border-slate-700 bg-slate-950/60 p-2">
-          <summary className="cursor-pointer text-[11px] text-slate-400">
+        <details className="mt-3 rounded-lg border border-hairline bg-surface-alt p-2">
+          <summary className="cursor-pointer text-[11px] text-ink-muted">
             Technical detail
           </summary>
-          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] text-slate-500">
+          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] text-ink-faint">
             {error.message}
           </pre>
         </details>
@@ -61,21 +61,21 @@ export default function DashboardError({
           <button
             type="button"
             onClick={reset}
-            className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-[#070d1e] transition-colors hover:bg-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="inline-flex items-center gap-2 rounded-lg bg-sky-deep px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-deep focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
             <RotateCw className="h-4 w-4" aria-hidden="true" />
             Retry console
           </button>
           <Link
             href="/mobile"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="inline-flex items-center gap-2 rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-ink-muted transition-colors hover:border-hairline-strong hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
             <Smartphone className="h-4 w-4" aria-hidden="true" />
             Field node
           </Link>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="inline-flex items-center gap-2 rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-ink-muted transition-colors hover:border-hairline-strong hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sky"
           >
             <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
             Home

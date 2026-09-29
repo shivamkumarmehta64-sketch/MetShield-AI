@@ -67,12 +67,12 @@ export function InvestigationPanel() {
             </div>
         </div>
 
-        <div className={`mt-4 p-3 rounded font-bold border ${isStorm ? 'bg-amber-100 text-amber-900 border-amber-300' : isFault ? 'bg-red-100 text-red-900 border-red-300' : 'bg-slate-100 text-slate-900 border-slate-300'}`}>
-            <div className="text-[10px] text-slate-500 mb-0.5">DECISION</div>
+        <div className={`mt-4 p-3 rounded font-bold border ${isStorm ? 'bg-weather-bg text-weather border-weather-border' : isFault ? 'bg-fault-bg text-fault-text border-fault-border' : 'bg-healthy-bg text-healthy-text border-healthy-border'}`}>
+            <div className="text-[10px] text-ink-muted mb-0.5">DECISION</div>
             {isStorm ? 'PRESERVE — GENUINE WEATHER EVENT' : isFault ? 'QUARANTINE — SENSOR ANOMALY' : 'NOMINAL'}
         </div>
         
-         <div className={`p-2 rounded text-[10px] border ${isStorm ? 'bg-amber-50 text-amber-800 border-amber-200' : isFault ? 'bg-red-50 text-red-800 border-red-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+         <div className={`p-2 rounded text-[10px] border ${isStorm ? 'bg-weather-bg text-weather border-weather-border' : isFault ? 'bg-fault-bg text-fault-text border-fault-border' : 'bg-surface-alt text-ink-muted border-hairline'}`}>
             <div className="font-bold mb-0.5">ACTION</div>
             {packet.operationalAction}
         </div>

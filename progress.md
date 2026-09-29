@@ -5,9 +5,9 @@
 
 ## Current Phase
 
-**Phase 4 — Visual QA / Polish.** Phase 1 (audit), Phase 2 (architecture map),
-and Phase 3 (implementation) closed 2026-09-29. All D1–D10 defects fixed and
-verified. Visual polish pass complete.
+**Phase 6 — Final Color & Visual Polish.** Completed 2026-09-29.
+Applied meteorological color system (sky `#38BDF8`, deep sky `#0EA5E9`, pressure `#8B5CF6`, humidity `#22D3EE`, wind `#34D399`, temperature `#FB923C`, critical `#EF4444`, healthy `#22C55E`, warning `#F59E0B`).
+Streamlined UI text across KPI cards, tables, maps, and operations panels following the NUMBER → LABEL → STATUS hierarchy.
 
 **Baseline verified 2026-09-29** — `npm run verify` green:
 lint 0 errors / 0 warnings · typecheck 0 errors · **14 test files, 132/132 tests** · `npm run build` succeeds (16 routes).

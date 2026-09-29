@@ -64,10 +64,9 @@ export default function StationsPage() {
         <section className="card overflow-hidden" aria-label="Station registry">
           <div className="border-b border-hairline px-5 py-3 flex flex-wrap items-center gap-3 justify-between">
             <div>
-              <h2 className="t-card-title">Registered observatories</h2>
+              <h2 className="t-card-title">AWS Stations</h2>
               <p className="t-meta">
-                {rows.length} of {snapshot.stations.length} stations shown · every row joined against
-                the station registry and the QC engine
+                {rows.length} of {snapshot.stations.length} stations shown · non-nominal sorted first
               </p>
             </div>
             <DataModeBadge />
