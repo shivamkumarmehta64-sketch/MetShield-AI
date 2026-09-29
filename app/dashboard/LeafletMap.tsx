@@ -86,10 +86,10 @@ const HEALTH_ORDER: StationHealth[] = ['FAULT', 'WEATHER_EVENT', 'DRIFT', 'TELEM
 const BASEMAPS = {
   light: {
     label: 'Light',
-    url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
-    subdomains: '',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    subdomains: 'abcd',
     maxZoom: 20,
-    attribution: '&copy; Stadia Maps &copy; OpenMapTiles &copy; OpenStreetMap',
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
   },
   streets: {
     label: 'Streets',
