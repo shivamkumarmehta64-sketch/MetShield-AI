@@ -241,7 +241,15 @@ export class NICWMOAnomalyEngine {
       inj.stepCount++;
       switch (inj.type) {
         case 'SENSOR_SPIKE':
-          rawT = 54.8 + Math.random() * 2.5;
+          // This is the one injection that used Math.random() unconditionally,
+          // ignoring `deterministic`. Every other noise term above is gated on
+          // that flag, so the seeded dataset was deterministic on every
+          // channel EXCEPT the spike — which made AWS-DEL-04 render a
+          // different temperature on the server than on the client and threw
+          // React's hydration error (#418) on every page that shows it.
+          // Derived from tickCount and station latitude like the jitter terms,
+          // so it still varies per tick and per station but is reproducible.
+          rawT = 54.8 + (deterministic ? Math.abs(Math.sin(tickCount * 11.7 + stationLat)) : Math.random()) * 2.5;
           break;
         case 'FROZEN_VALUE': {
           let c = this.frozenCache.get(stationId);

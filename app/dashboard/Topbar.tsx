@@ -231,7 +231,7 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
                 <span className="t-label block mb-1 text-ink-muted">Operational Data Mode</span>
                 <div className="p-3 rounded-lg border border-hairline bg-surface-alt flex items-center justify-between">
                   <div>
-                    <div className="font-semibold text-ink">{snapshot.dataMode} REPLAY</div>
+                    <div className="font-semibold text-ink">{snapshot.dataMode}</div>
                     <div className="t-meta text-[11.5px] mt-0.5">21 registered profiles · 14-tick deterministic pass</div>
                   </div>
                   <DataModeBadge />
