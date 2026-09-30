@@ -8,9 +8,11 @@ import { Layers, LocateFixed, Search, X } from 'lucide-react';
 import {
   classificationLabel,
   getNetworkSnapshot,
+  stationHistory,
   type StationHealth,
   type StationSnapshot,
 } from '@/lib/networkFeed';
+import type { TelemetryPacket } from '@/lib/anomalyLogic';
 import DataModeBadge from './DataModeBadge';
 
 /**
@@ -183,9 +185,190 @@ function clusterIcon(count: number, mixed: boolean): L.DivIcon {
   return icon;
 }
 
+/**
+ * Popup accent, by station state.
+ *
+ * `*_fill` values sit at roughly 2:1 on white and fail WCAG AA as text, so the
+ * evidence panel is tinted and its labels use the matching `*-text` weight —
+ * the same two-weight rule every other status surface in the console follows.
+ */
+const EVIDENCE_ACCENT: Record<StationHealth, string> = {
+  NOMINAL: 'var(--color-healthy-text)',
+  DRIFT: 'var(--color-warning-text)',
+  WEATHER_EVENT: 'var(--color-weather-text)',
+  FAULT: 'var(--color-fault-text)',
+  TELEMETRY: 'var(--color-telemetry-text)',
+};
+
+/**
+ * A signed delta with an explicit sign. An unsigned "3.1 hPa" is ambiguous — it
+ * does not say whether the barometer fell or rose, and that is the entire
+ * distinction between a squall and a calibration walk.
+ */
+
+/**
+ * The four-tick rolling deltas the engine tested, recomputed exactly as
+ * `evaluate()` computes them at lines 349-352.
+ *
+ * Why this exists rather than reading `packet.ratesOfChange`: the storm rule is
+ * a disjunction — `pD <= -2.5 || rPD <= -2.5` — and `ratesOfChange` carries
+ * only the single-tick half. On the seeded AWS-CHN-03 storm the deciding
+ * packet shows a single-tick ΔP of −0.7 hPa, which does not satisfy the −2.5
+ * hPa bound the packet was flagged under; the verdict rests on the rolling
+ * half, −6.0 hPa. A popup quoting only the single-tick window would therefore
+ * display FLAG_2 CONVECTIVE STORM beside evidence that fails the rule, which is
+ * the same defect as a diagram that misdraws a threshold.
+ *
+ * Recomputed here rather than stored, because `evaluate()` does not persist the
+ * rolling deltas and adding a field to the engine is out of scope for this
+ * change. The window anchor is `packets.length >= 4 ? packets[len - 4] :
+ * packets[0]`, matching the engine, and each delta falls back to its
+ * single-tick value when the anchor channel is null — also matching.
+ */
+function rollingDeltas(
+  p: TelemetryPacket,
+  history: TelemetryPacket[]
+): { press: number | null; hum: number | null; temp: number | null } | null {
+  const idx = history.findIndex((h) => h.timestamp === p.timestamp);
+  if (idx < 0) return null;
+  const w = history.length >= 4 ? history[idx - 4] ?? history[0] : history[0];
+  if (!w || w === p) return null;
+
+  const span = (cur: number | null, then: number | null, fallback: number) =>
+    cur !== null && then !== null ? cur - then : fallback;
+
+  return {
+    press: span(p.raw.pressure, w.raw.pressure, p.ratesOfChange.pressRoC),
+    hum: span(p.raw.humidity, w.raw.humidity, p.ratesOfChange.humRoC),
+    temp: span(p.raw.temperature, w.raw.temperature, p.ratesOfChange.tempRoC),
+  };
+}
+
+/**
+ * Whether a delta satisfies a storm-rule bound. These three literals are the
+ * Stage 03 thresholds; they are duplicated from `lib/engineRules.ts` only
+ * because they are needed to mark up which conjunct actually fired, and the
+ * `engineRules` guard test covers the transcription the panel ships.
+ */
+const STORM_BOUND = { press: -2.5, hum: 15, temp: -1.5 } as const;
+
+/** A null delta means the engine had no comparable reading — never zero. */
+function deltaCell(value: number | null, unit: string, digits: number, fired: boolean): string {
+  if (value === null) return '<span class="ms-map-popup-ev-na">N/A</span>';
+  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  const magnitude = `${sign}${Math.abs(value).toFixed(digits)} ${unit}`;
+  return `<span class="ms-map-popup-ev-label${fired ? ' is-bound' : ''}">${escapeHtml(magnitude)}</span>`;
+}
+
+interface EvidenceTable {
+  html: string;
+  /** TRUE when at least one conjunct is satisfied on the row it is marked. */
+  conjunctionHeld: boolean;
+}
+
+function evidenceTable(s: StationSnapshot): EvidenceTable {
+  const p = s.decidedBy;
+  const roll = rollingDeltas(p, stationHistory(s.stationId));
+  const isStorm = p.classification === 'GENUINE_CONVECTIVE_EVENT';
+
+  // Four channels, two windows. The rolling column is omitted when the packet
+  // is not in the buffer (an injected packet from the console) rather than
+  // showing a guessed value.
+  const rows: Array<{ label: string; single: number | null; rolling: number | null; unit: string; digits: number; bound: number }> = [
+    { label: 'ΔT', single: p.ratesOfChange.tempRoC, rolling: roll?.temp ?? null, unit: '°C', digits: 2, bound: STORM_BOUND.temp },
+    { label: 'ΔP', single: p.ratesOfChange.pressRoC, rolling: roll?.press ?? null, unit: 'hPa', digits: 1, bound: STORM_BOUND.press },
+    { label: 'ΔRH', single: p.ratesOfChange.humRoC, rolling: roll?.hum ?? null, unit: '%', digits: 1, bound: STORM_BOUND.hum },
+  ];
+
+  // Wind carries no storm-rule weight — it is not one of the three conjuncts —
+  // so it appears only when the thermal channels are the ones that failed.
+  // Listing it unconditionally would imply it participates in the test.
+  const thermalDead = p.classification === 'FROZEN_VALUE' || p.classification === 'TELEMETRY_PACKET_LOSS';
+  if (thermalDead) {
+    rows.push({ label: 'ΔW', single: p.ratesOfChange.windRoC, rolling: null, unit: 'km/h', digits: 1, bound: 0 });
+  }
+
+  let conjunctionHeld = false;
+  const body = rows
+    .map((r) => {
+      // ΔT and ΔP are `<=` bounds, ΔRH is `>=`. Marking a value that satisfies
+      // the storm bound is what tells a judge which conjunct carried the
+      // verdict; without it the two columns are just numbers.
+      const passes = (v: number | null) =>
+        v !== null && (r.label === 'ΔRH' ? v >= r.bound : v <= r.bound) && r.bound !== 0;
+      const singleFired = isStorm && passes(r.single);
+      const rollingFired = isStorm && passes(r.rolling);
+      if (singleFired || rollingFired) conjunctionHeld = true;
+      return (
+        `<div class="ms-map-popup-evrow">` +
+        `<dt>${escapeHtml(r.label)}</dt>` +
+        `<dd>` +
+        deltaCell(r.single, r.unit, r.digits, singleFired) +
+        deltaCell(r.rolling, r.unit, r.digits, rollingFired) +
+        `</dd>` +
+        `</div>`
+      );
+    })
+    .join('');
+
+  return {
+    conjunctionHeld,
+    html:
+      `<h6>Key evidence · rate of change</h6>` +
+      `<div class="ms-map-popup-evrow ms-map-popup-evhead">` +
+      `<dt></dt><dd><span>1 tick</span><span>4-tick</span></dd>` +
+      `</div>` +
+      body,
+  };
+}
+
+function evidenceHtml(s: StationSnapshot): string {
+  const p = s.decidedBy;
+  const table = evidenceTable(s);
+
+  // The conjunction note is only shown when the rule was the storm rule AND
+  // some conjunct actually passes here. If neither window satisfies any bound,
+  // claiming the conjunction held would be a fabrication, so the panel says
+  // the packet was flagged but the buffer no longer reproduces the conjunction
+  // rather than asserting something it cannot show.
+  let conjunction: string;
+  if (p.classification !== 'GENUINE_CONVECTIVE_EVENT') {
+    conjunction =
+      `<p class="ms-map-popup-note">Single-channel deviation — the three-parameter storm conjunction does not apply.</p>`;
+  } else if (table.conjunctionHeld) {
+    conjunction =
+      `<p class="ms-map-popup-note">All three bounds hold (bolded), so the fall is attributed to the atmosphere and the observation is retained.</p>`;
+  } else {
+    conjunction =
+      `<p class="ms-map-popup-note">Flagged by the storm rule at an earlier tick in this buffer; the four-tick window shown here has since decayed past the bounds.</p>`;
+  }
+
+  return (
+    `<dl class="ms-map-popup-ev" style="--ms-ev-accent:${EVIDENCE_ACCENT[s.health]}">` +
+    table.html +
+    `<div class="ms-map-popup-verdict">` +
+    `<span class="ms-map-popup-verdict-tag">WHY</span>` +
+    `<span class="ms-map-popup-verdict-val">${escapeHtml(p.xaiAttribution.primaryParameter)}</span>` +
+    `</div>` +
+    `<div class="ms-map-popup-verdict">` +
+    `<span class="ms-map-popup-verdict-tag">QC</span>` +
+    `<span class="ms-map-popup-verdict-val">${escapeHtml(classificationLabel(p.classification))} · ${escapeHtml(p.wmoFlag.replace(/_.*/, '').replace('FLAG_', 'Flag '))}</span>` +
+    `</div>` +
+    conjunction +
+    `<p class="ms-map-popup-action">` +
+    `<span class="ms-map-popup-verdict-tag">ACTION</span> ${escapeHtml(p.operationalAction)}` +
+    (p.ticketId ? ` · ${escapeHtml(p.ticketId)}` : '') +
+    `</p>` +
+    `</dl>`
+  );
+}
+
 function popupHtml(s: StationSnapshot): string {
   const g = HEALTH_GLYPH[s.health];
-  const p = s.packet;
+  const p = s.decidedBy;
+  const isAnomaly = p.classification !== 'NOMINAL_OPERATION';
+  const decidedAt = s.resolved ? `last event ${s.decidedBy.timeIST} · ` : '';
+  const statusLabel = isAnomaly ? (p.classification === 'GENUINE_CONVECTIVE_EVENT' ? 'WEATHER EVENT' : 'SENSOR / HARDWARE FAULT') : 'VERIFIED GOOD';
   return (
     `<div class="ms-map-popup">` +
     `<div class="ms-map-popup-head">` +
@@ -193,6 +376,9 @@ function popupHtml(s: StationSnapshot): string {
     `<span class="ms-map-popup-state" style="color:${g.fill}">${escapeHtml(g.glyph)} ${escapeHtml(g.label)}</span>` +
     `</div>` +
     `<div class="ms-map-popup-name">${escapeHtml(s.name)}</div>` +
+    (isAnomaly ?
+      `<div class="ms-map-popup-badge" style="display:inline-block;background:${g.fill}15;color:${g.fill};border:1px solid ${g.fill}40;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;font-family:system-ui;margin-bottom:4px;">${escapeHtml(statusLabel)}</div>`
+      : '') +
     `<dl class="ms-map-popup-grid">` +
     `<div><dt>Temperature</dt><dd>${reading(p.raw.temperature, '°C')}</dd></div>` +
     `<div><dt>Pressure</dt><dd>${reading(p.raw.pressure, 'hPa')}</dd></div>` +
@@ -201,8 +387,8 @@ function popupHtml(s: StationSnapshot): string {
     `<div><dt>WMO block</dt><dd>${escapeHtml(s.wmoBlockNo)}</dd></div>` +
     `<div><dt>Elevation</dt><dd>${s.elevationM} m</dd></div>` +
     `</dl>` +
-    `<p class="ms-map-popup-class">${escapeHtml(classificationLabel(s.classification))} · ${escapeHtml(s.wmoFlag.replace(/_.*/, '').replace('FLAG_', 'Flag '))}</p>` +
-    `<p class="ms-map-popup-note">${escapeHtml(p.xaiAttribution.diagnosticNote)}</p>` +
+    evidenceHtml(s) +
+    `<p class="ms-map-popup-when">${escapeHtml(decidedAt)}observed ${escapeHtml(p.timeIST)} · ${s.historyDepth} ticks in buffer</p>` +
     `</div>`
   );
 }

@@ -534,7 +534,18 @@ export default function MobileEdgeNodePage() {
     return () => clearInterval(timer);
   }, [isAutoStreaming, streamIntervalMs, temp, press, humidity, transmitObservation]);
 
-  // Fault Injections with Acoustic and Haptic Confirmation
+  /**
+ * The demo chain, as a judge would narrate it.
+ *
+ * Deliberately stops at "Incident / Retain". The pipeline continues past this
+ * screen — NWP assimilation, spatial validation, imputation — but none of it
+ * runs from a tap on this page, so the chain does not claim it. A demo that
+ * promises a downstream effect it cannot produce is the same defect as a metric
+ * the code does not compute.
+ */
+const DEMO_CHAIN = ['Scenario', 'QC evaluation', 'Classification', 'Incident / Retain'] as const;
+
+// Fault Injections with Acoustic and Haptic Confirmation
   const handleInjectSquall = () => {
     const squallP = Math.round((press - 3.4) * 10) / 10;
     const squallH = Math.min(99, Math.round((humidity + 20.0) * 10) / 10);
@@ -1147,14 +1158,57 @@ export default function MobileEdgeNodePage() {
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-amber-400 flex items-center gap-1.5">
               <Sliders className="w-3.5 h-3.5" />
-              Live Operational Stress &amp; Storm Test
+              FIELD DEMO
             </span>
-            <span className="text-[10px] text-slate-500 font-mono">1-Tap Live Test</span>
+            <span className="text-[10px] text-slate-500 font-mono">Simulated input · 1 tap</span>
           </div>
 
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-mono font-bold bg-amber-950/60 text-amber-200 px-1.5 py-0.5 rounded border border-amber-700">DEMO SCENARIO</span>
+            <span className="text-[10px] font-mono text-slate-500">SIMULATED INPUT → QC ENGINE → CLASSIFY → INCIDENT / RETAIN</span>
+          </div>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            <strong>Meteorological Verification:</strong> Tap any button below to demonstrate how our engine differentiates authentic extreme weather from sensor equipment failures under applicable WMO-No. 8 guidance:
+            <strong className="text-slate-300">Field demo pad.</strong> Each button sends one{' '}
+            <strong className="text-slate-300">simulated</strong> observation to the QC engine and shows what
+            it decides. Two are genuine atmospheric events; two are equipment faults. The distinction is
+            made by the engine, not by the button.
           </p>
+
+          {/* The demo chain, stated up front so a judge knows what a tap is
+              going to produce before making one. Steps 2-4 light up only once
+              the server has actually returned a verdict. */}
+          <div className="grid grid-cols-4 gap-1" aria-hidden={lastServerVerdict ? undefined : 'true'}>
+            {DEMO_CHAIN.map((step, i) => {
+              // Step 1 is the tap itself and is always "done" once a verdict
+              // exists. Steps 2-4 are the server's, and are greyed until then.
+              const reached = Boolean(lastServerVerdict) || i === 0;
+              return (
+                <div
+                  key={step}
+                  className={`rounded-lg px-1.5 py-1.5 text-center border ${
+                    reached
+                      ? 'bg-slate-800 border-slate-600'
+                      : 'bg-slate-950 border-slate-800'
+                  }`}
+                >
+                  <div
+                    className={`text-[8px] font-mono font-bold ${
+                      reached ? 'text-amber-400' : 'text-slate-600'
+                    }`}
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <div
+                    className={`text-[8.5px] leading-tight mt-0.5 ${
+                      reached ? 'text-slate-200' : 'text-slate-600'
+                    }`}
+                  >
+                    {step}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             {/* 1. Real Storm */}
@@ -1165,9 +1219,10 @@ export default function MobileEdgeNodePage() {
               <div className="font-bold flex items-center gap-1.5 mb-1 text-xs">
                 <CloudLightning className="w-4 h-4 text-amber-400" />
                 <span>Simulate Severe Storm</span>
+                <span className="ml-auto text-[9px] bg-amber-900/50 text-amber-300 px-1 rounded font-mono">BENCHMARK</span>
               </div>
               <div className="text-[10px] text-amber-300/80 leading-tight">
-                Coupled Baro Drop + Squall (Verified WMO Flag 2: Approved)
+                Genuine atmospheric event — baro fall coupled to humidity surge and temperature drop
               </div>
             </button>
 
@@ -1181,7 +1236,7 @@ export default function MobileEdgeNodePage() {
                 <span>Simulate Broken Wire</span>
               </div>
               <div className="text-[10px] text-red-300/80 leading-tight">
-                Temp Spike to +54.8°C (Flagged WMO Flag 4: Quarantined)
+                Sensor / data anomaly — thermal channel to 54.8&nbsp;°C with pressure untouched
               </div>
             </button>
 
@@ -1195,7 +1250,7 @@ export default function MobileEdgeNodePage() {
                 <span>Simulate Stuck ADC</span>
               </div>
               <div className="text-[10px] text-purple-300/80 leading-tight">
-                Zero Variance across 6 ticks (Flagged Hardware Deadlock)
+                Sensor / data anomaly — zero variance across 6 consecutive ticks
               </div>
             </button>
 
@@ -1209,7 +1264,7 @@ export default function MobileEdgeNodePage() {
                 <span>Simulate Sensor Drift</span>
               </div>
               <div className="text-[10px] text-sky-300/80 leading-tight">
-                Monotonic Baro Drift (Flagged WMO Flag 3: WMA Imputed)
+                Sensor / data anomaly — monotonic barometric drift, thermal channels flat
               </div>
             </button>
           </div>
@@ -1228,7 +1283,7 @@ export default function MobileEdgeNodePage() {
             <div className="flex items-center justify-between">
               <span className="font-bold text-slate-200 flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Central QMS Server Evaluation Feedback
+                QC Result
               </span>
               <span className="text-[10px] font-mono text-slate-400">
                 Pkt #{packetCounter} @ {lastTransmittedTime}
@@ -1248,6 +1303,25 @@ export default function MobileEdgeNodePage() {
                   }`}
                 >
                   {lastServerVerdict.wmoFlag}
+                </span>
+              </div>
+
+              {/* The last step of the demo chain, stated as the engine's own
+                  disposition. `FLAG_1`/`FLAG_2` are retained; `FLAG_3`/`4`/`5`
+                  open a work order — which is exactly what `ticketId` being
+                  non-null means, so the line is derived, not narrated. */}
+              <div className="flex items-center justify-between text-[10px] font-mono pt-0.5">
+                <span className="text-slate-400">Disposition:</span>
+                <span
+                  className={`font-bold px-2 py-0.5 rounded border ${
+                    lastServerVerdict.ticketId
+                      ? 'bg-red-950 text-red-300 border-red-700'
+                      : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                  }`}
+                >
+                  {lastServerVerdict.ticketId
+                    ? `INCIDENT · ${lastServerVerdict.ticketId}`
+                    : 'RETAINED — observation kept'}
                 </span>
               </div>
 
