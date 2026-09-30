@@ -44,12 +44,12 @@
   /* ── Meteorological Parameters ── */
   --color-met-temp-cool: #38BDF8;
   --color-met-temp-normal: #FACC15;
-  --color-met-temp-hot: #FB923C;
+  --color-met-temp-hot: #F97316;
   --color-met-temp-extreme: #EF4444;
-  --color-met-temperature: var(--color-met-temp-hot); /* chart series alias */
+  --color-met-temperature: #F97316; /* chart series alias */
   --color-met-pressure: #8B5CF6;
-  --color-met-humidity: #22D3EE;
-  --color-met-wind: #34D399;
+  --color-met-humidity: #06B6D4;
+  --color-met-wind: #10B981;
   --color-met-rain: #3B82F6;
 
   /* ── Semantic status ── */
@@ -61,9 +61,9 @@
   --color-warning-bg: #FFFBEB;
   --color-warning-border: #FDE68A;
 
-  --color-weather: #FB923C;
-  --color-weather-bg: #FFF7ED;
-  --color-weather-border: #FED7AA;
+  --color-weather: #0EA5E9;
+  --color-weather-bg: #F0F9FF;
+  --color-weather-border: #BAE6FD;
 
   --color-critical: #EF4444;
   --color-fault: #EF4444;
@@ -83,6 +83,7 @@
   /* ── Text-weight status ramp (Passes AA as text) ── */
   --color-healthy-text: #16A34A;
   --color-warning-text: #D97706;
+  --color-weather-text: #0284C7;
   --color-critical-text: #DC2626;
   --color-fault-text: #DC2626;
   --color-ai-text: #7C3AED;

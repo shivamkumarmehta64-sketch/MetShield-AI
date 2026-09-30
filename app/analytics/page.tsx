@@ -231,6 +231,106 @@ export default function AnalyticsPage() {
           </section>
         </div>
 
+        {/* Multi-Parameter Observation Channel Health */}
+        <section className="card overflow-hidden" aria-label="Observation channel parameters">
+          <div className="border-b border-hairline px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="t-card-title text-navy">Observation Channel Parameters</h2>
+              <p className="t-meta">Network-wide telemetry distribution across active meteorological channels.</p>
+            </div>
+            <span className="t-label font-mono text-[10.5px] px-2 py-0.5 rounded bg-surface-alt border border-hairline text-ink-muted">
+              5 CHANNELS
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-hairline">
+            {/* Temperature */}
+            <div className="p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-temperature)' }} />
+                  <span className="t-label text-ink-muted">TEMPERATURE</span>
+                </div>
+                <div className="t-mono text-[22px] font-bold text-ink">
+                  {(snapshot.stations.reduce((acc, s) => acc + (s.packet.raw.temperature ?? 0), 0) / snapshot.stations.length).toFixed(1)}
+                  <span className="text-xs text-ink-muted font-normal ml-1">°C avg</span>
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] font-mono text-ink-faint border-t border-hairline pt-2">
+                Min: {Math.min(...snapshot.stations.map((s) => s.packet.raw.temperature ?? 999)).toFixed(1)}°C · Max: {Math.max(...snapshot.stations.map((s) => s.packet.raw.temperature ?? -999)).toFixed(1)}°C
+              </div>
+            </div>
+
+            {/* Pressure */}
+            <div className="p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-pressure)' }} />
+                  <span className="t-label text-ink-muted">PRESSURE</span>
+                </div>
+                <div className="t-mono text-[22px] font-bold text-ink">
+                  {(snapshot.stations.reduce((acc, s) => acc + (s.packet.raw.pressure ?? 0), 0) / snapshot.stations.length).toFixed(1)}
+                  <span className="text-xs text-ink-muted font-normal ml-1">hPa avg</span>
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] font-mono text-ink-faint border-t border-hairline pt-2">
+                Min: {Math.min(...snapshot.stations.map((s) => s.packet.raw.pressure ?? 9999)).toFixed(1)} · Max: {Math.max(...snapshot.stations.map((s) => s.packet.raw.pressure ?? 0)).toFixed(1)} hPa
+              </div>
+            </div>
+
+            {/* Humidity */}
+            <div className="p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-humidity)' }} />
+                  <span className="t-label text-ink-muted">HUMIDITY</span>
+                </div>
+                <div className="t-mono text-[22px] font-bold text-ink">
+                  {(snapshot.stations.reduce((acc, s) => acc + (s.packet.raw.humidity ?? 0), 0) / snapshot.stations.length).toFixed(0)}
+                  <span className="text-xs text-ink-muted font-normal ml-1">% avg</span>
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] font-mono text-ink-faint border-t border-hairline pt-2">
+                Min: {Math.min(...snapshot.stations.map((s) => s.packet.raw.humidity ?? 100)).toFixed(0)}% · Max: {Math.max(...snapshot.stations.map((s) => s.packet.raw.humidity ?? 0)).toFixed(0)}%
+              </div>
+            </div>
+
+            {/* Wind */}
+            <div className="p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-wind)' }} />
+                  <span className="t-label text-ink-muted">WIND GUST</span>
+                </div>
+                <div className="t-mono text-[22px] font-bold text-ink">
+                  {(snapshot.stations.reduce((acc, s) => acc + (s.packet.raw.windSpeedKph ?? 0), 0) / snapshot.stations.length).toFixed(1)}
+                  <span className="text-xs text-ink-muted font-normal ml-1">km/h avg</span>
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] font-mono text-ink-faint border-t border-hairline pt-2">
+                Peak: {Math.max(...snapshot.stations.map((s) => s.packet.raw.windSpeedKph ?? 0)).toFixed(1)} km/h
+              </div>
+            </div>
+
+            {/* Rain */}
+            <div className="p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-rain)' }} />
+                  <span className="t-label text-ink-muted">PRECIPITATION</span>
+                </div>
+                <div className="t-mono text-[22px] font-bold text-ink">
+                  {(snapshot.stations.reduce((acc, s) => acc + (s.packet.raw.rainfallMm10min ?? 0), 0)).toFixed(1)}
+                  <span className="text-xs text-ink-muted font-normal ml-1">mm total</span>
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] font-mono text-ink-faint border-t border-hairline pt-2">
+                Max cell: {Math.max(...snapshot.stations.map((s) => s.packet.raw.rainfallMm10min ?? 0)).toFixed(1)} mm
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="card overflow-hidden" aria-label="State summary">
           <div className="border-b border-hairline px-5 py-3">
             <h2 className="t-card-title">Current network state</h2>

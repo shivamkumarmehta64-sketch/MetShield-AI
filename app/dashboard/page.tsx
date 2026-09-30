@@ -100,7 +100,6 @@ function DashboardTabs() {
   const search = useSearchParams();
   const active = search.get('tab');
   const activeTab: TabKey = isTab(active) ? active : 'matrix';
-  const { state } = useSystem();
 
   return (
     <>
@@ -141,14 +140,14 @@ function DashboardTabs() {
 
       <div className="pt-5">
         {activeTab === 'matrix' && (
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr,300px] gap-5">
-            <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr,360px] gap-5">
+            <div className="flex flex-col gap-5 min-w-0">
               <LeafletMap />
               <StationTable />
             </div>
             <div className="flex flex-col gap-5">
+              <InvestigationPanel />
               <ScenarioControls />
-              {state.selectedStationId && <InvestigationPanel />}
             </div>
           </div>
         )}

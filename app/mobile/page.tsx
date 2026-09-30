@@ -274,7 +274,7 @@ export default function MobileEdgeNodePage() {
           if (!isNaN(p)) setPress(Math.round(p * 10) / 10);
           if (!isNaN(h)) setHumidity(Math.round(h * 10) / 10);
           const provName = payload.provider === 'WEATHERSTACK' ? 'Weatherstack API' : 'Open-Meteo';
-          setLiveDataStatus(`Live Weather Synced via ${provName}: ${locationLabel || `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`} at ${new Date().toLocaleTimeString('en-IN', { hour12: false })}`);
+          setLiveDataStatus(`Field baseline synced via ${provName} (External Reference API): ${locationLabel || `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`} at ${new Date().toLocaleTimeString('en-IN', { hour12: false })}`);
           return;
         }
       }
@@ -291,7 +291,7 @@ export default function MobileEdgeNodePage() {
           if (!isNaN(t)) setTemp(Math.round(t * 10) / 10);
           if (!isNaN(p)) setPress(Math.round(p * 10) / 10);
           if (!isNaN(h)) setHumidity(Math.round(h * 10) / 10);
-          setLiveDataStatus(`Live Weather Synced: ${locationLabel || `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`} at ${new Date().toLocaleTimeString('en-IN', { hour12: false })}`);
+          setLiveDataStatus(`Field baseline synced (External Reference API): ${locationLabel || `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`} at ${new Date().toLocaleTimeString('en-IN', { hour12: false })}`);
         }
       }
     } catch {
@@ -842,7 +842,7 @@ export default function MobileEdgeNodePage() {
               <Activity className="w-3.5 h-3.5 text-amber-400" />
               Primary Atmospheric Measurements
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">WMO-No. 8 Compliant</span>
+            <span className="text-[10px] text-slate-400 font-mono">Aligned with WMO-No. 8 guidance</span>
           </div>
 
           {/* 3 Primary Thermodynamic Gauges */}
@@ -1153,7 +1153,7 @@ export default function MobileEdgeNodePage() {
           </div>
 
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            <strong>Meteorological Verification:</strong> Tap any button below to demonstrate how our WMO-No. 8 engine differentiates authentic extreme weather from sensor equipment failures in real time:
+            <strong>Meteorological Verification:</strong> Tap any button below to demonstrate how our engine differentiates authentic extreme weather from sensor equipment failures under applicable WMO-No. 8 guidance:
           </p>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1243,7 +1243,7 @@ export default function MobileEdgeNodePage() {
                     lastServerVerdict.wmoFlag === 'FLAG_1_VERIFIED_GOOD'
                       ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                       : lastServerVerdict.wmoFlag === 'FLAG_2_CONVECTIVE_STORM'
-                      ? 'bg-amber-950 text-amber-300 border border-amber-700'
+                      ? 'bg-sky-950 text-sky-300 border border-sky-700'
                       : 'bg-red-950 text-red-300 border border-red-700'
                   }`}
                 >

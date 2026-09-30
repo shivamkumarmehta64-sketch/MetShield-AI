@@ -73,19 +73,7 @@ changes what every number on the dashboard means.
 Detected from `package.json`. Do not substitute frameworks or add dependencies without
 being asked.
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js `16.3.4`, App Router |
-| Language | TypeScript 5, `strict: true` |
-| Styling | Tailwind CSS 4 (`@theme` block in `app/globals.css`) |
-| Charts | Recharts 3 |
-| Maps | Leaflet 5 + `react-leaflet` 5 |
-| Animation | Framer Motion 13, `lucide-react` icons |
-| Tests | Vitest 5 |
-| Lint | ESLint 9 + `eslint-config-next` |
-| AI | AI SDK 7, `@ai-sdk/openai` (`gpt-4o-mini`, optional) |
-| Edge target | Cloudflare Workers via `vinext` / `wrangler` |
-| Deploy | Vercel (`vercel.json`) |
+Read `package.json` for the exact framework and dependency versions.
 
 **Next 16 specifics already in this repo:** use `proxy.ts`, not `middleware.ts`
 (`middleware.ts` has been deleted). Prefer the default Node.js runtime over
@@ -116,28 +104,10 @@ reimplement it.
 | Provenance registry | `lib/dataProvenance.ts` |
 | D1 work-order store | `lib/d1Adapter.ts` |
 
-**WMO quality flags** (`WMOQualityFlag`, `lib/anomalyLogic.ts:5`):
-
-```
-FLAG_1_VERIFIED_GOOD  FLAG_2_CONVECTIVE_STORM  FLAG_3_SUSPECT_DRIFT
-FLAG_4_CORRUPT_HARDWARE  FLAG_5_PACKET_LOSS
-```
-
-**Root causes** (`RootCauseClassification`): `NOMINAL_OPERATION`,
-`GENUINE_CONVECTIVE_EVENT`, `SENSOR_SPIKE`, `FROZEN_VALUE`, `CALIBRATION_DRIFT`,
-`TELEMETRY_PACKET_LOSS`.
-
 **Storm discrimination invariant** (the load-bearing rule): a pressure drop
 ΔP ≤ −2.5 hPa is only a storm if it is *coupled* to ΔRH ≥ +15 and ΔT ≤ −1.5.
 A pressure drop alone is drift. Changing this threshold changes what the product
 is — treat it as a domain decision, not a tuning knob.
-
-**Routes:** `/` `/dashboard` `/incidents` `/analytics` `/audit-report` `/stations`
-`/mobile` `/demo`.
-
-**API:** `/api/telemetry` (write, PSK-auth), `/api/weather` (live Open-Meteo),
-`/api/ai/copilot`, `/api/ai/tools`, `/api/assistant`, `/api/network-ip`,
-`/api/og/certificate`, `/api/telemetry/cron`.
 
 ---
 
@@ -149,21 +119,6 @@ Dense but readable.
 **The theme is LIGHT, not dark.** `app/globals.css` ships a light operations console
 (`--color-page: #F8FAFC`). There is no `data-theme="dark"` block any more. Do not
 reintroduce one, and do not reintroduce the retired brand red `#C0162C`.
-
-### Tokens (from `@theme` in `app/globals.css`)
-
-| Meaning | Token | Value |
-|---|---|---|
-| Brand / institution | `--color-navy` | `#0B1F3A` |
-| | `--color-navy-deep` | `#123B63` |
-| | `--color-sky` | `#1683D8` |
-| | `--color-teal` | `#0E9F9A` |
-| Page surface | `--color-page` | `#F8FAFC` |
-| Card surface | `--color-card` | `#FFFFFF` |
-| Hairline | `--color-hairline` | `#E2E8F0` |
-| Ink / muted / faint | `--color-ink` | `#0B1F33` |
-| | `--color-ink-muted` | `#475569` |
-| | `--color-ink-faint` | `#94A3B8` |
 
 ### Colour carries exactly one axis: operational status
 

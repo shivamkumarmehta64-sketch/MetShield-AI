@@ -3,46 +3,29 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { IMD_AWS_STATIONS } from '@/lib/stationData';
-import { DISTRICT_REGISTRY_COUNTS, DISTRICT_REGISTRY_STATEMENT } from '@/lib/dataProvenance';
+import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 import { DATA_MODE } from '@/lib/networkFeed';
-import OperationsBand from '@/components/landing/OperationsBand';
 import QcPipelineBand from '@/components/landing/QcPipelineBand';
 import StationTableBand from '@/components/landing/StationTableBand';
 import ProvenanceBand from '@/components/landing/ProvenanceBand';
+import HeroVisual from '@/components/landing/HeroVisual';
+import NetworkSnapshotBand from '@/components/landing/NetworkSnapshotBand';
+import WhatChangedBand from '@/components/landing/WhatChangedBand';
+import HowMetshieldDecidesBand from '@/components/landing/HowMetshieldDecidesBand';
 
 /**
- * The public page.
- *
- * WHAT CHANGED AND WHY
- * --------------------
- * The previous version of this file set `data-theme="dark"` on its root and
- * then hardcoded #0A0A0A / #141414 / #1E1E1E / #C0162C inline at roughly forty
- * call sites. That bypassed the design tokens in app/globals.css entirely and
- * re-introduced, on the front page, the exact brand red that globals.css had
- * retired so that red would mean "critical fault and nothing else". It also
- * carried a set of claims the code does not support. All of it is gone.
- *
- * The dark terminal that sat in the hero is also gone, and that is a deletion
- * rather than a restyle. It appended lines like
- *
- *     [174829] RECV: NODE_1042  T:27.44C  P:1006.2hPa  -> ACQUIRED
- *
- * every 400 ms from Math.random(), under a pulsing dot labelled LIVE. No
- * packet was received; nothing was acquired. A judge who scrolls for ten
- * seconds finds that in the first screen, and having found it, discounts
- * every other number on the page. Removing it costs the page its most
- * eye-catching element and buys back the page's credibility.
- *
- * WHAT IS LEFT
- * ------------
- * A rail of sections beside the operations band, which is the console's own
- * data rather than a picture of it. Everything numeric on this page is read
- * from lib/ at render time.
+ * The public landing page for MetShield AI.
+ * 
+ * Strict adherence to:
+ * - Weather-native adaptive UI (light operations console, calm background, semantic colors)
+ * - Benchmark honesty: "Nothing in this build is live" / BENCHMARK DATA MODE
+ * - Immediate answer to: "Did the atmosphere change — or did the sensor?"
+ * - WHAT -> WHERE -> WHY -> ACTION hierarchy.
  */
 
-/** The rail is navigation, not decoration: these are sections a reader walks. */
 const SECTIONS = [
   { id: 'platform', label: 'Platform' },
+  { id: 'what-changed', label: 'What changed?' },
   { id: 'qc-engine', label: 'QC engine' },
   { id: 'network', label: 'Network' },
   { id: 'provenance', label: 'Provenance' },
@@ -50,6 +33,7 @@ const SECTIONS = [
 
 const NAV = [
   { href: '#platform', label: 'Platform' },
+  { href: '#what-changed', label: 'What changed?' },
   { href: '#qc-engine', label: 'QC engine' },
   { href: '#network', label: 'Network' },
   { href: '#provenance', label: 'Provenance' },
@@ -67,10 +51,6 @@ function useActiveSection(ids: readonly string[]): string {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // The active section is the topmost one currently intersecting the
-        // viewport. Picking the last entry in document order rather than
-        // whichever fired last stops the rail flickering between two
-        // sections that are both partly on screen.
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -92,79 +72,65 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans" style={{ background: 'var(--page)', color: 'var(--ink)' }}>
-      {/* ─── Header ────────────────────────────────────────────────────────
-          Nav is sentence case and 13px. It is a wayfinding strip for a
-          technical reader, not a brand banner. */}
+      {/* ─── Tricolor Institutional Bar ──────────────────────────────────── */}
+      <div className="flex w-full h-[2.5px] shrink-0" aria-hidden="true">
+        <div className="flex-1 bg-[#FF9933]" />
+        <div className="flex-1 bg-white border-y border-hairline/40" />
+        <div className="flex-1 bg-[#138808]" />
+      </div>
+
+      {/* ─── Institutional Header ────────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-40"
-        style={{ background: 'var(--card)', borderBottom: '1px solid var(--hairline)' }}
+        className="sticky top-0 z-40 bg-card border-b border-hairline shadow-xs"
       >
-        <div className="mx-auto flex items-center justify-between gap-4" style={{ maxWidth: 1500, padding: '0 20px', height: 54 }}>
-          <div className="flex items-baseline gap-2.5">
-            <span style={{ width: 9, height: 9, background: 'var(--brand)', display: 'inline-block' }} aria-hidden />
-            <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>MetShield AI</span>
-            <span className="t-mono" style={{ fontSize: 11, color: 'var(--ink-muted)' }}>
-              AWS quality management
-            </span>
+        <div className="mx-auto flex items-center justify-between gap-4" style={{ maxWidth: 1500, padding: '0 20px', height: 56 }}>
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-xs bg-navy" aria-hidden />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-bold tracking-tight text-navy">METSHIELD AI</span>
+                <span className="t-label hidden sm:inline-block px-1.5 py-0.5 rounded bg-surface-alt border border-hairline text-ink-muted text-[10px]">
+                  AWS QUALITY MANAGEMENT SYSTEM
+                </span>
+              </div>
+              <div className="text-[11px] text-ink-muted font-mono hidden md:block">
+                Ministry of Earth Sciences · IMD Automated Observation Network
+              </div>
+            </div>
           </div>
 
-          <nav aria-label="Sections" className="hidden md:flex items-center gap-1">
+          <nav aria-label="Sections" className="hidden lg:flex items-center gap-1">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="t-body"
-                style={{ color: 'var(--ink-muted)', textDecoration: 'none', padding: '6px 9px', fontSize: 13 }}
+                className="t-body text-ink-muted hover:text-navy hover:bg-surface-hover transition-colors rounded px-2.5 py-1.5 text-[13px]"
               >
                 {item.label}
               </Link>
             ))}
+          </nav>
+
+          <div className="flex items-center gap-2.5">
+            <span className="t-label font-mono px-2 py-1 rounded border border-hairline bg-surface-alt text-ink font-semibold text-[11px]">
+              {DATA_MODE}
+            </span>
             <Link
               href="/dashboard"
-              style={{
-                fontSize: 12.5,
-                fontWeight: 600,
-                padding: '7px 14px',
-                background: 'var(--brand)',
-                color: 'var(--accent-fg)',
-                textDecoration: 'none',
-                borderRadius: 4,
-                marginLeft: 6,
-                display: 'inline-block',
-              }}
+              className="text-[12.5px] font-semibold px-3.5 py-1.5 bg-navy text-white hover:bg-navy-deep transition-colors rounded shadow-xs"
             >
               Open console
             </Link>
-          </nav>
-
-          <Link
-            href="/dashboard"
-            className="t-body md:hidden"
-            style={{
-              fontWeight: 600,
-              padding: '7px 12px',
-              background: 'var(--brand)',
-              color: 'var(--accent-fg)',
-              textDecoration: 'none',
-              borderRadius: 4,
-              fontSize: 13,
-            }}
-          >
-            Console
-          </Link>
+          </div>
         </div>
       </header>
 
       <div className="flex-1 mx-auto w-full" style={{ maxWidth: 1500, padding: '0 20px' }}>
-        {/* ─── Rail + operations band ───────────────────────────────────────
-            The rail is sticky and the band sits beside it for the whole
-            height of the page. On a laptop this reads as one wide console
-            with a contents list; scrolling moves the left column of sections,
-            never the panel. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[188px_1fr] gap-x-8" style={{ paddingTop: 22, paddingBottom: 40 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[196px_1fr] gap-x-8" style={{ paddingTop: 24, paddingBottom: 48 }}>
+          {/* Navigation Rail */}
           <nav aria-label="On this page" className="hidden lg:block">
-            <div className="sticky" style={{ top: 76 }}>
-              <h2 className="t-label" style={{ marginBottom: 8 }}>On this page</h2>
+            <div className="sticky" style={{ top: 80 }}>
+              <h2 className="t-label" style={{ marginBottom: 10 }}>On this page</h2>
               {SECTIONS.map((s, i) => (
                 <a
                   key={s.id}
@@ -177,7 +143,7 @@ export default function LandingPage() {
                 </a>
               ))}
 
-              <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--hairline)' }}>
+              <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
                 <div className="t-label" style={{ marginBottom: 5 }}>Data mode</div>
                 <div className="t-mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>{DATA_MODE}</div>
                 <p className="t-meta" style={{ marginTop: 5, fontSize: 11 }}>
@@ -188,72 +154,89 @@ export default function LandingPage() {
             </div>
           </nav>
 
-          <main className="flex flex-col" style={{ gap: 44, minWidth: 0 }}>
-            {/* ── 01 Platform ── */}
-            <section id="platform" className="land-anchor" aria-labelledby="platform-h">
-              <div style={{ maxWidth: '76ch' }}>
-                <h1 id="platform-h" className="t-page-title">
-                  Automatic weather station quality control, decided by rules you can read.
+          {/* Main Content Stream */}
+          <main className="flex flex-col" style={{ gap: 40, minWidth: 0 }}>
+            {/* ── 01 Platform Hero ── */}
+            <section id="platform" className="land-anchor space-y-6" aria-labelledby="platform-h">
+              <div style={{ maxWidth: '82ch' }}>
+                <div className="t-label text-sky-deep font-bold tracking-wider mb-2">
+                  AUTOMATIC WEATHER STATION QUALITY CONTROL
+                </div>
+                <h1 id="platform-h" className="t-page-title text-navy font-bold leading-tight">
+                  Know whether the atmosphere changed — or the sensor did.
                 </h1>
-                <p className="t-body" style={{ marginTop: 12, color: 'var(--ink-muted)', fontSize: 15.5, lineHeight: 1.6 }}>
-                  MetShield is a quality management system for India&apos;s automatic weather station network. It takes
-                  each observation, decides whether the atmosphere changed or a sensor did, and either passes the reading
-                  to the numerical weather prediction stream or raises a work order against a named station.
+                <p className="t-body mt-3 text-ink-muted text-[15.5px] leading-relaxed">
+                  MetShield evaluates AWS observations using meteorological quality-control rules and produces explainable decisions for operators.
+                  It discriminates genuine convective squalls from hardware transducer faults before observations reach NWP assimilation streams.
                 </p>
-                <p className="t-body" style={{ marginTop: 10, color: 'var(--ink-muted)' }}>
-                  The decision is a deterministic threshold cascade — QC rules aligned with applicable WMO-No. 8 guidance, no trained model, no
-                  inference service. Every threshold is stated in the code and reproduced on this page.
+                <p className="t-body mt-2 text-ink-muted text-[13.5px]">
+                  The decision engine is a deterministic threshold cascade aligned with applicable WMO-No. 8 guidance — zero black-box delay, zero unverified models. Every threshold is stated in code and verifiable by audit.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2" style={{ marginTop: 16 }}>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3">
                 <Link
                   href="/dashboard"
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    padding: '8px 16px',
-                    background: 'var(--brand)',
-                    color: 'var(--accent-fg)',
-                    textDecoration: 'none',
-                    borderRadius: 4,
-                  }}
+                  className="text-[13px] font-semibold px-4 py-2 bg-navy text-white hover:bg-navy-deep transition-colors rounded shadow-xs"
                 >
-                  Open benchmark console
+                  Open operations console
                 </Link>
-                <Link href="/stations" className="t-body" style={{ color: 'var(--color-telemetry-text)' }}>
-                  Station registry
+                <a
+                  href="#qc-engine"
+                  className="text-[13px] font-semibold px-4 py-2 border border-hairline-strong text-navy bg-card hover:bg-surface-hover transition-colors rounded shadow-xs"
+                >
+                  Explore QC engine
+                </a>
+                <Link href="/stations" className="t-body ml-2 text-sky-deep hover:underline text-[13px]">
+                  Station registry ({IMD_AWS_STATIONS.length} stations · {DISTRICT_REGISTRY_COUNTS.total} districts)
                 </Link>
-                <span className="t-meta">
-                  {IMD_AWS_STATIONS.length} station profiles in this build ·{' '}
-                  {DISTRICT_REGISTRY_COUNTS.total} districts in the registry
-                </span>
               </div>
 
-              <p className="t-meta" style={{ marginTop: 10, maxWidth: '76ch' }}>
-                {DISTRICT_REGISTRY_STATEMENT}
-              </p>
+              {/* Scientific Hero Visual */}
+              <HeroVisual />
+
+              {/* Network Snapshot Strip */}
+              <NetworkSnapshotBand />
             </section>
 
-            {/* ── The operations band. This is the page. ── */}
-            <section aria-label="Network operations">
-              <OperationsBand />
-            </section>
-
-            {/* ── 02 QC engine ── */}
-            <section id="qc-engine" className="land-anchor" aria-labelledby="qc-h">
-              <div style={{ maxWidth: '76ch', marginBottom: 16 }}>
-                <h2 id="qc-h" className="t-section-title">
-                  How MetShield QC decides
+            {/* ── Signature Section: "What Changed?" ── */}
+            <section id="what-changed" className="land-anchor space-y-4" aria-labelledby="what-changed-h">
+              <div style={{ maxWidth: '78ch' }}>
+                <div className="t-label text-sky-deep font-bold mb-1">SIGNATURE DISCRIMINATION</div>
+                <h2 id="what-changed-h" className="t-section-title text-navy">
+                  Atmospheric event or sensor failure?
                 </h2>
-                <p className="t-body" style={{ marginTop: 7, color: 'var(--ink-muted)' }}>
-                  The central problem in station quality management is telling a broken instrument apart from real
-                  weather. Discarding a cyclone because the barometer looked odd loses the event; accepting a failed
-                  thermistor poisons the assimilation stream. The chain below is how the engine separates them, and what
-                  each stage actually tests.
+                <p className="t-body text-ink-muted mt-1">
+                  Examine three representative benchmark cases in real-world meteorological conditions. Notice how multi-parameter physical coupling protects real storm events from being discarded.
                 </p>
               </div>
-              <QcPipelineBand />
+              <WhatChangedBand />
+            </section>
+
+            {/* ── 02 How MetShield Decides (Visual Pipeline) ── */}
+            <section id="qc-engine" className="land-anchor space-y-4" aria-labelledby="qc-h">
+              <div style={{ maxWidth: '78ch' }}>
+                <div className="t-label text-sky-deep font-bold mb-1">DECISION ARCHITECTURE</div>
+                <h2 id="qc-h" className="t-section-title text-navy">
+                  How MetShield QC decides
+                </h2>
+                <p className="t-body text-ink-muted mt-1">
+                  The central problem in station quality management is telling a broken instrument apart from real
+                  weather. Discarding a cyclone because the barometer dropped rapidly loses the event; accepting a failed
+                  thermistor poisons the assimilation stream. The chain below details both the sequence and the exact numerical thresholds tested at each stage.
+                </p>
+              </div>
+              <HowMetshieldDecidesBand />
+              <details className="mt-4 border border-hairline rounded bg-surface-alt/40 p-3 group">
+                <summary className="cursor-pointer font-mono text-[12px] font-bold text-navy hover:text-sky-deep flex items-center justify-between">
+                  <span>► VIEW LITERAL ENGINE THRESHOLDS IN CODE (lib/anomalyLogic.ts)</span>
+                  <span className="text-[11px] text-ink-muted font-normal">Click to expand audit details</span>
+                </summary>
+                <div className="mt-3">
+                  <QcPipelineBand />
+                </div>
+              </details>
             </section>
 
             {/* ── 03 Network ── */}
