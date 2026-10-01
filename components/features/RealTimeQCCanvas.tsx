@@ -165,6 +165,7 @@ export default function RealTimeQCCanvas() {
   // ── Internal Historical Buffer for Rate-of-Change ──────────────────────────
   const historyRef = useRef<Reading3Param[]>(BASELINE.initialReadings);
   const freezeBufferRef = useRef<number[]>([]);
+  const packetCountRef = useRef<number>(14);
 
   // ── DCP Satellite Link Cadence Loop (2.5s) ─────────────────────────────────
   const processNextTick = useCallback(() => {
@@ -236,8 +237,11 @@ export default function RealTimeQCCanvas() {
 
     const timeUTC = new Date(now).toISOString();
 
+    const nextCount = packetCountRef.current + 1;
+    packetCountRef.current = nextCount;
+
     const newPoint: ChartPoint = {
-      index: updatedHistory.length,
+      index: nextCount,
       timeStr,
       temperature: qc.raw.temperature,
       pressure: qc.raw.pressure,
@@ -251,7 +255,7 @@ export default function RealTimeQCCanvas() {
     };
 
     setChartData((prev) => [...prev, newPoint].slice(-30));
-    setPacketCount((c) => c + 1);
+    setPacketCount(nextCount);
 
     // Persist into memory buffer / Supabase
     const telemetryPacket: StoredTelemetryPacket = {
@@ -553,7 +557,11 @@ export default function RealTimeQCCanvas() {
             </div>
             <div className="mt-2 text-[11px] text-ink-muted flex items-center justify-between">
               <span>Station: AWS-DEL-04 (Safdarjung)</span>
-              <span className="text-healthy font-semibold">● SENSOR NOMINAL</span>
+              {tCorrected || tRaw < WMO_LIMITS.TEMP_MIN || tRaw > WMO_LIMITS.TEMP_MAX ? (
+                <span className="text-fault font-semibold">● SENSOR FAULT</span>
+              ) : (
+                <span className="text-healthy font-semibold">● SENSOR NOMINAL</span>
+              )}
             </div>
           </div>
 
@@ -616,7 +624,11 @@ export default function RealTimeQCCanvas() {
             </div>
             <div className="mt-2 text-[11px] text-ink-muted flex items-center justify-between">
               <span>Coupled Threshold: ΔRH ≥ +15%</span>
-              <span className="text-healthy font-semibold">● DEW POINT NOMINAL</span>
+              {rhCorrected || rhRaw < WMO_LIMITS.HUM_MIN || rhRaw > WMO_LIMITS.HUM_MAX ? (
+                <span className="text-fault font-semibold">● TRANSDUCER FAULT</span>
+              ) : (
+                <span className="text-healthy font-semibold">● SENSOR NOMINAL</span>
+              )}
             </div>
           </div>
         </section>
@@ -747,12 +759,13 @@ export default function RealTimeQCCanvas() {
                       name="Temp (°C)"
                       stroke="var(--color-met-temperature)"
                       strokeWidth={2.2}
-                      dot={(props) => {
-                        const pt = chartData[props.index];
+                      dot={(props: { cx?: number; cy?: number; index?: number; payload?: ChartPoint }) => {
+                        const pt = props.payload ?? chartData[props.index ?? 0];
+                        const key = `dot-${pt?.index ?? props.index ?? 0}`;
                         if (pt?.severity === 'RED_HARDWARE_FAULT') {
                           return (
                             <circle
-                              key={`dot-${props.index}`}
+                              key={key}
                               cx={props.cx}
                               cy={props.cy}
                               r={5}
@@ -765,7 +778,7 @@ export default function RealTimeQCCanvas() {
                         if (pt?.severity === 'BLUE_GENUINE_WEATHER') {
                           return (
                             <circle
-                              key={`dot-${props.index}`}
+                              key={key}
                               cx={props.cx}
                               cy={props.cy}
                               r={5}
@@ -775,7 +788,7 @@ export default function RealTimeQCCanvas() {
                             />
                           );
                         }
-                        return <circle key={`dot-${props.index}`} cx={props.cx} cy={props.cy} r={2} fill="var(--color-met-temperature)" />;
+                        return <circle key={key} cx={props.cx} cy={props.cy} r={2} fill="var(--color-met-temperature)" />;
                       }}
                     />
                   )}

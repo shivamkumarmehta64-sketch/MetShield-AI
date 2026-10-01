@@ -40,12 +40,26 @@ export function useLiveNetwork(pollIntervalMs = 3500) {
         setStationStatuses((prev) => {
           const next = { ...prev };
           for (const p of incoming) {
+            const rawSource =
+              (p as unknown as { sensorSource?: string; source?: string }).sensorSource ??
+              (p as unknown as { source?: string }).source;
+
+            let source: StationDataSource = 'BENCHMARK';
+            if (rawSource === 'LIVE_MOBILE_SENSOR' || rawSource === 'LIVE_DEVICE') {
+              source = 'LIVE_DEVICE';
+            } else if (typeof rawSource === 'string' && (rawSource.includes('Open-Meteo') || rawSource === 'PUBLIC_MODEL_API')) {
+              source = 'PUBLIC_MODEL_API';
+            } else if (rawSource === 'REPLAY') {
+              source = 'REPLAY';
+            } else if (rawSource === 'SIMULATED') {
+              source = 'SIMULATED';
+            } else if (rawSource === 'BENCHMARK') {
+              source = 'BENCHMARK';
+            }
+
             next[p.stationId] = {
               stationId: p.stationId,
-              source:
-                (p as unknown as { source?: string }).source === 'LIVE_MOBILE_SENSOR'
-                  ? 'LIVE_DEVICE'
-                  : 'SIMULATED',
+              source,
               lastUpdated: p.timestamp,
               isStale: false,
               packet: p,
