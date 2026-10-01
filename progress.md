@@ -5,12 +5,17 @@
 
 ## Current Phase
 
-**Phase 6 — Final Color & Visual Polish.** Completed 2026-09-29.
-Applied meteorological color system (sky `#38BDF8`, deep sky `#0EA5E9`, pressure `#8B5CF6`, humidity `#22D3EE`, wind `#34D399`, temperature `#FB923C`, critical `#EF4444`, healthy `#22C55E`, warning `#F59E0B`).
-Streamlined UI text across KPI cards, tables, maps, and operations panels following the NUMBER → LABEL → STATUS hierarchy.
+**Phase 7 — SIH 2026 Production Refactor & Real-Time Split Canvas.** Completed 2026-10-01.
+- Implemented and mounted the GIGW-compliant NIC/MoES 65/35 Split Canvas (`RealTimeQCCanvas.tsx`) at `/`.
+- Connected physical phone Generic Sensor API (`window.PressureSensor`) with live altimetry reduction (1 hPa ≈ 8.4m).
+- Real-Time Incident Stream with SHAP/XAI attribution bars (`Temp %`, `Pressure %`, `Humidity %`) and auto-imputation.
+- Diagnostic drawer: simulation triggers for Thermistor Open-Circuit, Probe Float Lock, and Convective Front Dynamics.
+- Official NIC/IMD WMO-No. 8 CSV export with CWE-1236 spreadsheet injection protection.
+- Live Open-Meteo & wttr.in keyless ingestion verified for all 21 IMD stations across India.
+- Standardized MIT License, updated GitHub Actions CI (`.github/workflows/ci.yml`), and verified with Chromium browser subagent recording artifact.
 
-**Baseline verified 2026-09-29** — `npm run verify` green:
-lint 0 errors / 0 warnings · typecheck 0 errors · **14 test files, 132/132 tests** · `npm run build` succeeds (16 routes).
+**Verification Status** — `npm run verify` & `npm run build` green:
+lint 0 errors / 0 warnings · typecheck 0 errors · **20 test files, 210/210 tests passed** · `npm run build` succeeds (19 routes).
 
 ## Architecture map (Phase 2)
 

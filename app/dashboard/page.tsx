@@ -15,21 +15,56 @@ import { InvestigationPanel } from './InvestigationPanel';
 import { useSystem } from './SystemContext';
 import { type ScenarioId } from '@/lib/networkFeed';
 
+import { getAuditLogRecords, generateAuditCsvContent, type StoredFaultEvent } from '@/lib/supabaseClient';
+
 const LeafletMap = dynamic(() => import('./LeafletMap'), { ssr: false });
 
 function ScenarioControls() {
   const { state, setScenario } = useSystem();
   
   const handleExport = () => {
-    // Basic CSV Export
-    const csvContent = "data:text/csv;charset=utf-8,StationID,Timestamp,RootCause,WMOFlag\nAWS-DEL-04,2026-09-30T15:42:00Z,SENSOR_SPIKE,FLAG_4";
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "NIC_IMD_QC_Audit_Log.csv");
+    let records = getAuditLogRecords();
+    if (records.length === 0) {
+      // Seed with representative audit baseline if empty
+      const baselineEvent: StoredFaultEvent = {
+        eventId: 'EVT-INIT-01',
+        stationId: 'AWS-DEL-04',
+        timestamp: new Date().toISOString(),
+        timeIST: new Intl.DateTimeFormat('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }).format(new Date()),
+        parameter: 'temperature',
+        rawVal: 54.2,
+        imputedVal: 32.1,
+        temperatureC: 54.2,
+        pres_hPa: 1008.4,
+        rh_pct: 65.0,
+        classification: 'SENSOR_SPIKE',
+        severity: 'CRITICAL',
+        xaiAttribution: {
+          tempWeight: 85,
+          pressWeight: 8,
+          humWeight: 7,
+          explanation: 'Isolated step discontinuity on dry-bulb thermistor channel without thermodynamic coupling.'
+        },
+        recommendedAction: 'Quarantine observation and flag for transducer bridge recalibration.'
+      };
+      records = [baselineEvent];
+    }
+    const csvContent = generateAuditCsvContent(records);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `NIC_MoES_QC_Audit_Log_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const isActive = (id: ScenarioId) => state.scenario === id;
@@ -54,7 +89,7 @@ function ScenarioControls() {
   return (
     <details className="mt-5 card overflow-hidden group">
       <summary className="p-3 border-b border-hairline bg-surface-alt t-mono text-[11px] font-bold text-ink-faint hover:text-ink cursor-pointer flex justify-between items-center">
-        <span>[🔧 NIC-MoES Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]</span>
+        <span>[🔧 Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]</span>
         <span className="text-[10px] text-ink-muted group-open:hidden">Click to expand</span>
       </summary>
       

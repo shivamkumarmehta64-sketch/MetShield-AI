@@ -1,5 +1,5 @@
-import LandingPage from '@/components/features/LandingPage';
+import RealTimeQCCanvas from '@/components/features/RealTimeQCCanvas';
 
 export default function Page() {
-  return <LandingPage />;
+  return <RealTimeQCCanvas />;
 }

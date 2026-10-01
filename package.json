@@ -13,13 +13,9 @@
     "test:watch": "vitest",
     "verify": "npm run lint && npm run typecheck && npm run test",
     "bench": "tsx scripts/benchmark-detector.ts",
-    "sih:demo": "python scripts/skyguard_anomaly_engine.py",
-    "cf:deploy": "npm run build && wrangler deploy",
-    "dev:vinext": "vinext dev --port 3001",
-    "build:vinext": "npm run verify && vinext build",
-    "start:vinext": "wrangler dev --config dist/server/wrangler.json",
-    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
+    "sih:demo": "python scripts/skyguard_anomaly_engine.py"
   },
+  "license": "MIT",
   "dependencies": {
     "@ai-sdk/openai": "^4.0.66",
     "@supabase/supabase-js": "^2.116.0",

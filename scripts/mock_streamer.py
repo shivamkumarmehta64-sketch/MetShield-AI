@@ -49,7 +49,7 @@ STATION_PROFILES = {
     "AWS-DEL-04": {"name": "Safdarjung Observatory, New Delhi", "baseT": 32.5, "baseP": 1008.2, "baseRH": 62.0},
     "AWS-MUM-01": {"name": "Santacruz Coastal Station, Mumbai", "baseT": 29.8, "baseP": 1012.4, "baseRH": 82.0},
     "AWS-KOL-02": {"name": "Alipore Met Observatory, Kolkata", "baseT": 31.2, "baseP": 1009.6, "baseRH": 78.0},
-    "AWS-CHE-03": {"name": "Meenambakkam Regional Centre, Chennai", "baseT": 33.1, "baseP": 1010.8, "baseRH": 74.0},
+    "AWS-CHN-03": {"name": "Meenambakkam Regional Centre, Chennai", "baseT": 33.1, "baseP": 1010.8, "baseRH": 74.0},
     "AWS-BLR-05": {"name": "Bengaluru Urban Observation Hub, Karnataka", "baseT": 27.4, "baseP": 985.0, "baseRH": 58.0},
 }
 

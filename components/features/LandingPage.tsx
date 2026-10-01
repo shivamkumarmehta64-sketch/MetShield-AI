@@ -96,7 +96,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <div className="text-[11px] text-ink-muted font-mono hidden md:block">
-                भारत सरकार | Ministry of Earth Sciences
+                Prototype for MoES/IMD Problem Statement SIH26073 | Team AEROTECH1
               </div>
             </div>
           </div>

@@ -634,9 +634,10 @@ export function getIncidents(): Incident[] {
         // Severity follows the WMO flag, which the engine assigns. It is not
         // an independent opinion and it is not stored per-incident anywhere.
         severity: SEVERITY_BY_FLAG[p.wmoFlag],
-        // A packet is an open incident only while it is still the newest one
-        // for its station; anything older has been superseded.
-        status: p.timestamp === latestPacketTimestamp(p.stationId) ? 'ACTIVE' : 'RECOVERED',
+        // An incident remains ACTIVE while the station is currently in an anomalous
+        // (fault/drift/weather) state. Older resolved incidents for now-nominal
+        // stations are RECOVERED.
+        status: (getNetworkSnapshot().byId[p.stationId]?.health !== 'NOMINAL') ? 'ACTIVE' : 'RECOVERED',
         operationalAction: p.operationalAction,
         ticketId: p.ticketId,
         primaryParameter: p.xaiAttribution.primaryParameter,
@@ -649,9 +650,6 @@ export function getIncidents(): Incident[] {
   return incidentCache;
 }
 
-function latestPacketTimestamp(stationId: string): number {
-  return getNetworkSnapshot().byId[stationId]?.packet.timestamp ?? 0;
-}
 
 /* ─────────────────────────── per-tick time series ────────────────────────────
    The engine buffer holds every packet it produced, not just the newest one, so
