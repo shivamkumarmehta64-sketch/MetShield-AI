@@ -57,6 +57,9 @@ public/*.webp
 public/recorder.html
 public/walkthrough.html
 *.pptx
+*.ppt
+SIH FINISHED 5.pptx
+*SIH*.pptx
 
 # AI assistant & tooling artifacts
 .claude/*
@@ -68,3 +71,8 @@ skills-lock.json
 
 # Design drafts
 dashboard-desktop.png
+
+# QA / inspection artifacts (screenshots, backups, dev logs)
+.qa-inspector.png
+.qa-backup/
+tmp-ui-check/
