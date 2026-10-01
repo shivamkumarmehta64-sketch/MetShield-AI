@@ -76,3 +76,7 @@ dashboard-desktop.png
 .qa-inspector.png
 .qa-backup/
 tmp-ui-check/
+
+# Local dev/build logs
+dev.log
+prod.log

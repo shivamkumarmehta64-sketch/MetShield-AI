@@ -351,6 +351,33 @@ body {
   color: var(--ink-muted) !important;
 }
 
+/* ── Contained screen-reader-only text ──────────────────────────────────────
+   Tailwind's `.sr-only` is `position:absolute` with no offset. An absolutely
+   positioned box with no positioned ancestor resolves against the initial
+   containing block, so it is placed at its *static* position — which, for a
+   screen-reader label inside a table row far down the page, is hundreds of
+   pixels right of the viewport. `white-space:nowrap` then keeps the text from
+   wrapping, so the element's box is 600–1000px wide at that offset, and the
+   document gains a horizontal scrollbar. `overflow:hidden` on a 1px box does
+   not contain it, because the box itself is already at the wrong place.
+
+   Measured on /stations at a 390px viewport: scrollWidth 802 vs clientWidth 390,
+   and the page panned 412px. Same cause on /incidents (607 vs 390, 217px pan).
+   Confirmed by intervention — forcing `position:static` on every `.sr-only`
+   returned both pages to exactly 390.
+
+   `left:0` anchors the box to the viewport edge, where the clip-path already
+   hides it, and `top:0` removes the vertical offset entirely. The accessible
+   name survives intact; only the box moves. Every screen-reader-only span in a
+   table row benefits, which is why this is one rule rather than seven edits.
+
+   This is a *containment* rule, not a replacement for `.sr-only` — the utility
+   still supplies the clip, the 1px box and the nowrap. */
+.sr-only {
+  left: 0;
+  top: 0;
+}
+
 /* ── Station map: pins, labels, clusters (§E) ─────────────────────────────
    The state of a station is carried by a glyph AND a colour, and any pin that
    is not nominal also carries a word, so the map survives greyscale printing

@@ -35,6 +35,44 @@ function getCardinal(deg: number): string {
   return directions[index];
 }
 
+/**
+ * Diurnal clear-sky solar irradiance estimate, in W/m², from the wall clock.
+ *
+ * WHAT THIS IS NOT: a measurement. There is no pyranometer on this node. The UI
+ * labels it "Solar (est. from clock)" and it must keep doing so. The curve is a
+ * half-sine raised over daylight hours; it says what the sun would plausibly be
+ * doing, not what the sky is doing. Anything that treats it as an observation is
+ * reading a sine function as a sensor.
+ *
+ * WHY THE HOUR IS PINNED TO IST
+ * A `useState` initializer runs on the server AND on the client, so anything
+ * zone-dependent inside it is a hydration mismatch waiting to happen: the Vercel
+ * edge renders in IST, a phone can be anywhere, and `getHours()` returns the
+ * *browser's local* hour. That threw React #418 on every load of this route for
+ * any visitor outside IST. Proven: browser TZ Asia/Kolkata -> #418, TZ UTC ->
+ * clean, because only the second happened to agree with the edge.
+ *
+ * The fix is not to remove the clock read - it is to make the read a pure function
+ * of the *instant* rather than of the *observer*. `Asia/Kolkata` is the network's
+ * reporting timezone (every station timestamp here is IST), so both sides resolve
+ * the same hour for the same moment and hydration matches. The value is then
+ * identical whether the node sits in Delhi or Dublin, which is also the only
+ * defensible answer for an Indian weather network.
+ *
+ * A `useSyncExternalStore` version with a server snapshot of 0 was tried and
+ * discarded: it silenced the error but pinned the figure to 0 forever, because on a
+ * statically prerendered route React keeps the server snapshot for a value it cannot
+ * see has changed. Hiding a clock read is not the same as removing the mismatch.
+ */
+function estimateSolarIrradiance(date: Date): number {
+  const hr = Number(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false }).format(date)
+  );
+  if (!Number.isFinite(hr) || hr < 6 || hr > 18) return 0;
+  const solarPhase = Math.sin(((hr - 6) / 12) * Math.PI);
+  return Math.round(solarPhase * 880 + 50);
+}
+
 export function useMobileSensors() {
   // Pressure & Elevation Delta (1 hPa ≈ 8.4m)
   const [pressure, setPressure] = useState<number>(1012.35);
@@ -57,14 +95,19 @@ export function useMobileSensors() {
   const lastShakeTimeRef = useRef<number>(0);
 
   // Solar Radiation / Battery
-  const [solarRadiationWm2] = useState<number>(() => {
-    const hr = new Date().getHours();
-    if (hr >= 6 && hr <= 18) {
-      const solarPhase = Math.sin(((hr - 6) / 12) * Math.PI);
-      return Math.round(solarPhase * 880 + 50);
-    }
-    return 0;
-  });
+  //
+  // The solar estimate is a function of the wall clock, and the clock is a
+  // function of the timezone. The previous version read `new Date().getHours()`,
+  // which is *local* time: the server (Vercel edge, IST) and the browser (the
+  // phone's own zone) computed different values for the same slot, so the first
+  // client render never matched the server HTML and React threw #418 on every
+  // load of this route for any visitor outside IST.
+  //
+  // estimateSolarIrradiance pins the hour to Asia/Kolkata, so the same instant
+  // yields the same number on both sides regardless of where the phone is. That
+  // is what makes the initializer deterministic — not the absence of a clock
+  // read, which would only hide the divergence rather than remove it.
+  const [solarRadiationWm2] = useState<number>(() => estimateSolarIrradiance(new Date()));
   const [batteryVoltage, setBatteryVoltage] = useState<number>(12.42);
   const [batteryLevel, setBatteryLevel] = useState<number>(94);
 
