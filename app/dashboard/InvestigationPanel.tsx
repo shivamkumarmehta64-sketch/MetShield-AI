@@ -4,6 +4,7 @@ import React from 'react';
 import { useSystem } from './SystemContext';
 import { getNetworkSnapshot, classificationLabel, type StationHealth } from '@/lib/networkFeed';
 import WmoFlagBadge from './WmoFlagBadge';
+import WeatherReferencePanel from '@/components/dashboard/WeatherReferencePanel';
 
 const HEALTH_CONFIG: Record<
   StationHealth,
@@ -218,10 +219,32 @@ export function InvestigationPanel() {
         </div>
       </div>
 
+      {/* ── 03 EXTERNAL WEATHER REFERENCE (advisory, subordinate) ──
+          Sits below the QC decision on purpose. This is an independent
+          second opinion, not an input: nothing in evaluate() reads it, and
+          the panel says so in its own header so a screenshot taken out of
+          context cannot imply otherwise. Collapsed and fetch-on-demand, so
+          it costs nothing until an operator asks. */}
+      <div className="p-4 border-b border-hairline">
+        <WeatherReferencePanel
+          key={station.stationId}
+          stationId={station.stationId}
+          stationName={station.name}
+          lat={station.latitude}
+          lon={station.longitude}
+          station={{
+            temperature: packet.raw.temperature ?? null,
+            relativeHumidity: packet.raw.humidity ?? null,
+            pressure: packet.raw.pressure ?? null,
+            windSpeed: packet.raw.windSpeedKph ?? null,
+          }}
+        />
+      </div>
+
       {/* ── ACTION: Operational Order ── */}
       <div className="p-4 bg-surface-alt flex flex-col justify-between">
         <div>
-          <div className="t-label text-ink-muted mb-1 text-[10.5px]">03 OPERATIONAL ACTION</div>
+          <div className="t-label text-ink-muted mb-1 text-[10.5px]">04 OPERATIONAL ACTION</div>
           <div className="font-bold text-xs text-navy leading-snug mb-1">
             {cfg.isStorm
               ? 'RETAIN OBSERVATION FOR NWP ASSIMILATION'

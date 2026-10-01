@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ArrowRight, ShieldCheck, AlertTriangle, Activity } from 'lucide-react';
+import { useMobileSensors } from '@/hooks/useMobileSensors';
 
 /**
  * HeroVisual: A restrained, scientific meteorological operations visual.
@@ -15,6 +16,8 @@ import { ArrowRight, ShieldCheck, AlertTriangle, Activity } from 'lucide-react';
  * Zero neon, zero cyberpunk, zero fake animations.
  */
 export default function HeroVisual() {
+  const { pressure, isHardwareActive } = useMobileSensors();
+
   return (
     <div className="w-full card overflow-hidden border border-hairline bg-card shadow-sm">
       {/* Instrument Terminal Header */}
@@ -39,60 +42,44 @@ export default function HeroVisual() {
             <span className="t-mono text-[11px] text-ink-faint">2.5s Cycle</span>
           </div>
 
-          {/* 5 Channels with Stable Meteorological Semantic Colors */}
-          <div className="space-y-1.5 font-mono text-xs">
-            <div className="flex items-center justify-between p-2 rounded bg-surface-alt border border-hairline">
+          {/* 3 Metric Cards with Stable Meteorological Semantic Colors */}
+          <div className="space-y-2 font-mono text-xs">
+            <div className="flex flex-col p-2.5 rounded bg-surface-alt border border-hairline gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-temperature)' }} />
                 <span className="font-semibold text-ink">TEMP (T)</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-ink">31.2</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="font-bold text-ink text-[16px]">31.2</span>
                 <span className="text-[10px] text-ink-muted">°C</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-2 rounded bg-surface-alt border border-hairline">
+            <div className="flex flex-col p-2.5 rounded bg-surface-alt border border-hairline gap-1 relative overflow-hidden">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-pressure)' }} />
                 <span className="font-semibold text-ink">PRESSURE (P)</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-ink">1006.4</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="font-bold text-ink text-[16px]">{isHardwareActive ? pressure : 1006.4}</span>
                 <span className="text-[10px] text-ink-muted">hPa</span>
+              </div>
+              <div className="absolute top-2 right-2 flex items-center gap-1 bg-card px-1.5 py-0.5 rounded border border-hairline">
+                <span className={`w-1.5 h-1.5 rounded-full ${isHardwareActive ? 'bg-healthy animate-pulse' : 'bg-warning'}`}></span>
+                <span className="text-[8px] font-bold text-ink-muted">
+                  {isHardwareActive ? 'LIVE MOBILE HARDWARE FEED' : 'SIMULATED AWS FEED'}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-2 rounded bg-surface-alt border border-hairline">
+            <div className="flex flex-col p-2.5 rounded bg-surface-alt border border-hairline gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-humidity)' }} />
                 <span className="font-semibold text-ink">HUMIDITY (RH)</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-ink">53.0</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="font-bold text-ink text-[16px]">53.0</span>
                 <span className="text-[10px] text-ink-muted">%</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded bg-surface-alt border border-hairline">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-wind)' }} />
-                <span className="font-semibold text-ink">WIND (W)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-ink">12.4</span>
-                <span className="text-[10px] text-ink-muted">km/h</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded bg-surface-alt border border-hairline">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-met-rain)' }} />
-                <span className="font-semibold text-ink">RAIN (10m)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-ink">0.0</span>
-                <span className="text-[10px] text-ink-muted">mm</span>
               </div>
             </div>
           </div>

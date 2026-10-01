@@ -92,21 +92,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       <aside
         aria-label="Primary"
         className={clsx(
-          'fixed top-0 bottom-0 left-0 z-50 w-[248px] flex flex-col border-r border-hairline bg-card',
+          'fixed top-0 bottom-0 left-0 z-50 w-[248px] flex flex-col bg-navy border-r border-navy-deep text-white',
           'transition-transform duration-150 lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between border-b border-hairline px-4" style={{ height: 56 }}>
+        <div className="flex items-center justify-between border-b border-navy-deep px-4" style={{ height: 56 }}>
           <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
-            <span className="w-2.5 h-2.5 bg-navy" aria-hidden />
-            <span className="t-card-title text-navy tracking-wide">METSHIELD AI</span>
+            <span className="w-2.5 h-2.5 bg-sky" aria-hidden />
+            <span className="t-card-title text-white tracking-wide">METSHIELD AI</span>
           </Link>
           <button
             type="button"
             aria-label="Close navigation"
             onClick={onClose}
-            className="touch-target -mr-2 flex items-center justify-center lg:hidden text-ink-muted"
+            className="touch-target -mr-2 flex items-center justify-center lg:hidden text-white/70 hover:text-white"
           >
             <X size={18} />
           </button>
@@ -115,7 +115,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto py-2">
           {SECTIONS.map((section) => (
             <div key={section.label}>
-              <div className="t-label px-4 pt-5 pb-2">{section.label}</div>
+              <div className="t-label px-4 pt-5 pb-2 text-white/50">{section.label}</div>
               {section.items.map((item) => {
                 const active = isActive(pathname, search, item);
                 const Icon = item.icon;
@@ -128,15 +128,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                     className={clsx(
                       'flex items-center gap-3 border-l-2 px-4 text-[13.5px] transition-colors',
                       active
-                        ? 'border-l-sky-deep bg-sky-50/60 font-semibold text-navy'
-                        : 'border-l-transparent text-ink-muted hover:bg-surface-hover hover:text-ink'
+                        ? 'border-l-sky-deep bg-navy-deep/50 font-semibold text-white'
+                        : 'border-l-transparent text-white/70 hover:bg-navy-deep/30 hover:text-white'
                     )}
                     style={{ height: 40 }}
                   >
                     <Icon
                       size={16}
                       strokeWidth={1.75}
-                      className={active ? 'text-sky-deep' : 'text-ink-muted'}
+                      className={active ? 'text-sky-deep' : 'text-white/50'}
                       aria-hidden
                     />
                     {item.name}
@@ -148,21 +148,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         {/* §D: the status block is computed from the engine, not typed in. */}
-        <div className="border-t border-hairline px-4 py-3">
+        <div className="border-t border-navy-deep px-4 py-3 text-white">
           <div className="flex items-center gap-2">
             <span
               className="w-2 h-2 rounded-full bg-healthy"
               style={kpis.activeFaults > 0 ? { backgroundColor: 'var(--color-fault)' } : undefined}
               aria-hidden
             />
-            <span className="t-label">
+            <span className="t-label text-white/70">
               {kpis.activeFaults > 0 ? 'DEGRADED' : 'OPERATIONAL'}
             </span>
           </div>
-          <div className="t-meta mt-1 font-mono">
+          <div className="t-meta mt-1 font-mono text-white/60">
             {kpis.nominal}/{kpis.total} stations verified good
           </div>
-          <div className="t-meta mt-2 font-mono text-[10px]">MoES / IMD · SIH 2026 · AEROTECH</div>
+          <div className="t-meta mt-2 font-mono text-[10px] text-white/40">MoES / IMD · SIH 2026 · AEROTECH1 (ID: 162136)</div>
         </div>
       </aside>
     </>

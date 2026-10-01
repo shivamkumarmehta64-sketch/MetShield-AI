@@ -83,9 +83,9 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
         <Menu size={20} />
       </button>
 
-      <div className="min-w-0">
-        <div className="t-card-title text-navy truncate">AWS Quality Management System</div>
-        <div className="t-label truncate">{breadcrumb}</div>
+      <div className="flex items-center gap-3 min-w-0">
+        <ArrowRight size={18} className="rotate-180 text-ink-muted" />
+        <div className="t-body text-ink font-medium truncate">{breadcrumb}</div>
       </div>
 
       <div className="ml-auto flex items-center gap-2 lg:gap-3">
@@ -93,16 +93,22 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
           <DataModeBadge />
         </div>
 
-        <div className="hidden md:flex flex-col items-end leading-tight">
-          <span className="t-label">Last update</span>
-          <span className="t-meta font-mono text-[11.5px]">
-            {new Date(snapshot.latestTimestamp).toISOString().slice(11, 19)} UTC
-          </span>
+        <div className="hidden md:flex items-center">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search station, location..."
+              className="pl-9 pr-4 py-1.5 rounded-full border border-hairline bg-surface-alt text-[13px] w-64 focus:outline-none focus:border-sky-deep focus:ring-1 focus:ring-sky-deep transition-all"
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+          </div>
         </div>
 
-        <div className="hidden lg:flex flex-col items-end leading-tight">
-          <span className="t-label">Console {timeFormat}</span>
-          <span className="t-meta font-mono text-[11.5px]">{clock ?? '—'}</span>
+        <div className="hidden lg:flex items-center gap-2 px-3 border-r border-hairline">
+          <Settings size={15} className="text-ink-muted" />
+          <span className="t-meta font-mono text-[11.5px] whitespace-nowrap">{clock ?? '—'}</span>
         </div>
 
         {/* Notifications / Alerts Button */}
@@ -184,19 +190,10 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
           )}
         </div>
 
-        {/* Settings Button */}
-        <button
-          type="button"
-          aria-label="Settings"
-          aria-expanded={isSettingsOpen}
-          onClick={() => {
-            setIsSettingsOpen(!isSettingsOpen);
-            setIsAlertsOpen(false);
-          }}
-          className="touch-target flex items-center justify-center text-ink-muted hover:text-ink transition-colors"
-        >
-          <Settings size={18} />
-        </button>
+        {/* Profile Circle */}
+        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-sky-deep text-white text-[11px] font-bold ml-1">
+          SK
+        </div>
       </div>
 
       {/* Settings Modal */}

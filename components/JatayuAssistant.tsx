@@ -42,7 +42,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Hello, I am JATAYU-Sahayak, the MoES AI Copilot. How can I assist with your telemetry validation today?',
+      content: 'Hello, I am MetShield-Sahayak, the MoES AI Copilot. How can I assist with your telemetry validation today?',
     }
   ]);
   const [inputStr, setInputStr] = useState('');
@@ -82,7 +82,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
       setMessages(prev => [...prev, {
         id: nextMessageId(),
         role: 'assistant',
-        content: 'Error connecting to JATAYU-Sahayak edge service.',
+        content: 'Error connecting to MetShield-Sahayak edge service.',
       }]);
     } finally {
       setIsLoading(false);
@@ -112,7 +112,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </div>
             <MessageSquare className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-bold tracking-wide">JATAYU-Sahayak</span>
+            <span className="text-sm font-bold tracking-wide">MetShield-Sahayak</span>
             <span className="text-[10px] hidden sm:inline ml-1 font-medium text-slate-600">(MoES AI Copilot)</span>
           </motion.button>
         )}
@@ -147,7 +147,7 @@ export default function JatayuAssistant({ context }: JatayuAssistantProps) {
                       <Bot className="w-5 h-5 text-emerald-400" />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold text-white tracking-wide">JATAYU-Sahayak</h2>
+                      <h2 className="text-sm font-bold text-white tracking-wide">MetShield-Sahayak</h2>
                       <p className="text-[10px] text-slate-600 font-mono flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         Edge AI Copilot Connected

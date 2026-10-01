@@ -45,7 +45,7 @@ const HELP_TOPICS: { match: RegExp; reply: string }[] = [
       'This is a windowed mean, not a trained model.',
   },
   {
-    match: /\b(who|what) are you\b|\bjatayu\b|help/,
+    match: /\b(who|what) are you\b|\bjatayu\b|\bmetshield\b|help/,
     reply:
       'This endpoint is a legacy stub. It performs no inference, consults no model and reports no measurements. ' +
       'The engine-backed features are the dashboard, the QC workspace and the testbench.',

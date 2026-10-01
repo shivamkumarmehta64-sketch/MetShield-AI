@@ -34,7 +34,7 @@
   --font-mono: "JetBrains Mono", "Courier New", monospace;
 
   /* ── Brand / institution ── */
-  --color-navy: #0B1F3A;
+  --color-navy: #0F172A;
   --color-navy-deep: #123B63;
   --color-sky: #38BDF8;
   --color-sky-deep: #0EA5E9;
@@ -499,6 +499,271 @@ body {
   font-size: 10px;
   line-height: 1.45;
   color: var(--ink-muted);
+}
+
+/* ── Map popup: the evidence panel ──────────────────────────────────────────
+   The head/grid above answers "what does this station read". These rules
+   answer the question an operator actually opens a marker for: what moved,
+   which rule caught it, and what the operator is being told to do about it.
+
+   One `h6` rule, no new colours — the status tint is passed in as an inline
+   custom property by the popup builder and resolves to a token that already
+   exists, so the ramp stays the single axis it is everywhere else. */
+.ms-map-popup-ev {
+  --ms-ev-accent: var(--color-telemetry-text);
+  margin: 7px 0 0;
+  padding: 6px 7px;
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--ms-ev-accent);
+  border-radius: 2px;
+  background: var(--color-surface-alt);
+}
+.ms-map-popup-ev h6 {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.ms-map-popup-ev dt {
+  flex: none;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ms-ev-accent);
+}
+/* Two delta windows per channel, side by side. Fixed tracks so the columns
+   line up down the panel — a misaligned column of numbers is unreadable in a
+   way a ragged one is not. */
+.ms-map-popup-ev dd {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 8px;
+  margin: 0;
+  text-align: right;
+}
+.ms-map-popup-evhead dt,
+.ms-map-popup-evhead dd {
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--hairline);
+}
+.ms-map-popup-evhead dd {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.ms-map-popup-evrow + .ms-map-popup-evrow {
+  margin-top: 2px;
+}
+.ms-map-popup-ev-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink);
+}
+.ms-map-popup-ev-na {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+/* Marks the value that satisfies a Stage 03 storm bound — i.e. the conjunct
+   that actually carried the verdict. Bold and accent-coloured rather than
+   highlighted, so the panel stays a proof and not a decoration. */
+.ms-map-popup-ev-label.is-bound {
+  font-weight: 700;
+  color: var(--ms-ev-accent);
+}
+.ms-map-popup-verdict {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--color-hairline-strong);
+}
+.ms-map-popup-verdict-tag {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ms-ev-accent);
+}
+.ms-map-popup-verdict-val {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* The disposition is what separates "keep this observation" from "send a
+   technician". It is the last line in the popup and the only one set in
+   body weight, because it is the one an operator acts on. */
+.ms-map-popup-action {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+.ms-map-popup-when {
+  display: block;
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink-faint);
+}
+
+/* ── Landing: engine rule inspector ─────────────────────────────────────────
+   A proof panel, not an IDE: no gutter, no line numbers, no window chrome.
+   Everything here is quoted from lib/engineRules.ts, which
+   __tests__/engineRules.test.ts checks against lib/anomalyLogic.ts. */
+.ms-inspect {
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--card);
+  overflow: hidden;
+}
+.ms-inspect-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--color-surface-alt);
+}
+.ms-inspect-stage {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-telemetry-text);
+}
+.ms-inspect-headline {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+  max-width: 62ch;
+}
+.ms-inspect-copy {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 2px;
+  background: var(--card);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.ms-inspect-copy:hover {
+  color: var(--color-telemetry-text);
+  border-color: var(--color-telemetry);
+}
+
+.ms-inspect-evidence {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+.ms-inspect-row {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+.ms-inspect-idx {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+.ms-inspect-sym {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  min-width: 62px;
+}
+.ms-inspect-op {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+.ms-inspect-val {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ms-inspect-and {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+
+.ms-inspect-code {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--color-surface-alt);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--ink);
+  overflow-x: auto;
+}
+.ms-inspect-cline {
+  display: block;
+  white-space: pre;
+}
+.ms-inspect-comment {
+  color: var(--ink-faint);
+}
+
+.ms-inspect-foot {
+  padding: 9px 12px;
+  border-top: 1px solid var(--hairline);
+}
+.ms-inspect-attr {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.ms-inspect-attr-k {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.ms-inspect-attr-v {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-muted);
+}
+.ms-inspect-rationale {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  max-width: 86ch;
 }
 
 /* ── Landing: the operations band ────────────────────────────────────────

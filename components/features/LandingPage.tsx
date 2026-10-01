@@ -6,6 +6,7 @@ import { IMD_AWS_STATIONS } from '@/lib/stationData';
 import { DISTRICT_REGISTRY_COUNTS } from '@/lib/dataProvenance';
 import { DATA_MODE } from '@/lib/networkFeed';
 import QcPipelineBand from '@/components/landing/QcPipelineBand';
+import EngineRuleInspector from '@/components/landing/EngineRuleInspector';
 import StationTableBand from '@/components/landing/StationTableBand';
 import ProvenanceBand from '@/components/landing/ProvenanceBand';
 import HeroVisual from '@/components/landing/HeroVisual';
@@ -37,6 +38,7 @@ const NAV = [
   { href: '#qc-engine', label: 'QC engine' },
   { href: '#network', label: 'Network' },
   { href: '#provenance', label: 'Provenance' },
+  { href: '/mobile', label: 'Mobile PWA' },
   { href: '/audit-report', label: 'Documentation' },
 ];
 
@@ -90,13 +92,28 @@ export default function LandingPage() {
               <div className="flex items-center gap-2">
                 <span className="text-[14px] font-bold tracking-tight text-navy">METSHIELD AI</span>
                 <span className="t-label hidden sm:inline-block px-1.5 py-0.5 rounded bg-surface-alt border border-hairline text-ink-muted text-[10px]">
-                  AWS QUALITY MANAGEMENT SYSTEM
+                  NAWS-QMS v4.2
                 </span>
               </div>
               <div className="text-[11px] text-ink-muted font-mono hidden md:block">
-                Ministry of Earth Sciences · IMD Automated Observation Network
+                भारत सरकार | Ministry of Earth Sciences
               </div>
             </div>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-3 border-l border-hairline pl-4 ml-2">
+            <span className="flex items-center gap-1.5 t-meta text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-healthy animate-live-dot"></span>
+              2.5s DCP link
+            </span>
+            <div className="flex items-center gap-1 bg-surface-alt rounded border border-hairline px-1">
+              <button className="px-1.5 text-xs hover:text-navy text-ink-muted font-bold">A-</button>
+              <button className="px-1.5 text-[13px] hover:text-navy text-ink-muted font-bold">A</button>
+              <button className="px-1.5 text-sm hover:text-navy text-ink-muted font-bold">A+</button>
+            </div>
+            <button className="t-meta text-[11px] font-semibold border border-hairline rounded px-2 hover:bg-surface-hover">
+              हिन्दी
+            </button>
           </div>
 
           <nav aria-label="Sections" className="hidden lg:flex items-center gap-1">
@@ -182,6 +199,13 @@ export default function LandingPage() {
                 >
                   Open operations console
                 </Link>
+                <Link
+                  href="/mobile"
+                  className="text-[13px] font-semibold px-3.5 py-2 border border-sky-deep/40 text-sky-deep bg-sky-50/50 hover:bg-sky-50 transition-colors rounded shadow-xs flex items-center gap-1.5"
+                >
+                  <span className="w-2 h-2 rounded-full bg-healthy animate-pulse" />
+                  Mobile Sensor PWA
+                </Link>
                 <a
                   href="#qc-engine"
                   className="text-[13px] font-semibold px-4 py-2 border border-hairline-strong text-navy bg-card hover:bg-surface-hover transition-colors rounded shadow-xs"
@@ -237,6 +261,17 @@ export default function LandingPage() {
                   <QcPipelineBand />
                 </div>
               </details>
+              <details className="mt-3 border border-hairline rounded bg-surface-alt/40 p-3 group">
+                <summary className="cursor-pointer font-mono text-[12px] font-bold text-navy hover:text-sky-deep flex items-center justify-between gap-3">
+                  <span>► INSPECT ENGINE RULE · STAGE 03 PHYSICAL CONSISTENCY</span>
+                  <span className="text-[11px] text-ink-muted font-normal flex-none">
+                    Open evaluate()
+                  </span>
+                </summary>
+                <div className="mt-3">
+                  <EngineRuleInspector />
+                </div>
+              </details>
             </section>
 
             {/* ── 03 Network ── */}
@@ -281,10 +316,11 @@ export default function LandingPage() {
           style={{ maxWidth: 1500, padding: '16px 20px' }}
         >
           <p className="t-meta">
-            MetShield AI · Team AEROTECH · SIH 2026 problem SIH26073 · Ministry of Earth Sciences / IMD
+            MetShield AI · Team AEROTECH1 (ID: 162136) · SIH 2026 Problem SIH26073 · Ministry of Earth Sciences / IMD
           </p>
           <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Link href="/dashboard" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Console</Link>
+            <Link href="/mobile" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Mobile Node (PWA)</Link>
             <Link href="/stations" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Network</Link>
             <Link href="/incidents" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Incidents</Link>
             <Link href="/audit-report" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Audit report</Link>

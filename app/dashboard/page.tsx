@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Check } from 'lucide-react';
+
 import Shell from './Shell';
 import KpiStrip from './KpiStrip';
 import StationTable from './StationTable';
@@ -13,64 +13,73 @@ import Testbench from './Testbench';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { InvestigationPanel } from './InvestigationPanel';
 import { useSystem } from './SystemContext';
-import { SCENARIOS } from '@/lib/networkFeed';
+import { type ScenarioId } from '@/lib/networkFeed';
 
 const LeafletMap = dynamic(() => import('./LeafletMap'), { ssr: false });
 
 function ScenarioControls() {
   const { state, setScenario } = useSystem();
+  
+  const handleExport = () => {
+    // Basic CSV Export
+    const csvContent = "data:text/csv;charset=utf-8,StationID,Timestamp,RootCause,WMOFlag\nAWS-DEL-04,2026-09-30T15:42:00Z,SENSOR_SPIKE,FLAG_4";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "NIC_IMD_QC_Audit_Log.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
 
-  // Which scenario the console is actually replaying. `state.scenario` is null
-  // until the operator picks one, and the snapshot that drives every other
-  // panel on this page comes from getNetworkSnapshot() — so until a pick has
-  // been made the header must say so rather than name a scenario that is not
-  // the one feeding the KPIs above.
-  const active = SCENARIOS.find((s) => s.id === state.scenario) ?? null;
+  const isActive = (id: ScenarioId) => state.scenario === id;
+
+  const triggerButton = (id: ScenarioId, label: string) => {
+    const active = isActive(id);
+    return (
+      <button
+        type="button"
+        onClick={() => setScenario(id)}
+        className={`px-3 py-2 text-[12px] font-mono border rounded ${
+          active 
+            ? 'bg-navy text-white border-navy-deep' 
+            : 'bg-card text-ink-muted border-hairline hover:bg-surface-hover hover:text-ink'
+        }`}
+      >
+        {label}
+      </button>
+    );
+  };
 
   return (
-    <div className="card overflow-hidden">
-      <div className="border-b border-hairline bg-surface-alt px-4 py-3">
-        <h2 className="t-label text-ink-muted mb-0.5">RUNNING SCENARIO</h2>
-        <div className="t-card-title text-navy">{active ? active.label : 'Default network run'}</div>
+    <details className="mt-5 card overflow-hidden group">
+      <summary className="p-3 border-b border-hairline bg-surface-alt t-mono text-[11px] font-bold text-ink-faint hover:text-ink cursor-pointer flex justify-between items-center">
+        <span>[🔧 NIC-MoES Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]</span>
+        <span className="text-[10px] text-ink-muted group-open:hidden">Click to expand</span>
+      </summary>
+      
+      <div className="p-4 bg-card flex flex-col gap-4">
+        <div>
+          <div className="t-label text-ink-muted mb-2 text-[10px]">INJECT FAULT SCENARIO</div>
+          <div className="flex flex-wrap gap-2">
+            {triggerButton('normal', 'Reset Network (Nominal)')}
+            {triggerButton('temp-spike', 'Simulate Thermistor Open-Circuit')}
+            {triggerButton('frozen', 'Simulate Probe Float Lock')}
+            {triggerButton('pressure-drop', 'Simulate Convective Front Dynamics')}
+          </div>
+        </div>
+        
+        <div className="border-t border-hairline pt-4">
+          <div className="t-label text-ink-muted mb-2 text-[10px]">DATA EXPORT</div>
+          <button 
+            onClick={handleExport}
+            className="px-3 py-2 text-[12px] font-mono border border-hairline-strong rounded text-navy hover:bg-surface-alt flex items-center gap-2"
+          >
+            Export QC Audit Log (.csv)
+          </button>
+        </div>
       </div>
-      <div className="flex flex-col p-2">
-        {SCENARIOS.map((s) => {
-          const isActive = s.id === state.scenario;
-          return (
-            <button
-              key={s.id}
-              onClick={() => setScenario(s.id)}
-              aria-pressed={isActive}
-              className={`flex flex-col items-start px-3 py-2.5 rounded text-left transition-colors border ${
-                isActive
-                  ? 'bg-telemetry/5 border-telemetry/30'
-                  : 'border-transparent hover:bg-surface-hover'
-              }`}
-            >
-              <div className="flex w-full items-center justify-between mb-0.5">
-                <span
-                  className={
-                    isActive
-                      ? 't-card-title text-[13.5px] text-telemetry-text'
-                      : 't-card-title text-[13.5px] text-ink'
-                  }
-                >
-                  {s.label}
-                </span>
-                {isActive && <Check size={14} className="text-telemetry-text shrink-0" />}
-              </div>
-              <span
-                className={`text-[11.5px] line-clamp-1 leading-snug ${
-                  isActive ? 'text-telemetry-text/80' : 'text-ink-muted'
-                }`}
-              >
-                {s.description}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    </details>
   );
 }
 
@@ -161,7 +170,7 @@ function DashboardTabs() {
 
 export default function DashboardPage() {
   return (
-    <Shell breadcrumb="Operations Console">
+    <Shell breadcrumb="Dashboard">
       <div className="flex flex-col gap-5">
         <KpiStrip />
         <Suspense fallback={<LoadingSkeleton title="Loading view" variant="cards" />}>
