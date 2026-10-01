@@ -597,6 +597,21 @@ const SEVERITY_BY_FLAG: Record<WMOQualityFlag, IncidentSeverity> = {
 
 let incidentCache: Incident[] | null = null;
 
+/**
+ * A station's engine buffer, oldest first. Read-only.
+ *
+ * The storm rule is a disjunction over two windows: the single-tick delta and
+ * the four-tick rolling delta. `TelemetryPacket.ratesOfChange` carries only the
+ * single-tick form, so a surface that quotes rates of change alone can show
+ * evidence that does not satisfy the rule the packet was flagged under — which
+ * is what happened on the AWS-CHN-03 seeded storm, whose verdict rests entirely
+ * on the rolling window. Any surface that quotes the rule as evidence needs
+ * both windows, and the rolling one can only be recomputed from the buffer.
+ */
+export function stationHistory(stationId: string): TelemetryPacket[] {
+  return getInitialSeededDataset().stationPackets[stationId] ?? [];
+}
+
 /** Every flagged packet in the engine buffer, newest first. */
 export function getIncidents(): Incident[] {
   if (incidentCache) return incidentCache;
