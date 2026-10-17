@@ -33,7 +33,7 @@ export function logVayuEvent(entry: Omit<VayuEventLogEntry, 'id' | 'timestamp' |
   const now = new Date();
   const item: VayuEventLogEntry = {
     ...entry,
-    id: 'EVT-' + Math.random().toString(36).substring(2, 9),
+    id: 'EVT-' + crypto.randomUUID(),
     timestamp: now.toISOString(),
     timeFormatted: formatISTTime(now)
   };

@@ -5,7 +5,14 @@
 
 ## Current Phase
 
-**Phase 7 — SIH 2026 Production Refactor & Real-Time Split Canvas.** Completed 2026-10-01.
+**Phase 8 — Dashboard map and mobile UI repair.** In progress 2026-10-17.
+- Local `main` matches the available `origin/main` ref; preserve four existing local edits.
+- Baseline `npm run verify`: lint and typecheck pass; 20 test files and 210 tests pass.
+- Confirmed map legend overlaps attribution at 390px; station marker popup remains open as expected.
+- Confirmed `/mobile` masthead causes 9px horizontal overflow at 320px; chart fits after resize settles.
+- Applied responsive map legend positioning and masthead wrapping; rerun browser checks and full verification next.
+
+Previous phase completed 2026-10-01:
 - Implemented and mounted the GIGW-compliant NIC/MoES 65/35 Split Canvas (`RealTimeQCCanvas.tsx`) at `/`.
 - Connected physical phone Generic Sensor API (`window.PressureSensor`) with live altimetry reduction (1 hPa ≈ 8.4m).
 - Real-Time Incident Stream with SHAP/XAI attribution bars (`Temp %`, `Pressure %`, `Humidity %`) and auto-imputation.
@@ -76,7 +83,9 @@ Ground truth, established by runtime probe and by reading every route:
 
 ## In Progress
 
-- [ ] Wait for user guidance on next steps
+- [x] Reproduce dashboard map and `/mobile` layout issues in the browser.
+- [x] Fix confirmed map legend collision and phone masthead overflow.
+- [ ] Verify rendered layouts, then run the full build and test gate.
 
 ## Remaining
 
@@ -109,4 +118,4 @@ Ground truth, established by runtime probe and by reading every route:
 
 ## Next Action
 
-Run final verify gate. If green, the product is ready for SIH 2026 presentation.
+Remeasure map overlay intersection and `/mobile` document overflow at phone widths; then run `npm run verify` and `npm run build`.

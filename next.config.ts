@@ -36,6 +36,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,

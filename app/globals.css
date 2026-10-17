@@ -30,100 +30,104 @@
    ============================================================================ */
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Courier New", monospace;
+    --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", "Courier New", monospace;
 
-  /* ── Brand / institution ── */
-  --color-navy: #0F172A;
-  --color-navy-deep: #123B63;
-  --color-sky: #38BDF8;
-  --color-sky-deep: #0EA5E9;
-  --color-blue-deep: #1E88E5;
-  --color-teal: #0E9F9A;
+    /* ── Brand / institution ── */
+    --color-navy: #0F172A;
+    --color-navy-deep: #123B63;
+    --color-sky: #38BDF8;
+    --color-sky-deep: #0EA5E9;
+    --color-blue-deep: #1E88E5;
+    --color-teal: #0E9F9A;
 
-  /* ── Meteorological Parameters ── */
-  --color-met-temp-cool: #38BDF8;
-  --color-met-temp-normal: #FACC15;
-  --color-met-temp-hot: #F97316;
-  --color-met-temp-extreme: #EF4444;
-  --color-met-temperature: #F97316; /* chart series alias */
-  --color-met-pressure: #8B5CF6;
-  --color-met-humidity: #06B6D4;
-  --color-met-wind: #10B981;
-  --color-met-rain: #3B82F6;
+    /* ── Meteorological Parameters ── */
+    --color-met-temp-cool: #38BDF8;
+    --color-met-temp-normal: #FACC15;
+    --color-met-temp-hot: #F97316;
+    --color-met-temp-extreme: #EF4444;
+    --color-met-temperature: #F97316;
+    /* chart series alias */
+    --color-met-pressure: #8B5CF6;
+    --color-met-humidity: #06B6D4;
+    --color-met-wind: #10B981;
+    --color-met-rain: #3B82F6;
 
-  /* ── Semantic status ── */
-  --color-healthy: #22C55E;
-  --color-healthy-bg: #ECFDF3;
-  --color-healthy-border: #A7F3D0;
+    /* ── Semantic status ── */
+    --color-healthy: #22C55E;
+    --color-healthy-bg: #ECFDF3;
+    --color-healthy-border: #A7F3D0;
 
-  --color-warning: #F59E0B;
-  --color-warning-bg: #FFFBEB;
-  --color-warning-border: #FDE68A;
+    --color-warning: #F59E0B;
+    --color-warning-bg: #FFFBEB;
+    --color-warning-border: #FDE68A;
 
-  --color-weather: #0EA5E9;
-  --color-weather-bg: #F0F9FF;
-  --color-weather-border: #BAE6FD;
+    --color-weather: #0EA5E9;
+    --color-weather-bg: #F0F9FF;
+    --color-weather-border: #BAE6FD;
 
-  --color-critical: #EF4444;
-  --color-fault: #EF4444;
-  --color-fault-bg: #FEF2F2;
-  --color-fault-border: #FECACA;
+    --color-critical: #EF4444;
+    --color-fault: #EF4444;
+    --color-fault-bg: #FEF2F2;
+    --color-fault-border: #FECACA;
 
-  --color-ai: #8B5CF6;
-  --color-ai-bg: #F5F3FF;
-  --color-ai-border: #DDD6FE;
+    --color-ai: #8B5CF6;
+    --color-ai-bg: #F5F3FF;
+    --color-ai-border: #DDD6FE;
 
-  --color-info: #38BDF8;
-  --color-selected: #0EA5E9;
-  --color-telemetry: #0EA5E9;
-  --color-telemetry-bg: #EFF6FF;
-  --color-telemetry-border: #BFDBFE;
+    --color-info: #38BDF8;
+    --color-selected: #0EA5E9;
+    --color-telemetry: #0EA5E9;
+    --color-telemetry-bg: #EFF6FF;
+    --color-telemetry-border: #BFDBFE;
 
-  /* ── Text-weight status ramp (Passes AA as text) ── */
-  --color-healthy-text: #16A34A;
-  --color-warning-text: #D97706;
-  --color-weather-text: #0284C7;
-  --color-critical-text: #DC2626;
-  --color-fault-text: #DC2626;
-  --color-ai-text: #7C3AED;
-  --color-info-text: #0284C7;
-  --color-telemetry-text: #0284C7;
+    /* ── Text-weight status ramp (Passes AA as text) ── */
+    --color-healthy-text: #16A34A;
+    --color-warning-text: #D97706;
+    --color-weather-text: #0284C7;
+    --color-critical-text: #DC2626;
+    --color-fault-text: #DC2626;
+    --color-ai-text: #7C3AED;
+    --color-info-text: #0284C7;
+    --color-telemetry-text: #0284C7;
 
-  /* ── Light surfaces (operations console) ── */
-  --color-page: #F8FAFC;
-  --color-card: #FFFFFF;
-  --color-surface-alt: #F1F5F9;
-  --color-surface-hover: #F8FAFC;
+    /* ── Light surfaces (operations console) ── */
+    --color-page: #F8FAFC;
+    --color-card: #FFFFFF;
+    --color-surface-alt: #F1F5F9;
+    --color-surface-hover: #F8FAFC;
 
-  --color-ink: #0F172A; /* Primary text */
-  --color-ink-muted: #475569; /* Secondary */
-  --color-ink-faint: #64748B; /* Muted — AA on white */
-  --color-ink-inverse: #FFFFFF;
+    --color-ink: #0F172A;
+    /* Primary text */
+    --color-ink-muted: #475569;
+    /* Secondary */
+    --color-ink-faint: #64748B;
+    /* Muted — AA on white */
+    --color-ink-inverse: #FFFFFF;
 
-  --color-hairline: #E2E8F0;
-  --color-hairline-strong: #CBD5E1;
+    --color-hairline: #E2E8F0;
+    --color-hairline-strong: #CBD5E1;
 
-  /* ── Semantic aliases (§B) ──
+    /* ── Semantic aliases (§B) ──
      These are purpose aliases, not a third ramp. `--color-brand` is the
      institution navy (chrome, titles, active rail), `--color-accent` is the
      primary action blue, and the `--weather-*` aliases map onto the
      meteorological parameter tokens already defined above. They exist so a
      component can ask for "brand" or "temperature" without knowing which
      underlying hex carries it — flip one token and the whole surface moves. */
-  --color-brand: var(--color-navy);
-  --color-brand-deep: var(--color-navy-deep);
-  --color-accent: var(--color-sky-deep);
-  --color-accent-fg: #FFFFFF;
+    --color-brand: var(--color-navy);
+    --color-brand-deep: var(--color-navy-deep);
+    --color-accent: var(--color-sky-deep);
+    --color-accent-fg: #FFFFFF;
 
-  --color-weather-cool: var(--color-met-temp-cool);
-  --color-weather-normal: var(--color-met-temp-normal);
-  --color-weather-hot: var(--color-met-temp-hot);
-  --color-weather-extreme: var(--color-met-temp-extreme);
-  --color-weather-pressure: var(--color-met-pressure);
-  --color-weather-humidity: var(--color-met-humidity);
-  --color-weather-wind: var(--color-met-wind);
-  --color-weather-rain: var(--color-met-rain);
+    --color-weather-cool: var(--color-met-temp-cool);
+    --color-weather-normal: var(--color-met-temp-normal);
+    --color-weather-hot: var(--color-met-temp-hot);
+    --color-weather-extreme: var(--color-met-temp-extreme);
+    --color-weather-pressure: var(--color-met-pressure);
+    --color-weather-humidity: var(--color-met-humidity);
+    --color-weather-wind: var(--color-met-wind);
+    --color-weather-rain: var(--color-met-rain);
 }
 
 /* ---------------------------------------------------------------------------
@@ -133,75 +137,75 @@
    --------------------------------------------------------------------------- */
 :root,
 [data-theme="light"] {
-  color-scheme: light;
+    color-scheme: light;
 
-  --page: var(--color-page);
-  --card: var(--color-card);
-  --surface-alt: var(--color-surface-alt);
-  --surface-hover: var(--color-surface-hover);
+    --page: var(--color-page);
+    --card: var(--color-card);
+    --surface-alt: var(--color-surface-alt);
+    --surface-hover: var(--color-surface-hover);
 
-  --ink: var(--color-ink);
-  --ink-muted: var(--color-ink-muted);
-  --ink-faint: var(--color-ink-faint);
+    --ink: var(--color-ink);
+    --ink-muted: var(--color-ink-muted);
+    --ink-faint: var(--color-ink-faint);
 
-  --hairline: var(--color-hairline);
-  --hairline-strong: var(--color-hairline-strong);
+    --hairline: var(--color-hairline);
+    --hairline-strong: var(--color-hairline-strong);
 
-  --brand: var(--color-navy);
-  --brand-deep: var(--color-navy-deep);
-  --accent: var(--color-sky);
-  --accent-hover: var(--color-blue-deep);
-  --accent-fg: #FFFFFF;
+    --brand: var(--color-navy);
+    --brand-deep: var(--color-navy-deep);
+    --accent: var(--color-sky);
+    --accent-hover: var(--color-blue-deep);
+    --accent-fg: #FFFFFF;
 
-  --focus-ring: var(--color-sky);
+    --focus-ring: var(--color-sky);
 
-  /* Meteorological parameter aliases, exposed at runtime so chart code and
+    /* Meteorological parameter aliases, exposed at runtime so chart code and
      inline styles can ask for `var(--weather-temp)` instead of reaching for
      a literal. These are aliases, not a second palette. */
-  --weather-temp-cool: var(--color-met-temp-cool);
-  --weather-temp-normal: var(--color-met-temp-normal);
-  --weather-temp-hot: var(--color-met-temp-hot);
-  --weather-temp-extreme: var(--color-met-temp-extreme);
-  --weather-pressure: var(--color-met-pressure);
-  --weather-humidity: var(--color-met-humidity);
-  --weather-wind: var(--color-met-wind);
-  --weather-rain: var(--color-met-rain);
+    --weather-temp-cool: var(--color-met-temp-cool);
+    --weather-temp-normal: var(--color-met-temp-normal);
+    --weather-temp-hot: var(--color-met-temp-hot);
+    --weather-temp-extreme: var(--color-met-temp-extreme);
+    --weather-pressure: var(--color-met-pressure);
+    --weather-humidity: var(--color-met-humidity);
+    --weather-wind: var(--color-met-wind);
+    --weather-rain: var(--color-met-rain);
 }
 
 /* `data-theme` is retained as a hook but there is no second palette behind
    it. Any page that sets it now gets these same light values, so a stray
    override degrades to the default rather than to a black page. */
 [data-theme] {
-  color-scheme: light;
+    color-scheme: light;
 }
 
 html {
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: linear-gradient(180deg, var(--page) 0%, #F1F5F9 100%);
-  background-attachment: fixed;
-  color: var(--ink);
-  font-family: var(--font-sans);
-  /* Overflow is NOT globally hidden any more. Hiding it hides layout bugs
+    background: linear-gradient(180deg, var(--page) 0%, #F1F5F9 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    /* Overflow is NOT globally hidden any more. Hiding it hides layout bugs
      instead of fixing them, and §22 requires that the page never scrolls
      horizontally — so each surface is made to fit instead. */
-  margin: 0;
-  padding: 0;
+    margin: 0;
+    padding: 0;
 }
 
 *:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-  border-radius: 2px;
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 ::selection {
-  background-color: var(--accent);
-  color: var(--accent-fg);
+    background-color: var(--accent);
+    color: var(--accent-fg);
 }
 
 /* ── Typography scale (§B) ─────────────────────────────────────────────────
@@ -209,68 +213,74 @@ body {
    Uppercase is reserved for system labels, status codes and technical
    identifiers — never for prose. */
 .t-page-title {
-  font-size: 30px;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
+
 .t-section-title {
-  font-size: 20px;
-  line-height: 1.3;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+    font-size: 20px;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
+
 .t-card-title {
-  font-size: 15px;
-  line-height: 1.4;
-  font-weight: 600;
+    font-size: 15px;
+    line-height: 1.4;
+    font-weight: 600;
 }
+
 .t-body {
-  font-size: 14.5px;
-  line-height: 1.55;
+    font-size: 14.5px;
+    line-height: 1.55;
 }
+
 .t-meta {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--ink-muted);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--ink-muted);
 }
+
 /* System / status label — one of the few places uppercase is correct. */
 .t-label {
-  font-size: 11px;
-  line-height: 1.35;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
+    font-size: 11px;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
 }
 
 /* Telemetry, station IDs, timestamps, measurements, logs. */
 .t-mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
-  letter-spacing: -0.01em;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: -0.01em;
 }
 
 /* ── Card (§25) ────────────────────────────────────────────────────────────
    White, 1px subtle border, small radius, very subtle shadow. No glassmorphism,
    no neon, no gradient wash. */
 .card {
-  background: var(--card);
-  border: 1px solid var(--hairline);
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgb(11 31 58 / 0.04);
-  transition: box-shadow 150ms ease, border-color 150ms ease;
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgb(11 31 58 / 0.04);
+    transition: box-shadow 150ms ease, border-color 150ms ease;
 }
+
 .card:hover {
-  box-shadow: 0 2px 8px rgb(11 31 58 / 0.06);
-  border-color: var(--hairline-strong);
+    box-shadow: 0 2px 8px rgb(11 31 58 / 0.06);
+    border-color: var(--hairline-strong);
 }
 
 /* ── Focus / touch targets (§23: 44px minimum on touch) ─────────────────── */
 .touch-target {
-  min-width: 44px;
-  min-height: 44px;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 /* ============================================================================
@@ -281,74 +291,98 @@ body {
    motion, nothing decorative moves.
    ============================================================================ */
 @keyframes ms-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.35;
+    }
 }
+
 .animate-live-dot {
-  animation: ms-pulse 2s ease-in-out infinite;
+    animation: ms-pulse 2s ease-in-out infinite;
 }
 
 @keyframes ms-skeleton {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.75; }
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.75;
+    }
 }
+
 .skeleton {
-  background: var(--color-hairline);
-  border-radius: 4px;
-  animation: ms-skeleton 1.5s ease-in-out infinite;
+    background: var(--color-hairline);
+    border-radius: 4px;
+    animation: ms-skeleton 1.5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 /* ── Leaflet: restyled for the light operations map (§E) ───────────────── */
 .leaflet-container {
-  background: var(--color-surface-alt);
-  font-family: var(--font-sans);
-  border-radius: 6px;
+    background: var(--color-surface-alt);
+    font-family: var(--font-sans);
+    border-radius: 6px;
 }
+
 .leaflet-popup-content-wrapper {
-  background: var(--card);
-  border: 1px solid var(--hairline);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgb(11 31 58 / 0.1);
-  color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgb(11 31 58 / 0.1);
+    color: var(--ink);
 }
+
 .leaflet-popup-content {
-  margin: 10px 12px;
-  font-size: 12px;
-  line-height: 1.5;
+    margin: 10px 12px;
+    font-size: 12px;
+    line-height: 1.5;
 }
+
 .leaflet-popup-tip {
-  background: var(--card);
-  border: 1px solid var(--hairline);
-  box-shadow: none;
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    box-shadow: none;
 }
+
 .leaflet-control-zoom a {
-  background: var(--card) !important;
-  border-color: var(--hairline) !important;
-  color: var(--ink) !important;
-  border-radius: 4px !important;
+    background: var(--card) !important;
+    border-color: var(--hairline) !important;
+    color: var(--ink) !important;
+    border-radius: 4px !important;
 }
+
 .leaflet-control-zoom a:hover {
-  background: var(--surface-hover) !important;
-  color: var(--color-navy) !important;
+    background: var(--surface-hover) !important;
+    color: var(--color-navy) !important;
 }
+
 .leaflet-control-attribution {
-  background: rgb(255 255 255 / 0.8) !important;
-  color: var(--ink-faint) !important;
-  font-size: 9px !important;
+    background: rgb(255 255 255 / 0.8) !important;
+    color: var(--ink-faint) !important;
+    font-size: 9px !important;
 }
+
 .leaflet-control-attribution a {
-  color: var(--ink-muted) !important;
+    color: var(--ink-muted) !important;
 }
 
 /* ── Contained screen-reader-only text ──────────────────────────────────────
@@ -374,8 +408,8 @@ body {
    This is a *containment* rule, not a replacement for `.sr-only` — the utility
    still supplies the clip, the 1px box and the nowrap. */
 .sr-only {
-  left: 0;
-  top: 0;
+    left: 0;
+    top: 0;
 }
 
 /* ── Station map: pins, labels, clusters (§E) ─────────────────────────────
@@ -385,147 +419,174 @@ body {
    area, which is the closest a 5.5px-wide country-scale station can get to
    the 44px touch floor without pins overlapping. */
 .ms-map-icon {
-  background: none !important;
-  border: none !important;
+    background: none !important;
+    border: none !important;
 }
+
 .ms-map-pin {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  height: 18px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
 }
+
 .ms-map-pin::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 34px;
-  height: 34px;
-  margin: -8px 0 0 -8px;
-  border-radius: 50%;
-  /* An invisible-but-present hit area; a transparent background still
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 34px;
+    height: 34px;
+    margin: -8px 0 0 -8px;
+    border-radius: 50%;
+    /* An invisible-but-present hit area; a transparent background still
      receives pointer events, which an `opacity: 0` element also would. */
-  background: transparent;
+    background: transparent;
 }
+
 .ms-map-glyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--pin);
-  border: 2px solid var(--ring);
-  color: #FFFFFF;
-  font-size: 10px;
-  line-height: 1;
-  box-shadow: 0 1px 2px rgb(11 31 58 / 0.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--pin);
+    border: 2px solid var(--ring);
+    color: #FFFFFF;
+    font-size: 10px;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgb(11 31 58 / 0.35);
 }
+
 .ms-map-pin.is-selected .ms-map-glyph {
-  outline: 2px solid var(--color-navy);
-  outline-offset: 2px;
+    outline: 2px solid var(--color-navy);
+    outline-offset: 2px;
 }
+
 .ms-map-pin:hover .ms-map-glyph {
-  transform: scale(1.15);
-  transition: transform 150ms ease;
+    transform: scale(1.15);
+    transition: transform 150ms ease;
 }
+
 .ms-map-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 4px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--card);
-  border: 1px solid var(--hairline);
-  white-space: nowrap;
-  box-shadow: 0 1px 2px rgb(11 31 58 / 0.12);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 4px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgb(11 31 58 / 0.12);
 }
+
 .ms-map-code {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink);
 }
+
 .ms-map-word {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--pin);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--pin);
 }
+
 .ms-map-cluster {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--pin);
-  border: 2px solid var(--ring);
-  box-shadow: 0 1px 3px rgb(11 31 58 / 0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--pin);
+    border: 2px solid var(--ring);
+    box-shadow: 0 1px 3px rgb(11 31 58 / 0.3);
 }
+
 .ms-map-count {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: #FFFFFF;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+@media (max-width: 480px) {
+    .ms-map-legend {
+        top: 0.5rem;
+        right: 0.5rem;
+        bottom: auto;
+        left: auto;
+    }
 }
 
 .ms-map-popup-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
 }
+
 .ms-map-popup-id {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
 }
+
 .ms-map-popup-state {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
+
 .ms-map-popup-name {
-  margin-top: 1px;
-  font-size: 11px;
-  color: var(--ink-muted);
+    margin-top: 1px;
+    font-size: 11px;
+    color: var(--ink-muted);
 }
+
 .ms-map-popup-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px 12px;
-  margin: 7px 0 0;
-  padding: 7px 0 0;
-  border-top: 1px solid var(--hairline);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 12px;
+    margin: 7px 0 0;
+    padding: 7px 0 0;
+    border-top: 1px solid var(--hairline);
 }
+
 .ms-map-popup-grid dt {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
 }
+
 .ms-map-popup-grid dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink);
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink);
 }
+
 .ms-map-popup-class {
-  margin-top: 7px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ink);
+    margin-top: 7px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink);
 }
+
 .ms-map-popup-note {
-  margin-top: 2px;
-  font-size: 10px;
-  line-height: 1.45;
-  color: var(--ink-muted);
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.45;
+    color: var(--ink-muted);
 }
 
 /* ── Map popup: the evidence panel ──────────────────────────────────────────
@@ -537,112 +598,126 @@ body {
    custom property by the popup builder and resolves to a token that already
    exists, so the ramp stays the single axis it is everywhere else. */
 .ms-map-popup-ev {
-  --ms-ev-accent: var(--color-telemetry-text);
-  margin: 7px 0 0;
-  padding: 6px 7px;
-  border: 1px solid var(--hairline);
-  border-left: 2px solid var(--ms-ev-accent);
-  border-radius: 2px;
-  background: var(--color-surface-alt);
+    --ms-ev-accent: var(--color-telemetry-text);
+    margin: 7px 0 0;
+    padding: 6px 7px;
+    border: 1px solid var(--hairline);
+    border-left: 2px solid var(--ms-ev-accent);
+    border-radius: 2px;
+    background: var(--color-surface-alt);
 }
+
 .ms-map-popup-ev h6 {
-  margin: 0 0 4px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+    margin: 0 0 4px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
 }
+
 .ms-map-popup-ev dt {
-  flex: none;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ms-ev-accent);
+    flex: none;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ms-ev-accent);
 }
+
 /* Two delta windows per channel, side by side. Fixed tracks so the columns
    line up down the panel — a misaligned column of numbers is unreadable in a
    way a ragged one is not. */
 .ms-map-popup-ev dd {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 8px;
-  margin: 0;
-  text-align: right;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 8px;
+    margin: 0;
+    text-align: right;
 }
+
 .ms-map-popup-evhead dt,
 .ms-map-popup-evhead dd {
-  padding-bottom: 3px;
-  border-bottom: 1px solid var(--hairline);
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--hairline);
 }
+
 .ms-map-popup-evhead dd {
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
 }
-.ms-map-popup-evrow + .ms-map-popup-evrow {
-  margin-top: 2px;
+
+.ms-map-popup-evrow+.ms-map-popup-evrow {
+    margin-top: 2px;
 }
+
 .ms-map-popup-ev-label {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink);
 }
+
 .ms-map-popup-ev-na {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
 }
+
 /* Marks the value that satisfies a Stage 03 storm bound — i.e. the conjunct
    that actually carried the verdict. Bold and accent-coloured rather than
    highlighted, so the panel stays a proof and not a decoration. */
 .ms-map-popup-ev-label.is-bound {
-  font-weight: 700;
-  color: var(--ms-ev-accent);
+    font-weight: 700;
+    color: var(--ms-ev-accent);
 }
+
 .ms-map-popup-verdict {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  padding-top: 5px;
-  border-top: 1px dashed var(--color-hairline-strong);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top: 1px dashed var(--color-hairline-strong);
 }
+
 .ms-map-popup-verdict-tag {
-  flex: none;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--ms-ev-accent);
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--ms-ev-accent);
 }
+
 .ms-map-popup-verdict-val {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--ink);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink);
 }
+
 /* The disposition is what separates "keep this observation" from "send a
    technician". It is the last line in the popup and the only one set in
    body weight, because it is the one an operator acts on. */
 .ms-map-popup-action {
-  display: block;
-  margin-top: 5px;
-  font-size: 10px;
-  line-height: 1.45;
-  color: var(--ink-muted);
+    display: block;
+    margin-top: 5px;
+    font-size: 10px;
+    line-height: 1.45;
+    color: var(--ink-muted);
 }
+
 .ms-map-popup-when {
-  display: block;
-  margin-top: 5px;
-  padding-top: 4px;
-  border-top: 1px solid var(--hairline);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--ink-faint);
+    display: block;
+    margin-top: 5px;
+    padding-top: 4px;
+    border-top: 1px solid var(--hairline);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-faint);
 }
 
 /* ── Landing: engine rule inspector ─────────────────────────────────────────
@@ -650,147 +725,164 @@ body {
    Everything here is quoted from lib/engineRules.ts, which
    __tests__/engineRules.test.ts checks against lib/anomalyLogic.ts. */
 .ms-inspect {
-  border: 1px solid var(--hairline);
-  border-radius: 3px;
-  background: var(--card);
-  overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    background: var(--card);
+    overflow: hidden;
 }
+
 .ms-inspect-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--hairline);
-  background: var(--color-surface-alt);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--color-surface-alt);
 }
+
 .ms-inspect-stage {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--color-telemetry-text);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--color-telemetry-text);
 }
+
 .ms-inspect-headline {
-  margin: 4px 0 0;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--ink);
-  max-width: 62ch;
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--ink);
+    max-width: 62ch;
 }
+
 .ms-inspect-copy {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  border: 1px solid var(--color-hairline-strong);
-  border-radius: 2px;
-  background: var(--card);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--ink-muted);
-  cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border: 1px solid var(--color-hairline-strong);
+    border-radius: 2px;
+    background: var(--card);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s;
 }
+
 .ms-inspect-copy:hover {
-  color: var(--color-telemetry-text);
-  border-color: var(--color-telemetry);
+    color: var(--color-telemetry-text);
+    border-color: var(--color-telemetry);
 }
 
 .ms-inspect-evidence {
-  list-style: none;
-  margin: 0;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--hairline);
+    list-style: none;
+    margin: 0;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--hairline);
 }
+
 .ms-inspect-row {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  flex-wrap: wrap;
-  padding: 2px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    flex-wrap: wrap;
+    padding: 2px 0;
 }
+
 .ms-inspect-idx {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--ink-faint);
 }
+
 .ms-inspect-sym {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  min-width: 62px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    min-width: 62px;
 }
+
 .ms-inspect-op {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-muted);
 }
+
 .ms-inspect-val {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink);
 }
+
 .ms-inspect-and {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
 }
 
 .ms-inspect-code {
-  margin: 0;
-  padding: 10px 12px;
-  background: var(--color-surface-alt);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.65;
-  color: var(--ink);
-  overflow-x: auto;
+    margin: 0;
+    padding: 10px 12px;
+    background: var(--color-surface-alt);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.65;
+    color: var(--ink);
+    overflow-x: auto;
 }
+
 .ms-inspect-cline {
-  display: block;
-  white-space: pre;
+    display: block;
+    white-space: pre;
 }
+
 .ms-inspect-comment {
-  color: var(--ink-faint);
+    color: var(--ink-faint);
 }
 
 .ms-inspect-foot {
-  padding: 9px 12px;
-  border-top: 1px solid var(--hairline);
+    padding: 9px 12px;
+    border-top: 1px solid var(--hairline);
 }
+
 .ms-inspect-attr {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
 }
+
 .ms-inspect-attr-k {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
 }
+
 .ms-inspect-attr-v {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-muted);
 }
+
 .ms-inspect-rationale {
-  margin: 6px 0 0;
-  font-size: 11.5px;
-  line-height: 1.55;
-  color: var(--ink-muted);
-  max-width: 86ch;
+    margin: 6px 0 0;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--ink-muted);
+    max-width: 86ch;
 }
 
 /* ── Landing: the operations band ────────────────────────────────────────
@@ -800,110 +892,121 @@ body {
    a visitor who clicks through arrives somewhere they have already seen. */
 
 .land-rail-link {
-  display: block;
-  padding: 5px 10px 5px 0;
-  border-left: 2px solid transparent;
-  padding-left: 10px;
-  color: var(--ink-muted);
-  text-decoration: none;
-  font-size: 12.5px;
-  line-height: 1.35;
-  transition: color 120ms ease, border-color 120ms ease;
+    display: block;
+    padding: 5px 10px 5px 0;
+    border-left: 2px solid transparent;
+    padding-left: 10px;
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 12.5px;
+    line-height: 1.35;
+    transition: color 120ms ease, border-color 120ms ease;
 }
+
 .land-rail-link:hover {
-  color: var(--ink);
-  border-left-color: var(--color-hairline-strong);
+    color: var(--ink);
+    border-left-color: var(--color-hairline-strong);
 }
+
 .land-rail-link[aria-current="true"] {
-  color: var(--ink);
-  border-left-color: var(--color-navy);
-  font-weight: 600;
+    color: var(--ink);
+    border-left-color: var(--color-navy);
+    font-weight: 600;
 }
+
 .land-rail-num {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--ink-faint);
-  margin-right: 7px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    margin-right: 7px;
 }
+
 .land-rail-link[aria-current="true"] .land-rail-num {
-  color: var(--color-navy);
+    color: var(--color-navy);
 }
 
 /* Section anchor target: the sticky header would otherwise cover the
    heading a rail link just scrolled to. */
 .land-anchor {
-  scroll-margin-top: 72px;
+    scroll-margin-top: 72px;
 }
 
 /* The pipeline chain. Seven stages, each a bordered cell carrying the real
    threshold the engine tests. Not decoration — if a threshold changes in
    lib/anomalyLogic.ts this string must change with it. */
 .pipe-cell {
-  border: 1px solid var(--hairline);
-  border-top: 2px solid var(--color-navy);
-  background: var(--card);
-  padding: 10px 11px 11px;
+    border: 1px solid var(--hairline);
+    border-top: 2px solid var(--color-navy);
+    background: var(--card);
+    padding: 10px 11px 11px;
 }
+
 .pipe-cell.is-open {
-  border-top-color: var(--color-hairline-strong);
-  background: var(--surface-alt);
+    border-top-color: var(--color-hairline-strong);
+    background: var(--surface-alt);
 }
+
 .pipe-index {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 500;
+    color: var(--ink-faint);
 }
+
 .pipe-name {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.25;
-  margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
+    margin-top: 2px;
 }
+
 .pipe-rule {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1.4;
-  color: var(--color-telemetry-text);
-  margin-top: 6px;
-  word-break: break-word;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: var(--color-telemetry-text);
+    margin-top: 6px;
+    word-break: break-word;
 }
+
 .pipe-note {
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--ink-muted);
-  margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--ink-muted);
+    margin-top: 6px;
 }
 
 /* ── Form controls ─────────────────────────────────────────────────────── */
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-ink-faint);
-  font-style: normal;
+    color: var(--color-ink-faint);
+    font-style: normal;
 }
 
 select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 28px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
 }
 
 /* ── Print (§K: print-friendly audit report) ───────────────────────────── */
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: #FFFFFF;
-    color: #000000;
-  }
-  .card {
-    border: 1px solid #CCCCCC;
-    box-shadow: none;
-    break-inside: avoid;
-  }
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: #FFFFFF;
+        color: #000000;
+    }
+
+    .card {
+        border: 1px solid #CCCCCC;
+        box-shadow: none;
+        break-inside: avoid;
+    }
 }

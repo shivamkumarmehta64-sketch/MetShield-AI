@@ -182,8 +182,8 @@ export default function RealTimeQCCanvas() {
 
     // Apply active scenario mutations
     if (activeScenario === 'temp-spike') {
-      // Thermistor Open-Circuit Spike (Sudden +24°C step jump)
-      nextT = 55.4;
+      // Thermistor Open-Circuit Spike (Sudden +21.4°C step jump)
+      nextT = 52.8;
       nextP = prevReading ? prevReading.pressure + (Math.random() - 0.5) * 0.1 : 1008.2;
       nextRH = prevReading ? prevReading.humidity + (Math.random() - 0.5) * 0.2 : 64.5;
     } else if (activeScenario === 'probe-freeze') {
@@ -436,14 +436,16 @@ export default function RealTimeQCCanvas() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold tracking-tight text-navy text-[15px]">
-                  METSHIELD AI — NAWS-QMS v4.2
+                  PROJECT JATAYU — NAWS-QMS v4.2
                 </span>
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-surface-alt border border-hairline text-ink-muted">
                   WMO-No. 8 PROTOCOL
                 </span>
               </div>
               <div className="text-[11px] text-ink-muted font-medium truncate">
-                {lang === 'hi' ? 'प्रोटोटाइप | पृथ्वी विज्ञान मंत्रालय (MoES/IMD) समस्या विवरण SIH26073 | Team AEROTECH1' : 'Prototype for MoES/IMD Problem Statement SIH26073 | Team AEROTECH1'}
+                {lang === 'hi'
+                  ? 'भारत सरकार | पृथ्वी विज्ञान मंत्रालय (MoES/IMD) | SIH26073'
+                  : 'भारत सरकार | Ministry of Earth Sciences (MoES/IMD) | SIH26073'}
               </div>
             </div>
           </div>
@@ -946,7 +948,7 @@ export default function RealTimeQCCanvas() {
           <summary className="p-3.5 border-b border-hairline bg-surface-alt font-mono text-[12px] font-bold text-navy hover:text-ink cursor-pointer flex justify-between items-center select-none">
             <span className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-navy-deep" />
-              [🔧 Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]
+              [🔧 NIC-MoES Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]
             </span>
             <span className="text-[11px] text-ink-muted group-open:hidden">
               Click to expand test controls & export
