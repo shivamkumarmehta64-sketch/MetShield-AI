@@ -1,0 +1,27 @@
+{
+  "name": "MetShield-AI Codespace",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" }
+  },
+  "forwardPorts": [3000],
+  "postCreateCommand": "npm install && npx playwright install --with-deps || true",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-playwright.playwright",
+        "ms-vscode.vscode-typescript-next",
+        "eamodio.gitlens",
+        "christian-kohler.path-intellisense"
+      ]
+    }
+  },
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "remoteUser": "vscode",
+  "shutdownAction": "stopContainer"
+}
