@@ -1,35 +1,64 @@
-# Metshield AI: Automated Weather Station Quality Management System
-## NAWS-MetShield: Real-Time Intelligent Telemetry Validation & Thermodynamic Anomaly Defense
-### Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD) | Government of India
-#### Standardized Solution Architecture for National AWS Telemetry Assurance (Team AEROTECH)
+# MetShield AI — Automatic Weather Station Quality Control
 
-[![Next.js 16](https://img.shields.io/badge/Next.js-16.3.4-black?logo=next.js)](https://nextjs.org/)
-[![TypeScript Strict](https://img.shields.io/badge/TypeScript-5.x_Strict-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![WMO-No. 8](https://img.shields.io/badge/Standard-WMO--No._8-002147)](https://library.wmo.int/records/item/41650-guide-to-instruments-and-methods-of-observation)
-[![Vitest Passing](https://img.shields.io/badge/Tests-132%2F132_Passed-success?logo=vitest)](https://vitest.dev/)
-[![ESLint Clean](https://img.shields.io/badge/ESLint-0_Errors_%2F_0_Warnings-emerald)](https://eslint.org/)
-[![Zero Cost](https://img.shields.io/badge/Operating_Cost-%E2%82%B90_Zero_Cost-brightgreen)](#7-complete-zero-cost-public-api-ecosystem)
-[![Compliance](https://img.shields.io/badge/Compliance-GIGW_3.0-orange)](https://guidelines.india.gov.in/)
+**Decides whether an observation is the atmosphere or the instrument** — and quarantines the
+faulty ones before they reach numerical weather prediction.
 
----
+Built for the MoES/IMD problem statement **SIH26073** (AI/ML-based intelligent anomaly detection
+for AWS). It was not selected. What remains is the part that can be measured: a deterministic
+quality-control engine, an operations console, and a reproducible benchmark over **recorded**
+station data.
 
-## Live Demo
-🔴 https://aws2026-nu.vercel.app
+[![CI](https://github.com/shivamkumarmehta64-sketch/MetShield-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/shivamkumarmehta64-sketch/MetShield-AI/actions/workflows/ci.yml)
+[![Next.js 16.4](https://img.shields.io/badge/Next.js-16.4-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](tsconfig.json)
+[![Tests](https://img.shields.io/badge/tests-212_passing-success)](__tests__)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-## Quick Navigation
-| Page | URL | Description |
-|------|-----|-------------|
-| Landing | `/` | Problem statement + live CLI feed |
-| Dashboard | `/dashboard` | Station observation matrix |
-| Live Console | `/dashboard?tab=live` | Telemetry console + QC (benchmark replay — see §14) |
+![MetShield AI landing page](docs/assets/landing.jpg)
+
+## What it does
+
+- **Separates weather from hardware.** A pressure drop alone is drift; a storm requires it
+  *coupled* to rising humidity and falling temperature (ΔP ≤ −2.5 hPa with ΔRH ≥ +15% and
+  ΔT ≤ −1.5 °C). Real squalls pass; a drifting barometer does not.
+- **Quarantines before assimilation.** Every verdict carries a WMO quality flag, a named rule,
+  and the magnitude that breached it — not a black-box score.
+- **Says where every number came from.** Each figure is labelled `LIVE`, `DERIVED` or `SIMULATED`
+  in one registry, because a synthetic number that looks official is worse than an obvious
+  placeholder.
+
+## Measured, not claimed
+
+Both benchmarks run from this repository. Neither figure is hand-written.
+
+| Benchmark | Data | Result |
+|---|---|---|
+| `npm run bench` | 20,000 seeded synthetic frames | **98.7%** macro F1 · p95 **0.005 ms** · **0 of 4,000** storm frames quarantined |
+| `npm run bench:real` | 308k clean hours, 5 Indian stations (recorded) | **62.2%** precision · **37.8%** recall · **47.0%** F1 vs **18.6%** for a static range check · **0.3%** of real weather flagged |
+
+Per fault class on recorded data: packet loss **100%**, single-sample spikes **93.6%**, frozen
+values **61%** (six-sample confirmation latency), calibration drift **0.0%** — a known,
+root-caused gap, documented in [§13](#13-honest-engineering-notes--known-limitations).
+
+## Live demo
+
+**https://aws2026-nu.vercel.app**
+
+| Page | Path | What it is |
+|------|------|------------|
+| Landing | `/` | What the system is, and what it currently thinks |
+| Operations console | `/dashboard` | Station matrix, telemetry, QC panel, scenario testbench |
+| QC canvas | `/canvas` | Single-station three-parameter evaluation surface |
+| Network | `/stations` | National map and registry |
 | Incidents | `/incidents` | WMO anomaly audit trail |
 | Analytics | `/analytics` | QC performance metrics |
-| Audit Report | `/audit-report` | Integrity findings — states what the checksum is and is not |
+| Audit report | `/audit-report` | Integrity findings — states what the checksum is and is not |
 | Mobile PWA | `/mobile` | Field technician sensor node |
+
 
 ## Tech Stack
 - Next.js 16 · TypeScript Strict · Tailwind CSS
-- Recharts · Leaflet · Vitest (132/132 passing)
+- Recharts · Leaflet · Vitest (212 passing)
 - Zero paid APIs · ₹0 operating cost
 - WMO-No. 8 - inspired QC logic
 
@@ -230,7 +259,7 @@ The repository includes a comprehensive automated test suite powered by **Vitest
 npm test
 ```
 
-### Verified Test Cases — 132 tests across 14 files, all passing in ~700ms
+### Verified Test Cases — 212 tests across 20 files, all passing in ~1s
 
 | Suite | Tests | What it locks down |
 | --- | ---: | --- |
@@ -268,7 +297,7 @@ npm install
 
 # 3. Verify code quality & tests
 npm run lint    # 0 errors, 0 warnings
-npm test        # 132/132 tests pass
+npm test        # 212 tests pass
 
 # 4. Start development server
 npm run dev
@@ -419,3 +448,35 @@ Stated plainly so that nobody relies on a capability the codebase does not have.
   available through `/api/weather` (IMD / Open-Meteo) and is used only where a live baseline
   exists; the field-node client at `/mobile` is the one surface that posts real device
   telemetry, and it does so through the PSK-guarded `/api/telemetry` write path.
+- **The submitted pitch deck was retracted and rebuilt.** `scripts/generate_sih_ppt.py`
+  produces `public/Metshield_AI_SIH26073.pptx`. As submitted it sold an "Isolation Forest +
+  LSTM Autoencoder ensemble", "SHAP XAI attribution", "Kriging interpolation", a
+  TensorFlow/Keras/pykrige stack, "97.8% F1" and "<4.2ms" latency — none of which this
+  repository has ever contained. The deck now describes the deterministic rule engine and
+  quotes the benchmark that actually runs: 98.7% macro F1 and p95 0.005 ms over 20,000 seeded
+  **synthetic** frames, with 0 of 4,000 genuine storm frames quarantined as sensor faults.
+  It is a synthetic benchmark, not field validation, and the deck says so.
+  `__tests__/claimsAudit.test.ts` now scans `scripts/` as well as the shipped app, so a
+  fabricated capability cannot return through the pitch material. Note it scans source, not
+  the binary `.pptx` — regenerate the deck after editing the generator.
+- **Calibration drift is not detectable from the three in-scope parameters.**
+  `isDrift` reads `this.driftOffset`, and `driftOffset` is written by exactly three things:
+  the demo trigger, field calibration, and the reset. It is never derived from an
+  observation, so on real ingest it stays 0 and the drift branch can only fire when the
+  testbench says drift happened. `scripts/benchmark-real-injected.ts` measures the
+  consequence: **0.0% recall on injected barometric drift at every rate tested**
+  (0.02–1.0 hPa/h), against 93.6% on single-sample spikes and 100% on packet loss. The
+  engine names the drift class correctly 100% of the time — once it is told drift occurred,
+  which is not detection. This is not a threshold that needs loosening: at hourly cadence a
+  2–6 hPa drift is smaller than ordinary diurnal and synoptic swing, so separating it needs a
+  climatological or NWP-background reference (the sixth layer of the NCMRWF operational
+  protocol), not another rule over T/P/RH alone.
+- **The detector is benchmarked against recorded station data, not only synthetic frames.**
+  `npm run bench:real` injects the same fault catalogue into hourly observations from five
+  Indian stations (Safdarjung, Colaba, Meenambakkam, Alipore, Thiruvananthapuram), each
+  driving the registered profile at identical coordinates. Seeded `20260201`, 478 episodes,
+  ~308k clean rows: **precision 62.2%, recall 37.8%, F1 47.0%** against 18.6% for a static
+  range check; **0.3%** of clean recorded hours flagged as faults and **0.1% of the hottest
+  5%** quarantined. The recall figure is dominated by the drift gap above; per-class recall
+  is in the harness output. Run `node scripts/fetch-real-aws-data.mjs` first — the raw
+  archive is gitignored.

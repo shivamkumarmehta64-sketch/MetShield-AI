@@ -1,30 +1,64 @@
-name: MetShield AI CI
+name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+  workflow_dispatch:
+
+# Least privilege: this workflow only reads the repository.
+permissions:
+  contents: read
+
+# A new push supersedes a queued run on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  verify-and-build:
+  verify:
+    name: verify · build · benchmark
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-          cache: 'npm'
+          node-version: 22.x
+          cache: npm
 
-      - name: Install dependencies
+      - name: Install
         run: npm ci
 
-      - name: Run verification gate (Lint, Typecheck, Tests)
+      # The gate: eslint (0 errors) → tsc --noEmit → vitest.
+      - name: Verify
         run: npm run verify
 
-      - name: Next.js Production Build
+      - name: Production build
         run: npx next build
+
+      # The differentiator is a reproducible benchmark, so CI runs it rather
+      # than trusting the number in the README.
+      - name: Detector benchmark (synthetic, seeded)
+        run: npm run bench | tee benchmark-output.txt
+
+      # `bench:real` needs the recorded archive, which is fetched rather than
+      # committed (36 MB). CI proves the harness runs, not the numbers.
+      - name: Real-record benchmark harness smoke test
+        run: node scripts/fetch-real-aws-data.mjs && npm run bench:real
+
+      - name: Dependency audit (fails on critical only)
+        run: npm audit --omit=dev --audit-level=critical
+
+      - name: Upload benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output
+          path: |
+            benchmark-output.txt
+            data/benchmark/*.json
+          retention-days: 14
