@@ -13,6 +13,7 @@ import HeroVisual from '@/components/landing/HeroVisual';
 import NetworkSnapshotBand from '@/components/landing/NetworkSnapshotBand';
 import WhatChangedBand from '@/components/landing/WhatChangedBand';
 import HowMetshieldDecidesBand from '@/components/landing/HowMetshieldDecidesBand';
+import OperationsBand from '@/components/landing/OperationsBand';
 
 /**
  * The public landing page for MetShield AI.
@@ -26,6 +27,7 @@ import HowMetshieldDecidesBand from '@/components/landing/HowMetshieldDecidesBan
 
 const SECTIONS = [
   { id: 'platform', label: 'Platform' },
+  { id: 'operations', label: 'Operations' },
   { id: 'what-changed', label: 'What changed?' },
   { id: 'qc-engine', label: 'QC engine' },
   { id: 'network', label: 'Network' },
@@ -101,22 +103,23 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="hidden lg:flex items-center gap-3 border-l border-hairline pl-4 ml-2">
-            <span className="flex items-center gap-1.5 t-meta text-[11px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-healthy animate-live-dot"></span>
-              2.5s DCP link
+          {/* Header status — xl and up only. At 1024 px the nav shares the row
+              with this block and the logo, and the three together overflow the
+              viewport by ~200 px. The rail already carries the section links
+              between lg and xl, so this block is the one that can wait. */}
+          <div className="hidden xl:flex items-center gap-3 border-l border-hairline pl-4 ml-2">
+            <span className="t-meta text-[11px]">
+              <span className="font-mono font-semibold text-ink">{IMD_AWS_STATIONS.length}</span> registered stations
             </span>
-            <div className="flex items-center gap-1 bg-surface-alt rounded border border-hairline px-1">
-              <button className="px-1.5 text-xs hover:text-navy text-ink-muted font-bold">A-</button>
-              <button className="px-1.5 text-[13px] hover:text-navy text-ink-muted font-bold">A</button>
-              <button className="px-1.5 text-sm hover:text-navy text-ink-muted font-bold">A+</button>
-            </div>
-            <button className="t-meta text-[11px] font-semibold border border-hairline rounded px-2 hover:bg-surface-hover">
-              हिन्दी
-            </button>
+            <span className="t-meta text-[11px] text-ink-muted border-l border-hairline pl-3">
+              2.5 s replay cadence
+            </span>
           </div>
 
-          <nav aria-label="Sections" className="hidden lg:flex items-center gap-1">
+          {/* Section nav appears at xl. Between lg and xl the left rail already
+              carries all six section links, and the nav row cannot share the
+              header with the brand block and the CTA without wrapping. */}
+          <nav aria-label="Sections" className="hidden xl:flex items-center gap-1">
             {NAV.map((item) => (
               <Link
                 key={item.href}
@@ -129,7 +132,11 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-2.5">
-            <span className="t-label font-mono px-2 py-1 rounded border border-hairline bg-surface-alt text-ink font-semibold text-[11px]">
+            {/* The data-mode badge is xl-only for the same reason as the status
+                block: at 1024 the row is logo + nav + badge + CTA and does not
+                fit. The rail states the data mode from lg upwards, so nothing
+                is lost at the sizes where the badge is hidden. */}
+            <span className="hidden xl:inline-block t-label font-mono px-2 py-1 rounded border border-hairline bg-surface-alt text-ink font-semibold text-[11px]">
               {DATA_MODE}
             </span>
             <Link
@@ -222,6 +229,21 @@ export default function LandingPage() {
 
               {/* Network Snapshot Strip */}
               <NetworkSnapshotBand />
+            </section>
+
+            {/* ── 02 Operations: what the engine currently thinks ── */}
+            <section id="operations" className="land-anchor space-y-4" aria-labelledby="operations-h">
+              <div style={{ maxWidth: '78ch' }}>
+                <div className="t-label text-sky-deep font-bold mb-1">CURRENT ENGINE STATE</div>
+                <h2 id="operations-h" className="t-section-title text-navy">
+                  What the system thinks right now
+                </h2>
+                <p className="t-body text-ink-muted mt-1">
+                  The same snapshot the operations console renders, not a screenshot of it. It leads with the
+                  stations the engine is not satisfied with, because those are the only rows that carry a decision.
+                </p>
+              </div>
+              <OperationsBand />
             </section>
 
             {/* ── Signature Section: "What Changed?" ── */}
@@ -320,6 +342,8 @@ export default function LandingPage() {
           </p>
           <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Link href="/dashboard" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Console</Link>
+            <Link href="/canvas" className="t-meta" style={{ color: 'var(--ink-muted)' }}>QC canvas</Link>
+            <Link href="/demo" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Demo lab</Link>
             <Link href="/mobile" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Mobile Node (PWA)</Link>
             <Link href="/stations" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Network</Link>
             <Link href="/incidents" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Incidents</Link>

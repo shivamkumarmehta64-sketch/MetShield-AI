@@ -162,10 +162,113 @@ export default function RealTimeQCCanvas() {
   const [currentResult, setCurrentResult] = useState<QCValidationResult | null>(BASELINE.initialQC);
   const [incidentList, setIncidentList] = useState<IncidentItem[]>([]);
 
+  // ── Live Weather Feed State (Open-Meteo / IMD Gateway) ────────────────────
+  const [liveProvider, setLiveProvider] = useState<string | null>(null);
+  const liveFeedRef = useRef<{
+    temperature: number;
+    pressure: number;
+    humidity: number;
+    provider: string;
+    fetchedAt: number;
+  } | null>(null);
+  const lastApiHistoryStampRef = useRef<number>(0);
+
   // ── Internal Historical Buffer for Rate-of-Change ──────────────────────────
   const historyRef = useRef<Reading3Param[]>(BASELINE.initialReadings);
   const freezeBufferRef = useRef<number[]>([]);
   const packetCountRef = useRef<number>(14);
+  const activeScenarioRef = useRef<SimulatedScenario>(activeScenario);
+  const hardwareRef = useRef({ pressure: hardwarePressure, isHardwareActive });
+
+  useEffect(() => {
+    activeScenarioRef.current = activeScenario;
+  }, [activeScenario]);
+
+  useEffect(() => {
+    hardwareRef.current = { pressure: hardwarePressure, isHardwareActive };
+  }, [hardwarePressure, isHardwareActive]);
+
+  // Fetch real live meteorological readings for AWS-DEL-04 (Safdarjung) on mount + every 30s
+  useEffect(() => {
+    let cancelled = false;
+    const syncLiveWeather = async () => {
+      try {
+        const res = await fetch('/api/weather?stationId=AWS-DEL-04&lat=28.585&lon=77.206');
+        if (!res.ok) return;
+        const payload = (await res.json()) as {
+          success?: boolean;
+          provider?: string;
+          data?: {
+            temperature?: number;
+            pressure?: number;
+            humidity?: number;
+            timestamp?: number;
+          };
+        };
+        if (cancelled || !payload?.success || !payload.data) return;
+        const t = Number(payload.data.temperature);
+        const p = Number(payload.data.pressure);
+        const rh = Number(payload.data.humidity);
+        if (!Number.isFinite(t) || !Number.isFinite(p) || !Number.isFinite(rh)) return;
+
+        const isFirstSync = liveFeedRef.current === null;
+        const fetchedAt = payload.data.timestamp ?? Date.now();
+        liveFeedRef.current = {
+          temperature: Math.round(t * 10) / 10,
+          pressure: Math.round(p * 10) / 10,
+          humidity: Math.round(rh * 10) / 10,
+          provider: payload.provider ?? 'OPEN_METEO',
+          fetchedAt,
+        };
+        setLiveProvider(payload.provider ?? 'OPEN_METEO');
+
+        // On first live load while nominal, re-anchor the baseline window to the real
+        // observation so transitioning from SSR seed to live weather never fires a false spike.
+        if (isFirstSync && activeScenarioRef.current === 'nominal') {
+          const liveTs = Date.now();
+          const liveReading: Reading3Param = {
+            temperature: liveFeedRef.current.temperature,
+            pressure: liveFeedRef.current.pressure,
+            humidity: liveFeedRef.current.humidity,
+            timestamp: liveTs,
+            stationId: 'AWS-DEL-04',
+          };
+          historyRef.current = [liveReading];
+          lastApiHistoryStampRef.current = fetchedAt;
+          const qc = evaluate3ParamQC(liveReading, []);
+          setCurrentResult(qc);
+          const timeStr = new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          }).format(new Date(liveTs));
+          setChartData([
+            {
+              index: packetCountRef.current,
+              timeStr,
+              temperature: qc.raw.temperature,
+              pressure: qc.raw.pressure,
+              humidity: qc.raw.humidity,
+              wmoFlag: qc.wmoFlag,
+              severity: qc.severity,
+              isAnomaly: false,
+            },
+          ]);
+        }
+      } catch {
+        // Keep simulated fallback cleanly when offline
+      }
+    };
+
+    void syncLiveWeather();
+    const timer = setInterval(() => void syncLiveWeather(), 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
 
   // ── DCP Satellite Link Cadence Loop (2.5s) ─────────────────────────────────
   const processNextTick = useCallback(() => {
@@ -175,18 +278,29 @@ export default function RealTimeQCCanvas() {
     const now = Date.now();
     const prevHistory = historyRef.current;
     const prevReading = prevHistory.length > 0 ? prevHistory[prevHistory.length - 1] : null;
+    const scenario = activeScenarioRef.current;
+    const hw = hardwareRef.current;
+    const live = liveFeedRef.current;
 
-    let nextT = 31.4 + (Math.random() - 0.5) * 0.4;
-    let nextP = isHardwareActive && hardwarePressure ? hardwarePressure : (1008.2 + (Math.random() - 0.5) * 0.3);
-    let nextRH = 64.5 + (Math.random() - 0.5) * 0.8;
+    let nextT = live ? live.temperature : 31.4 + (Math.random() - 0.5) * 0.4;
+    let nextP =
+      hw.isHardwareActive && hw.pressure
+        ? hw.pressure
+        : live
+        ? live.pressure
+        : 1008.2 + (Math.random() - 0.5) * 0.3;
+    let nextRH = live ? live.humidity : 64.5 + (Math.random() - 0.5) * 0.8;
 
     // Apply active scenario mutations
-    if (activeScenario === 'temp-spike') {
-      // Thermistor Open-Circuit Spike (Sudden +21.4°C step jump)
-      nextT = 52.8;
+    if (scenario === 'temp-spike') {
+      // Thermistor Open-Circuit Spike: chatter > 10°C per cycle within WMO envelope
+      // so consecutive ticks remain SENSOR_SPIKE instead of reverting to NOMINAL or PROBE_FREEZE.
+      const step = scenarioStepRef.current;
+      scenarioStepRef.current += 1;
+      nextT = (step % 2 === 0 ? 52.8 : 41.6) + (Math.random() - 0.5) * 0.4;
       nextP = prevReading ? prevReading.pressure + (Math.random() - 0.5) * 0.1 : 1008.2;
       nextRH = prevReading ? prevReading.humidity + (Math.random() - 0.5) * 0.2 : 64.5;
-    } else if (activeScenario === 'probe-freeze') {
+    } else if (scenario === 'probe-freeze') {
       // Probe Float Lock (Exact zero variance for 6+ cycles)
       scenarioStepRef.current += 1;
       const freezeVal = freezeBufferRef.current[0] ?? 31.8;
@@ -196,15 +310,24 @@ export default function RealTimeQCCanvas() {
       nextT = freezeVal;
       nextP = prevReading ? prevReading.pressure : 1008.2;
       nextRH = prevReading ? prevReading.humidity : 64.5;
-    } else if (activeScenario === 'convective-storm') {
-      // Convective Front Dynamics (Coupled plunge: ΔP <= -2.5 hPa & ΔRH >= +15% & ΔT <= -0.5°C)
+    } else if (scenario === 'convective-storm') {
+      // Convective Front Dynamics: coupled plunge on front passage (step 0),
+      // then stabilize in the post-frontal air mass instead of saturating RH and faulting on step 1.
+      const step = scenarioStepRef.current;
+      scenarioStepRef.current += 1;
       const prevP = prevReading?.pressure ?? 1008.2;
       const prevRH = prevReading?.humidity ?? 64.5;
       const prevT = prevReading?.temperature ?? 31.4;
 
-      nextP = Math.round((prevP - 3.8) * 10) / 10;
-      nextRH = Math.min(99.0, Math.round((prevRH + 22.0) * 10) / 10);
-      nextT = Math.round((prevT - 2.1) * 10) / 10;
+      if (step === 0) {
+        nextP = Math.round((prevP - 3.8) * 10) / 10;
+        nextRH = Math.min(99.0, Math.round((prevRH + 22.0) * 10) / 10);
+        nextT = Math.round((prevT - 2.1) * 10) / 10;
+      } else {
+        nextP = prevP + (Math.random() - 0.5) * 0.2;
+        nextRH = Math.min(99.0, Math.max(75.0, prevRH + (Math.random() - 0.5) * 0.6));
+        nextT = prevT + (Math.random() - 0.5) * 0.3;
+      }
     }
 
     nextT = Math.round(nextT * 10) / 10;
@@ -219,13 +342,24 @@ export default function RealTimeQCCanvas() {
       stationId: 'AWS-DEL-04',
     };
 
-    // Evaluate 3-tier QC engine
+    // Evaluate 3-tier QC engine.
+    // When streaming exact 30s-cached Open-Meteo API values in nominal mode without
+    // a physical barometer, only advance the QC history window when a new API sample
+    // arrives so cached API values are not misclassified as a frozen 2.5s hardware probe.
+    const isPolledLiveNominal =
+      scenario === 'nominal' && live !== null && !hw.isHardwareActive;
+    const isNewApiSample = live !== null && live.fetchedAt !== lastApiHistoryStampRef.current;
+
     const qc = evaluate3ParamQC(currentReading, prevHistory);
     setCurrentResult(qc);
 
-    // Update history window (keep last 30 frames)
-    const updatedHistory = [...prevHistory, currentReading].slice(-30);
-    historyRef.current = updatedHistory;
+    if (!isPolledLiveNominal || isNewApiSample) {
+      if (live && isNewApiSample) {
+        lastApiHistoryStampRef.current = live.fetchedAt;
+      }
+      const updatedHistory = [...prevHistory, currentReading].slice(-30);
+      historyRef.current = updatedHistory;
+    }
 
     const timeStr = new Intl.DateTimeFormat('en-IN', {
       timeZone: 'Asia/Kolkata',
@@ -332,7 +466,7 @@ export default function RealTimeQCCanvas() {
 
       setIncidentList((prev) => [incidentEntry, ...prev.slice(0, 19)]);
     }
-  }, [activeScenario, hardwarePressure, isHardwareActive]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(processNextTick, 2500);
@@ -341,13 +475,25 @@ export default function RealTimeQCCanvas() {
 
   // ── Diagnostic Scenario Injections ─────────────────────────────────────────
   const triggerScenario = (scenario: SimulatedScenario) => {
+    activeScenarioRef.current = scenario;
     setActiveScenario(scenario);
     scenarioStepRef.current = 0;
     freezeBufferRef.current = [];
-    if (scenario !== 'nominal') {
-      // Immediately run next tick for prompt UX responsiveness
-      setTimeout(processNextTick, 50);
+    if (scenario === 'nominal' && liveFeedRef.current) {
+      const live = liveFeedRef.current;
+      const liveTs = Date.now();
+      historyRef.current = [
+        {
+          temperature: live.temperature,
+          pressure: live.pressure,
+          humidity: live.humidity,
+          timestamp: liveTs,
+          stationId: 'AWS-DEL-04',
+        },
+      ];
+      lastApiHistoryStampRef.current = live.fetchedAt;
     }
+    setTimeout(processNextTick, 50);
   };
 
   // ── Official Audit Log CSV Export ──────────────────────────────────────────
@@ -450,18 +596,23 @@ export default function RealTimeQCCanvas() {
             </div>
           </div>
 
-          {/* Center Ingestion Link Status */}
+          {/* Local evaluation cadence.
+              This pill previously read "DCP SATELLITE LINK: ACTIVE (2.5s)" beside
+              a pulsing green dot, over a counter labelled "PACKETS INGESTED".
+              There is no DCP satellite link: the count starts at 14 and is
+              incremented by a local timer. Green is the operational-status
+              axis and must not be spent on a link that does not exist. */}
           <div className="hidden lg:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-surface-alt border border-hairline text-[11px] font-mono">
             <span
               className={`w-2 h-2 rounded-full ${
-                dcpStatus === 'INGESTING' ? 'bg-sky-deep animate-ping' : 'bg-healthy'
+                dcpStatus === 'INGESTING' ? 'bg-telemetry animate-ping' : 'bg-telemetry'
               }`}
             />
-            <span className="text-ink font-semibold">DCP SATELLITE LINK: ACTIVE (2.5s)</span>
+            <span className="text-ink font-semibold">LOCAL QC CADENCE: 2.5s</span>
             <span className="text-ink-faint">|</span>
             <span className="text-ink-muted">NODE: AWS-DEL-04</span>
             <span className="text-ink-faint">|</span>
-            <span className="text-navy font-bold">{packetCount} PACKETS INGESTED</span>
+            <span className="text-navy font-bold">{packetCount} PACKETS EVALUATED</span>
           </div>
 
           {/* Right Controls: GIGW Accessibility & Nav */}
@@ -574,15 +725,27 @@ export default function RealTimeQCCanvas() {
                 <Activity className="w-3.5 h-3.5 text-[var(--color-met-pressure)]" />
                 {lang === 'hi' ? 'वायुमंडलीय दबाव' : 'ATMOSPHERIC PRESSURE'}
               </span>
-              {/* Badge: Live Mobile Hardware Feed vs Simulated AWS Feed */}
+              {/* Badge: Live Mobile Hardware Feed vs Live Open-Meteo Feed vs Simulated Feed */}
+              {/* Provenance badge. Open-Meteo is labelled an NWP baseline, not a
+                  live station feed: its `current` block is interpolated surface
+                  analysis, not an IMD AWS transducer reading. Only real device
+                  hardware earns the green "live" treatment. */}
               <span
                 className={`t-meta font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1 text-[10px] ${
                   isHardwareActive
                     ? 'bg-healthy-bg text-healthy-text border border-healthy-border animate-pulse'
-                    : 'bg-surface-alt text-navy border border-hairline'
+                    : liveProvider && activeScenario === 'nominal'
+                      ? 'bg-telemetry-bg text-telemetry-text border border-telemetry-border'
+                      : 'bg-surface-alt text-navy border border-hairline'
                 }`}
               >
-                {isHardwareActive ? '● LIVE MOBILE HARDWARE FEED' : '● SIMULATED AWS FEED'}
+                {isHardwareActive
+                  ? '● LIVE MOBILE HARDWARE FEED'
+                  : activeScenario !== 'nominal'
+                  ? '● SIMULATED SCENARIO'
+                  : liveProvider
+                  ? `● ${liveProvider.replace(/_/g, ' ')} NWP BASELINE`
+                  : '● SIMULATED AWS FEED'}
               </span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -650,7 +813,7 @@ export default function RealTimeQCCanvas() {
                   {lang === 'hi' ? 'वास्तविक समय बहु-पैरामीटर टेलीमेट्री' : 'REAL-TIME MULTIVARIATE TELEMETRY STREAM'}
                 </h2>
                 <p className="t-meta mt-0.5">
-                  2.5s DCP cycle cadence · 30-frame sliding window · WMO-No. 8 physical limits
+                  2.5 s evaluation cadence · 30-frame sliding window · WMO-No. 8 physical limits
                 </p>
               </div>
 
@@ -846,7 +1009,7 @@ export default function RealTimeQCCanvas() {
                   <ShieldAlert className="w-4 h-4 text-fault" />
                   {lang === 'hi' ? 'वास्तविक समय घटना स्ट्रीम' : 'REAL-TIME INCIDENT STREAM'}
                 </h2>
-                <p className="t-meta">Root-cause identification & SHAP XAI attribution</p>
+                <p className="t-meta">Root-cause identification &amp; rule-weighted XAI attribution</p>
               </div>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-surface-alt text-ink">
                 {incidentList.length} INCIDENTS
@@ -903,7 +1066,7 @@ export default function RealTimeQCCanvas() {
                     {/* SHAP / XAI Attribution Bars */}
                     <div className="mt-2.5 pt-2 border-t border-hairline/60">
                       <div className="flex items-center justify-between text-[10px] font-mono text-ink-muted mb-1">
-                        <span>XAI ATTRIBUTION (SHAP WEIGHTS)</span>
+                        <span>XAI ATTRIBUTION (RULE WEIGHTS)</span>
                         <span>PRIMARY: {inc.xai.primaryParameter.toUpperCase()}</span>
                       </div>
                       {/* Attribution Progress Bar */}
@@ -948,7 +1111,7 @@ export default function RealTimeQCCanvas() {
           <summary className="p-3.5 border-b border-hairline bg-surface-alt font-mono text-[12px] font-bold text-navy hover:text-ink cursor-pointer flex justify-between items-center select-none">
             <span className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-navy-deep" />
-              [🔧 NIC-MoES Field Diagnostic & Bench Test Tool (Authorized Personnel Only)]
+              Field Diagnostic &amp; Bench Test Tool (Authorized Personnel Only)
             </span>
             <span className="text-[11px] text-ink-muted group-open:hidden">
               Click to expand test controls & export

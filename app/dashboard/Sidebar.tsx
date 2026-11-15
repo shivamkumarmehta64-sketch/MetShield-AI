@@ -12,11 +12,14 @@ import {
   FlaskConical,
   BarChart3,
   FileCheck2,
+  Activity,
+  PlayCircle,
   X,
   type LucideIcon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { getNetworkSnapshot, computeKpis } from '@/lib/networkFeed';
+import { computeKpis } from '@/lib/networkFeed';
+import { useSystem } from './SystemContext';
 
 interface NavItem {
   name: string;
@@ -42,6 +45,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
       { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
       { name: 'Field Operations', href: '/mobile', icon: Wrench },
       { name: 'Testbench', href: '/dashboard?tab=testbench', icon: FlaskConical, tabKey: 'testbench' },
+      { name: 'QC Canvas', href: '/canvas', icon: Activity },
     ],
   },
   {
@@ -49,6 +53,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
     items: [
       { name: 'Analytics', href: '/analytics', icon: BarChart3 },
       { name: 'Audit Reports', href: '/audit-report', icon: FileCheck2 },
+      { name: 'Demo Lab', href: '/demo', icon: PlayCircle },
     ],
   },
 ];
@@ -75,7 +80,8 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const search = useSearchParams();
-  const kpis = computeKpis(getNetworkSnapshot());
+  const { state } = useSystem();
+  const kpis = computeKpis(state.snapshot);
 
   return (
     <>
@@ -97,7 +103,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between border-b border-navy-deep px-4" style={{ height: 56 }}>
+        <div className="flex items-center justify-between border-b border-navy-deep px-4 h-14">
           <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
             <span className="w-2.5 h-2.5 bg-sky" aria-hidden />
             <span className="t-card-title text-white tracking-wide">METSHIELD AI</span>
@@ -126,12 +132,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                     onClick={onClose}
                     aria-current={active ? 'page' : undefined}
                     className={clsx(
-                      'flex items-center gap-3 border-l-2 px-4 text-[13.5px] transition-colors',
+                      'flex items-center gap-3 border-l-2 px-4 text-[13.5px] transition-colors h-10',
                       active
                         ? 'border-l-sky-deep bg-navy-deep/50 font-semibold text-white'
                         : 'border-l-transparent text-white/70 hover:bg-navy-deep/30 hover:text-white'
                     )}
-                    style={{ height: 40 }}
                   >
                     <Icon
                       size={16}
