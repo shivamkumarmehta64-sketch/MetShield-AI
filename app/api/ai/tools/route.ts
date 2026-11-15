@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { enforceAiRequestLimits, enforcePromptLength } from '@/lib/aiLimits';
+import { enforceAiRequestLimits, enforcePromptLength, enforceAiAccess } from '@/lib/aiLimits';
 
 /**
  * Metshield AI: Meteorological Anomaly & Telemetry Intelligence API
@@ -14,6 +14,11 @@ export async function POST(request: NextRequest) {
     // a bound that differs between two routes is a bound nobody can reason about.
     const limited = enforceAiRequestLimits(request.headers, 'tools');
     if (limited) return limited;
+
+    // A configured model key makes this endpoint billable; refuse unless the
+    // deployment also provisioned an access key (fails closed).
+    const denied = enforceAiAccess(request.headers);
+    if (denied) return denied;
 
     const { toolId, toolName, prompt } = await request.json();
 

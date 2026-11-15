@@ -1,25 +1,35 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Known malicious user agents and automated vulnerability scanners
-const BLOCKED_USER_AGENTS = [
-  'python-requests',
-  'postmanruntime',
-  'go-http-client',
-  'java',
-  'nmap',
-  'sqlmap',
-  'nikto',
-  'masscan',
-  'zgrab',
-];
+// Automated vulnerability scanners. This is NOISE REDUCTION, not a security
+// control: a user agent is chosen by the caller, so anything here is one flag
+// away from bypassed. It was previously a much longer list that also named
+// generic HTTP clients (`python-requests`, `go-http-client`, `java`,
+// `postmanruntime`), which blocked legitimate integrations and every scripted
+// health check while stopping no attacker. Keep only tools whose default UA no
+// real client uses.
+const BLOCKED_USER_AGENTS = ['nmap', 'sqlmap', 'nikto', 'masscan', 'zgrab'];
+
+/** Production hosts this deployment is served from. Exact matches only. */
+const CANONICAL_HOSTS = ['metshield-ai.vercel.app', 'aws2026-nu.vercel.app'];
+
+/**
+ * Extra origins from `ALLOWED_ORIGINS` (comma-separated), for previews and
+ * custom domains. Configure these rather than widening the matcher.
+ */
+function configuredOrigins(): string[] {
+  return (process.env.ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 // Helper to check whether an origin is permitted
 function isOriginAllowed(originHeader: string | null): boolean {
   if (!originHeader) return false;
   try {
     const parsed = new URL(originHeader);
-    const host = parsed.hostname;
+    const host = parsed.hostname.toLowerCase();
 
     // Allow localhost and local loopback
     if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
@@ -35,16 +45,10 @@ function isOriginAllowed(originHeader: string | null): boolean {
       return true;
     }
 
-    // Allow trusted production & preview domains
-    if (
-      host === 'metshield-ai.vercel.app' ||
-      host.endsWith('.vercel.app') ||
-      host.endsWith('.pages.dev')
-    ) {
-      return true;
-    }
-
-    return false;
+    // Exact hosts only. This previously accepted `host.endsWith('.vercel.app')`,
+    // which meant ANY Vercel deployment — including one an attacker creates for
+    // free in a minute — passed the CSRF origin check.
+    return CANONICAL_HOSTS.includes(host) || configuredOrigins().includes(host);
   } catch {
     return false;
   }
@@ -53,7 +57,10 @@ function isOriginAllowed(originHeader: string | null): boolean {
 // Default baseline defensive security headers
 function attachSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  // DENY, matching next.config.ts. These two used to disagree (SAMEORIGIN here,
+  // DENY there), and when both are present the browser's behaviour depends on
+  // header order rather than on intent.
+  response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-Metshield-Edge-Secured', 'true');
   return response;
@@ -119,17 +126,20 @@ export function proxy(request: NextRequest) {
   // Handle standard OPTIONS preflight requests for CORS
   if (request.method === 'OPTIONS') {
     const reqOrigin = request.headers.get('origin');
-    const allowOrigin = isOriginAllowed(reqOrigin) && reqOrigin ? reqOrigin : '*';
+    // No wildcard. An unrecognised origin gets a bare 204 with no
+    // Access-Control-Allow-Origin, so the browser refuses the actual request;
+    // answering `*` told every page in every tab that the API was open to it.
+    const allowOrigin = isOriginAllowed(reqOrigin) && reqOrigin ? reqOrigin : null;
 
-    const preflightRes = new NextResponse(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': allowOrigin,
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-        'Access-Control-Max-Age': '86400',
-      },
-    });
+    const headers: Record<string, string> = {
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Metshield-AI-Key',
+      'Access-Control-Max-Age': '86400',
+      Vary: 'Origin',
+    };
+    if (allowOrigin) headers['Access-Control-Allow-Origin'] = allowOrigin;
+
+    const preflightRes = new NextResponse(null, { status: 204, headers });
     return attachSecurityHeaders(preflightRes);
   }
 

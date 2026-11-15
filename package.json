@@ -13,9 +13,13 @@
     "test:watch": "vitest",
     "verify": "npm run lint && npm run typecheck && npm run test",
     "bench": "tsx scripts/benchmark-detector.ts",
+    "bench:real": "tsx scripts/benchmark-real-injected.ts",
     "sih:demo": "python scripts/skyguard_anomaly_engine.py"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=20.9"
+  },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.66",
     "@supabase/supabase-js": "^2.116.0",
@@ -28,7 +32,7 @@
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
     "lucide-react": "^1.43.0",
-    "next": "16.3.4",
+    "next": "16.4.6",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
