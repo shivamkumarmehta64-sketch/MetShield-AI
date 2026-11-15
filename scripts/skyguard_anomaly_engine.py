@@ -14,7 +14,7 @@ Core Monitored Parameters:
 Key Features:
   - Line-rate Edge Anomaly Detection (<5ms)
   - Severe Convective Storm vs. Sensor Fault Discrimination (Zahumenský 2004 Standard)
-  - Explainable AI (XAI) Attribution Weights (SHAP/Zahumenský equivalent)
+  - Rule-Based Attribution Weights (normalized deviation; not SHAP)
   - Auto-Imputation via Weighted Moving Average (WMA) & Spatial Neighbors
   - Spatial KNN Cohort Cross-Validation across Observation Networks
   - Zero External Dependencies (Standard Python 3 Library only)
@@ -349,7 +349,7 @@ class SkyGuardAIEngine:
 
     def _compute_xai_spike(self, dt: float, dp: float, drh: float) -> XAIAttribution:
         """
-        Calculates normalized feature attribution scores (SHAP equivalent)
+        Calculates normalized feature attribution scores (rule-based; not SHAP)
         using Zahumenský normalized deviation from physical limits.
         """
         score_t = abs(dt) / self.TEMP_ROC_MAX

@@ -5,24 +5,73 @@
 
 ## Current Phase
 
-**Phase 8 — Dashboard map and mobile UI repair.** In progress 2026-10-17.
-- Local `main` matches the available `origin/main` ref; preserve four existing local edits.
-- Baseline `npm run verify`: lint and typecheck pass; 20 test files and 210 tests pass.
-- Confirmed map legend overlaps attribution at 390px; station marker popup remains open as expected.
-- Confirmed `/mobile` masthead causes 9px horizontal overflow at 320px; chart fits after resize settles.
-- Applied responsive map legend positioning and masthead wrapping; rerun browser checks and full verification next.
+**Phase 13 — Recorded-data, anomaly-injected benchmark.** Completed 2026-11-15.
+- `scripts/fetch-real-aws-data.mjs` pulls hourly T/RH/P for five Indian stations from
+  Meteostat's bulk archive (ISD/GHCN derived). Their coordinates match the registered
+  profiles exactly, so each series drives its own station baselines.
+- `scripts/benchmark-real-injected.ts` (`npm run bench:real`) injects a sampled fault
+  catalogue into 30-day episodes of those recordings and scores the engine against a static
+  range check on the same rows. Seeded, reproducible, and it prints whatever it finds.
+- Result: precision 62.2% / recall 37.8% / F1 47.0% vs 18.6% for range QC. 0.3% of 308k
+  clean recorded hours flagged; 0.1% of the hottest 5% quarantined (real weather passes).
+  Per class: spikes 93.6%, packet loss 100%, frozen 61%, **drift 0.0%**.
+- Root cause found and confirmed by reading the engine: `isDrift` depends on `driftOffset`,
+  which only the demo trigger, field calibration and reset ever write. There is no
+  data-driven drift detection. A series-based detector was prototyped and measured; it also
+  caught ~0% because hourly diurnal variation swamps the "thermodynamically silent"
+  signature. It was reverted rather than shipped as a feature that does not work. The honest
+  conclusion is recorded in README §13: drift needs a climatology/NWP-background reference.
+- `data/real/` (36 MB) is gitignored; result JSON under `data/benchmark/` is kept.
 
-Previous phase completed 2026-10-01:
-- Implemented and mounted the GIGW-compliant NIC/MoES 65/35 Split Canvas (`RealTimeQCCanvas.tsx`) at `/`.
-- Connected physical phone Generic Sensor API (`window.PressureSensor`) with live altimetry reduction (1 hPa ≈ 8.4m).
-- Real-Time Incident Stream with SHAP/XAI attribution bars (`Temp %`, `Pressure %`, `Humidity %`) and auto-imputation.
-- Diagnostic drawer: simulation triggers for Thermistor Open-Circuit, Probe Float Lock, and Convective Front Dynamics.
-- Official NIC/IMD WMO-No. 8 CSV export with CWE-1236 spreadsheet injection protection.
-- Live Open-Meteo & wttr.in keyless ingestion verified for all 21 IMD stations across India.
-- Standardized MIT License, updated GitHub Actions CI (`.github/workflows/ci.yml`), and verified with Chromium browser subagent recording artifact.
+**Phase 12 — Site finish: landing page is the front door.** Completed 2026-11-13.
+- `/` mounted `RealTimeQCCanvas` — a full-viewport widget with no statement of what the
+  project is — while `components/features/LandingPage.tsx` (332 lines, 5 sections) was
+  imported by nothing. Wired it up; the canvas keeps its own route at `/canvas`.
+- Wired `components/landing/OperationsBand.tsx`, which was also unimported and describes
+  itself as "the landing page's centre of gravity". New `#operations` section, rail
+  renumbered 01–06.
+- Sidebar now links `/canvas` and `/demo`. `/demo` was previously reachable from nowhere.
+- Removed false status from both surfaces: the landing header's green "2.5s DCP link"
+  pulsing dot, and the canvas's "DCP SATELLITE LINK: ACTIVE" / "PACKETS INGESTED" /
+  "LIVE OPEN METEO FEED" / "NIC-MoES" emoji header. There is no DCP link; the counter
+  starts at 14 and increments on a local timer. Open-Meteo is now labelled an NWP
+  baseline, not a live station feed.
+- Removed the landing page's three dead text-size buttons and the non-functional हिन्दी
+  toggle (the canvas's equivalents have real handlers and stayed).
+- Responsive fixes found by rendering, not reading: provenance table was 569 px inside a
+  390 px viewport with its only explanatory column off-screen (now stacks below 640 px);
+  the landing header overflowed by 204 px at exactly 1024 px, now 0 at 768/1024/1280/1536.
+- Verified in Chromium at four widths: 4 routes, 0 console errors, 0 horizontal overflow.
+  `npm run verify` 20 files / 212 tests; `npm run build` 21 routes.
+
+**Phase 11 — Pitch-artifact honesty pass.** Completed 2026-11-13.
+- Rewrote `scripts/generate_sih_ppt.py`: removed every unimplemented claim the submitted deck
+  carried (Isolation Forest, LSTM autoencoder, SHAP, Kriging, TensorFlow/Keras/pykrige/scikit,
+  AES-256 + RBAC, "97.8% F1", "<4.2ms", "100% clean data", the invented "60% fewer callouts",
+  and the 1,350 figure where it was stated as present-tense scope). Regenerated
+  `public/Metshield_AI_SIH26073.pptx` and re-rendered all six slides to PNG to check layout.
+- Replaced them with what the code does and what `npm run bench` measures: 98.7% macro F1 and
+  p95 0.005 ms over 20,000 seeded **synthetic** frames; 0 of 4,000 storm frames quarantined.
+- Extended `__tests__/claimsAudit.test.ts` to scan `scripts/` (it previously excluded the
+  generator on a promise to "reconcile separately" that never happened). Added a Python `#`
+  stripper and 11 new forbidden patterns. Negative-controlled: injecting "Isolation Forest"
+  into the generator fails the test; restoring passes.
+- Fixed the module docstring in `scripts/skyguard_anomaly_engine.py`, which also claimed a
+  "SHAP equivalent".
+- Fixed two rendered defects found only by looking at the exported slides: the "Benefits of the
+  Solution" header was drawn under its own blue bar (z-order), and the 01–05 badges wrapped to
+  two lines.
+- `vitest.config.ts` now excludes `unslop/**`; those are `node:test` suites and vitest reported
+  "No test suite found", failing `npm run verify` for a reason unrelated to this app.
+
+**Phase 10 — Live Open-Meteo network ingestion & production deployment.** Completed 2026-11-11.
+- Added `/api/weather/network` edge-cached route fetching live Open-Meteo observations (QNH reduced) for all 21 IMD stations via `fetchBatchLiveObservations`.
+- Added `buildLiveNetworkSnapshot` in `lib/networkFeed.ts` and wired `SystemContext.tsx` + `DataModeBadge` + `ProvenanceStrip` + `KpiStrip` so `/dashboard` auto-syncs live Open-Meteo data every 60s and reflects `LIVE` vs `BENCHMARK` vs `REPLAY`.
+- Wired `RealTimeQCCanvas.tsx` (`/`) to `/api/weather` for `AWS-DEL-04` (30s polling, clean baseline anchor, `● LIVE OPEN METEO FEED` badge).
+- Deployed to Vercel production (`dpl_9y1Y8Ekbu6C1cAWtffjHUA77FXPK` → `https://aws2026-nu.vercel.app`) and verified live `21/21` station responses + rendered UI in headless Chromium (`errors: []`).
 
 **Verification Status** — `npm run verify` & `npm run build` green:
-lint 0 errors / 0 warnings · typecheck 0 errors · **20 test files, 210/210 tests passed** · `npm run build` succeeds (19 routes).
+lint 0 errors / 0 warnings · typecheck 0 errors · **20 test files, 212/212 tests passed** · `npm run build` succeeds (20 routes).
 
 ## Architecture map (Phase 2)
 
@@ -98,9 +147,15 @@ Ground truth, established by runtime probe and by reading every route:
 
 ## Known Issues
 
-- **`DATA_MODE = 'BENCHMARK'`** (`lib/networkFeed.ts:37`). The console is driven by
+- **`DATA_MODE = 'BENCHMARK'`** (`lib/networkFeed.ts:39`). The console is driven by
   deterministic replay, not live ingest. Any change to it changes what every number on
   the dashboard means — announce it.
+- **The live feed is model output, not station telemetry.** `buildLiveNetworkSnapshot` flips
+  `dataMode` to `LIVE` as soon as one Open-Meteo fetch succeeds, and `liveWeatherService.ts`
+  sets `isLive: true` on any parsed response. Open-Meteo's `current` block is interpolated
+  surface analysis, not an IMD AWS transducer reading. The provenance statement in the route
+  says so, but the badge does not. Open — needs either a DERIVED/MODEL provenance state or a
+  relabelled feed. Not fixed in Phase 11 (out of scope for the deck work).
 - **Seeded scenario constraints.** `getInitialSeededDataset()` runs exactly 14 ticks
   (0–13): a trigger with `maxTicks < 14 - tick` has expired before the console renders.
   And a station above ~80% RH has no headroom for the fixed +19.6 storm injection.

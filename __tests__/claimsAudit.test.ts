@@ -16,16 +16,23 @@
  *
  * SCOPE
  * -----
- * Only files that ship to the user are scanned. Documentation under docs/ and
- * the pitch generator under scripts/ are excluded on purpose: they describe
- * the intended national deployment, which genuinely does target 1,350+
- * stations, and they are reconciled separately as part of the documentation
- * pass. What must never happen is the *running product* asserting a number the
- * code does not compute.
+ * `scripts/` used to be excluded here, on the argument that the pitch generator
+ * would be "reconciled separately as part of the documentation pass". That pass
+ * never happened, and the deck kept selling an Isolation Forest + LSTM
+ * Autoencoder ensemble, SHAP attribution and Kriging interpolation that this
+ * repository has never contained — for five of its six slides, all the way to
+ * submission. A claim exclusion that outlives the reason for it is how a
+ * fabricated capability survives a green test suite.
+ *
+ * So `scripts/` is scanned now, including the Python deck generator. Only
+ * documentation under docs/ remains out of scope, because prose may discuss a
+ * retracted claim in order to retract it; the artefacts that get submitted may
+ * not assert one.
  *
  * The scan strips comments before matching, because the fixes for these
  * defects are largely written as comments explaining what was removed — and a
  * test that fails on its own remediation notes is a test that gets deleted.
+ * Python sources therefore need their own `#` stripper alongside the JS one.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -34,8 +41,8 @@ import { join, relative, sep } from 'node:path';
 
 const ROOT = join(__dirname, '..');
 
-/** Directories whose contents reach a user at runtime. */
-const SCANNED_DIRS = ['app', 'lib', 'components', 'hooks'];
+/** Directories whose contents reach a user or an evaluator. */
+const SCANNED_DIRS = ['app', 'lib', 'components', 'hooks', 'scripts'];
 
 /**
  * Parked, unreachable components retained for future work. Their headers say
@@ -61,6 +68,20 @@ const FORBIDDEN_CLAIMS: Array<[RegExp, string]> = [
   // Verified by hand against lib/: neither filter is implemented anywhere.
   // `windowedMean` in lib/anomalyDetector.ts is a flat arithmetic mean.
   [/\b(Kalman|Butterworth)\b/i, 'no state-space or band-pass filter exists in lib/; imputation is a flat windowed mean'],
+  // The pitch deck's ML stack. Verified absent: package.json carries no ML
+  // runtime, and `grep -r` finds no model, weights or training code. The
+  // detector is `NICWMOAnomalyEngine.evaluate()` — named physical invariants.
+  [/\bIsolation\s+Forest\b/i, 'no Isolation Forest exists; the detector is a rule engine'],
+  [/\bLSTM\b/i, 'no recurrent network exists anywhere in this repository'],
+  [/\bauto-?encoder\b/i, 'no autoencoder exists; there are no learned weights to load'],
+  [/\bSHAP\b/, 'attribution is normalized rule weighting, not Shapley values'],
+  [/\bKriging\b/i, 'spatial QC is 3-nearest-neighbour KNN by Haversine distance, not interpolation'],
+  [/\bpykrige\b/i, 'this is a TypeScript repository; no Python interpolation dependency exists'],
+  [/\b(TensorFlow|Keras|scikit-learn)\b/i, 'no ML framework is installed; see package.json'],
+  [/\b97\.8\b/, 'no code computes 97.8% — the measured macro F1 is 98.7% on a seeded synthetic benchmark'],
+  [/\b4\.2\s*ms\b/i, 'no code measures 4.2 ms — the measured p95 verdict latency is 0.005 ms'],
+  [/AES-?256/i, 'no AES implementation exists; the write path authenticates with HMAC-SHA256'],
+  [/role-based access control/i, 'no RBAC exists on the API surface; this is a known retracted claim'],
 ];
 
 /**
@@ -155,7 +176,7 @@ function listSourceFiles(dir: string, out: string[] = []): string[] {
     const rel = relative(ROOT, full).split(sep).join('/');
     if (EXCLUDED_DIRS.some((ex) => rel === ex || rel.startsWith(`${ex}/`))) continue;
     if (statSync(full).isDirectory()) listSourceFiles(full, out);
-    else if (/\.(ts|tsx)$/.test(entry) && !/\.test\.tsx?$/.test(entry)) out.push(full);
+    else if (/\.(ts|tsx|py)$/.test(entry) && !/\.test\.tsx?$/.test(entry)) out.push(full);
   }
   return out;
 }
@@ -172,10 +193,26 @@ function stripComments(src: string): string {
     .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
 }
 
+/**
+ * Python has no `//` comments, and `#` is the only marker. Only whole-line and
+ * whitespace-preceded `#` runs are stripped: a bare `#` inside a quoted string
+ * (a hex colour, a URL fragment) would otherwise truncate a real claim and hide
+ * it from the audit. Python docstrings are deliberately *not* stripped — the
+ * deck generator's prose lives in ordinary string literals, and the reference
+ * engine's module docstring was itself asserting a SHAP equivalence, which is
+ * exactly the kind of claim this test exists to catch.
+ */
+function stripPythonComments(src: string): string {
+  return src
+    .replace(/^[ \t]*#[^\n]*/gm, ' ')
+    .replace(/[ \t]#[^\n]*/g, ' ');
+}
+
 /** Non-comment, non-import lines of a file, lowercased for matching. */
 function claimLines(file: string): string[] {
   const raw = readFileSync(file, 'utf8');
-  return stripComments(raw)
+  const stripped = file.endsWith('.py') ? stripPythonComments(raw) : stripComments(raw);
+  return stripped
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 0 && !/^import\b/.test(l) && !/^from\b/.test(l));

@@ -263,11 +263,11 @@ def slide_innovation(prs):
     rect(sl, 0.15, 1.68, 5.65, 4.55, GRAY_BG, border=SIH_BLUE_LT, border_w=0.5)
 
     solutions = [
-        ("5-Tier WMO Anomaly Engine:", "Validates telemetry in <4.2ms, discriminating convective storms from broken sensors using thermodynamic physical rules, Isolation Forest & LSTM Autoencoder ensemble."),
-        ("Spatial Intelligence Matrix:", "Real-time cross-validation against 1,350+ surrounding stations using Haversine geometry and Kriging interpolation to build mathematical regional consensus."),
-        ("Zero-Gap NWP Data Assurance:", "Quarantines corrupted packets and performs spatial imputation so no bad data ever enters national numerical weather prediction models."),
-        ("CAP v1.2 Early Warnings:", "Instantly generates ITU-T X.1303 Common Alerting Protocol payloads for genuine storm confirmations; prevents false alarms from sensor faults."),
-        ("Predictive Field Maintenance:", "SHI/RUL engine models thermal decay and barometric drift to calculate Sensor Health Index and dispatch preventive maintenance before failure."),
+        ("5-Stage WMO QC Engine:", "Range, temporal, multivariate, spatial and coupling checks against WMO-No.8 physical invariants — every verdict is a named rule, not a learned weight."),
+        ("Storm vs. Fault Discrimination:", "A pressure drop alone is drift. A storm requires it coupled to rising humidity and falling temperature (\u0394P \u2264 -2.5 hPa with \u0394RH \u2265 +15% and \u0394T \u2264 -1.5 \u00b0C)."),
+        ("Spatial Cross-Validation:", "Each observation is compared against its 3 nearest registered stations within 500 km by Haversine distance, separating regional weather from single-node faults."),
+        ("Zero-Gap NWP Assurance:", "Corrupted packets are quarantined with a WMO quality flag and a work order before assimilation; bad observations never reach the national model."),
+        ("Predictive Field Maintenance:", "Per-sensor health and remaining-useful-life estimates from rolling variance and drift slope, converted into prioritised maintenance work orders."),
     ]
 
     tb = sl.shapes.add_textbox(Inches(0.28), Inches(1.75), Inches(5.4), Inches(4.3))
@@ -293,12 +293,12 @@ def slide_innovation(prs):
     rect(sl, 5.95, 1.6, 7.2, 4.6, GRAY_CARD, border=SIH_BLUE_LT, border_w=0.5)
 
     flow_steps = [
-        ("Raw Telemetry Ingest\n(1350+ AWS Packets / 2.5s)", SIH_CYAN, 6.1, 1.65),
-        ("WMO Pub8 Physical Bounds\nValidation Gate",          SIH_BLUE, 6.1, 2.30),
-        ("Dual ML Ensemble\nIsolation Forest + Autoencoder",   SIH_BLUE_LT, 6.1, 2.95),
-        ("SHAP XAI Attribution\nPhysical Reasoning Engine",    ORANGE, 6.1, 3.60),
-        ("Spatial Kriging Imputation\n/ CAP Alert Dispatch",   GREEN, 6.1, 4.25),
-        ("NWP Gateway Output\n(100% Clean Data)",              SIH_BLUE, 6.1, 4.90),
+        ("Raw Telemetry Ingest\n(21 stations / 2.5 s cycle)", SIH_CYAN, 6.1, 1.65),
+        ("WMO-No.8 Physical Bounds\nValidation Gate",          SIH_BLUE, 6.1, 2.30),
+        ("Storm / Fault Coupling\nDiscriminator",              SIH_BLUE_LT, 6.1, 2.95),
+        ("Rule Attribution\nPer-Flag Explanation",             ORANGE, 6.1, 3.60),
+        ("Spatial KNN Consensus\n/ CAP Alert Record",          GREEN, 6.1, 4.25),
+        ("NWP Gateway Output\n(Quarantined Bad Data)",         SIH_BLUE, 6.1, 4.90),
     ]
 
     col2 = 9.4
@@ -319,11 +319,11 @@ def slide_innovation(prs):
 
     # ── Bottom: Innovation cards ──────────────────────────────────────────
     innovation_cards = [
-        ("Storm vs.\nFault Discriminator", "<5ms AI inference\nWMO Pub 8 rules"),
-        ("Spatial\nKriging Mesh", "Haversine + IDW\nZero NWP Gaps"),
-        ("SHAP XAI\nReasoning", "97.8% F1\nExplainable AI"),
-        ("CAP v1.2\nAlerts", "ITU-T X.1303\nFalse-alarm proof"),
-        ("SHI/RUL\nMaintenance", "Thermal decay model\nField dispatch"),
+        ("Storm vs.\nFault Discriminator", "0 / 4,000 storm frames\nquarantined on bench"),
+        ("Spatial KNN\nConsensus", "3 neighbours\nwithin 500 km"),
+        ("Deterministic\nAttribution", "98.7% macro F1\non seeded bench"),
+        ("CAP v1.2\nAlert Record", "CAP field structure,\nnot an XML broadcast"),
+        ("Sensor Health\n& RUL", "Rolling variance\n+ drift slope"),
     ]
 
     CARD_W = (W - 0.5) / len(innovation_cards) - 0.12
@@ -358,7 +358,7 @@ def slide_technical(prs):
         "Zone 1\nUsers & Sources",
         "Zone 2\nFrontend\n(Dashboard Layer)",
         "Zone 3\nBackend\n(Processing Layer)",
-        "Zone 4\nAI & Intelligence\n(Brain Layer)"
+        "Zone 4\nIntelligence\n(Rule Layer)"
     ]
     ZCARD_W = 8.6 / 4
     ZL = 0.15
@@ -375,7 +375,7 @@ def slide_technical(prs):
                 size=8, bold=True, color=WHITE, align=PP_ALIGN.CENTER)
 
     # Zone 1 content
-    z1_items = ["IMD/WMO\nData Streams", "INSAT-3D DRT\nTelemetry", "1350+ AWS\nStations", "Mobile\nNodes"]
+    z1_items = ["IMD/WMO\nData Streams", "INSAT-3D DRT\nTelemetry (target)", "21 Registered\nStations", "Mobile\nField Node"]
     for i, item in enumerate(z1_items):
         rrect(sl, ZL + 0.12, ZT + 0.88 + i * 0.97, ZCARD_W - 0.24, 0.8, WHITE, border=SIH_BLUE_LT, border_w=0.5)
         textbox(sl, item, ZL + 0.14, ZT + 0.92 + i * 0.97, ZCARD_W - 0.28, 0.72,
@@ -391,7 +391,7 @@ def slide_technical(prs):
 
     # Zone 3 content
     z3l = ZL + 2 * ZCARD_W
-    z3_items = ["Telemetry Ingest\n(2.5s cycle)", "WMO Bounds\nValidator", "Anomaly\nEnsemble", "Spatial\nImputer", "CAP Alert\nGenerator"]
+    z3_items = ["Telemetry Ingest\n(2.5 s cycle)", "WMO Bounds\nValidator", "Storm / Fault\nDiscriminator", "Spatial KNN\nConsensus", "CAP Alert\nRecord Builder"]
     for i, item in enumerate(z3_items[:4]):
         rrect(sl, z3l + 0.08, ZT + 0.88 + i * 0.97, ZCARD_W - 0.16, 0.8, SIH_BLUE_LT)
         textbox(sl, item, z3l + 0.10, ZT + 0.92 + i * 0.97, ZCARD_W - 0.20, 0.72,
@@ -401,15 +401,15 @@ def slide_technical(prs):
     z4l = ZL + 3 * ZCARD_W
     rrect(sl, z4l + 0.08, ZT + 0.88, ZCARD_W - 0.16, 3.0, SIH_BLUE)
     z4_lines = [
-        "AI/ML Engine",
+        "Intelligence Layer",
         "",
-        "Isolation Forest",
-        "LSTM Autoencoder",
-        "Physical Rules",
+        "WMO-No.8 Invariants",
+        "Storm/Fault Coupling",
+        "Rule Attribution",
         "",
-        "SHAP XAI",
-        "Kriging Interp.",
-        "SHI/RUL Engine",
+        "Spatial KNN",
+        "Sensor Health & RUL",
+        "Deterministic Flags",
     ]
     tb4 = sl.shapes.add_textbox(Inches(z4l + 0.12), Inches(ZT + 0.95), Inches(ZCARD_W - 0.24), Inches(2.85))
     tf4 = tb4.text_frame; tf4.word_wrap = True
@@ -425,8 +425,8 @@ def slide_technical(prs):
 
     # ── Tech stack bar at bottom ───────────────────────────────────────────
     rect(sl, ZL, ZT + ZH, 8.6, 0.55, DARK_TEXT if False else SIH_BLUE_LT)
-    stack_items = ["Python/scikit-learn", "TensorFlow/Keras", "NumPy/SciPy", "Kriging (pykrige)",
-                   "FastAPI", "Next.js 15", "PostgreSQL", "INSAT-3D DRT"]
+    stack_items = ["TypeScript + React", "Next.js 16", "Tailwind v4", "Web Crypto",
+                   "Cloudflare D1", "Supabase", "Leaflet GIS", "Open-Meteo"]
     for i, tech in enumerate(stack_items):
         tw = 8.6 / len(stack_items)
         textbox(sl, tech, ZL + i * tw + 0.05, ZT + ZH + 0.06, tw - 0.1, 0.4,
@@ -438,12 +438,12 @@ def slide_technical(prs):
             size=14, bold=True, color=WHITE)
 
     steps = [
-        ("Field Calibration\n& Onboarding", "AWS stations registered with GPS\ncoordinates, hardware specs & baselines"),
-        ("Telemetry Ingest", "2.5s INSAT-3D DRT uplink, WMO\nPub 8 range validation"),
-        ("AI Ensemble\nInference", "Isolation Forest + Autoencoder +\nPhysical rules in <4.2ms"),
-        ("XAI Attribution", "SHAP feature weights & physical\nreasoning for every decision"),
-        ("Action Dispatch", "Quarantine / Impute / CAP alert\n/ RUL maintenance dispatch"),
-        ("NWP Assimilation", "100% clean verified data passed\nto national weather models"),
+        ("Field Calibration\n& Onboarding", "Station registered with GPS, hardware\nkit, baseline means & calibration cert"),
+        ("Telemetry Ingest", "2.5 s QC cycle across registered\nstations, WMO-No.8 range validation"),
+        ("Storm / Fault\nDiscrimination", "Coupled invariants replace a lone\nthreshold; 0.005 ms p95 verdict"),
+        ("Rule Attribution", "Named rule plus breached magnitude\nreported for every flag"),
+        ("Action Dispatch", "Quarantine / WMO flag / CAP record\n/ work order with station context"),
+        ("NWP Assimilation", "Only validated observations pass\nto the national model"),
     ]
 
     STEP_COLORS = [SIH_CYAN, SIH_BLUE_LT, SIH_BLUE, ORANGE, GREEN, SIH_CYAN]
@@ -486,18 +486,18 @@ def slide_feasibility(prs):
     # ── 3 top header cards ────────────────────────────────────────────────
     top_cards = [
         ("Feasibility", SIH_BLUE, [
-            "Proven ensemble AI (Isolation Forest + LSTM Autoencoder) deployed on identical telemetry architectures.",
-            "WMO Pub 8 physical bounds integrated as hard rules — no ML black-box on critical bounds.",
-            "INSAT-3D DRT satellite uplink ensures station connectivity across remote regions.",
+            "Deterministic engine: no trained model to retrain, no black box sitting on the WMO physical bounds.",
+            "Signed telemetry on the write path — per-station PSK plus HMAC-SHA256; an unsigned write is refused.",
+            "Reproducible benchmark: 98.7% macro F1 over 20,000 seeded synthetic frames, p95 verdict 0.005 ms.",
         ]),
         ("Viability", SIH_BLUE_LT, [
-            "Web dashboard + mobile PWA for field technicians with offline-first capability.",
-            "Sensor Health Index (SHI) drives scheduled maintenance, reducing emergency callouts.",
-            "Modular API architecture: new AWS networks onboarded in <2 days with metadata ingestion.",
+            "Web console plus a mobile field client with IndexedDB offline buffering.",
+            "Per-sensor health and remaining-useful-life estimates drive scheduled maintenance.",
+            "Station registry is data, not code: a new AWS site is a profile entry, not a deployment.",
         ]),
         ("Practical Implementation", ORANGE, [
-            "Ready for pilot with IMD's existing 1,350 AWS network within 3 months.",
-            "Multilingual dashboard (English/Hindi) for field technician accessibility.",
+            "Designed for IMD's ~1,350-station network; this build runs the engine end-to-end on 21 registered station profiles.",
+            "Multilingual console (English/Hindi) for field technician accessibility.",
             "Fully open-source stack — zero vendor lock-in for government deployment.",
         ]),
     ]
@@ -529,11 +529,11 @@ def slide_feasibility(prs):
         ("Integration:", "Heterogeneous AWS hardware (SUTRON, VAISALA, etc.) across IMD network."),
     ]
     strategies = [
-        "Store-and-forward buffering ensures zero data loss during satellite outages.",
-        "Auto-calibration via Kriging spatial consensus corrects drift continuously.",
-        "AES-256 encryption + role-based access control for all telemetry streams.",
-        "SHI/RUL predictive alerts dispatch field teams before hardware failure.",
-        "Pluggable adapter layer — new hardware types added via JSON config schema.",
+        "Field client queues packets in IndexedDB and replays them, so a brief uplink outage does not drop readings.",
+        "Barometric drift detected against the nearest-station cohort and flagged for NABL recalibration.",
+        "Telemetry writes require a per-station Pre-Shared Key; unsigned writes are refused (fails closed).",
+        "Sensor health and RUL estimates raise a work order before hardware failure.",
+        "Station hardware is a registry profile — new sensor kits are added as data, not code.",
     ]
 
     # Challenge box
@@ -545,7 +545,7 @@ def slide_feasibility(prs):
         circ = sl.shapes.add_shape(9, Inches(CHL + 0.12), Inches(ty + 0.04), Inches(0.38), Inches(0.38))
         circ.fill.solid(); circ.fill.fore_color.rgb = RED_BADGE; circ.line.fill.background()
         textbox(sl, f"0{i+1}", CHL + 0.14, ty + 0.07, 0.34, 0.3,
-                size=10, bold=True, color=WHITE, align=PP_ALIGN.CENTER)
+                size=10, bold=True, color=WHITE, align=PP_ALIGN.CENTER, wrap=False)
         multibox(sl, CHL + 0.6, ty + 0.01, CHW - 0.75, 0.62, [
             {"text": label, "size": 10, "bold": True, "color": DARK_TEXT},
             {"text": " " + text, "size": 9.5, "color": DARK_TEXT},
@@ -559,7 +559,7 @@ def slide_feasibility(prs):
         circ = sl.shapes.add_shape(9, Inches(SL2 + 0.12), Inches(ty + 0.04), Inches(0.38), Inches(0.38))
         circ.fill.solid(); circ.fill.fore_color.rgb = GREEN; circ.line.fill.background()
         textbox(sl, f"0{i+1}", SL2 + 0.14, ty + 0.07, 0.34, 0.3,
-                size=10, bold=True, color=WHITE, align=PP_ALIGN.CENTER)
+                size=10, bold=True, color=WHITE, align=PP_ALIGN.CENTER, wrap=False)
         textbox(sl, strat, SL2 + 0.6, ty + 0.06, SHW - 0.75, 0.58,
                 size=9.5, color=DARK_TEXT, wrap=True)
 
@@ -590,13 +590,13 @@ def slide_impact(prs):
     # ── Audience cards (left side) ────────────────────────────────────────
     audiences = [
         ("IMD Forecasters", SIH_BLUE,
-         "Receive 100% clean, validated AWS data for NWP model assimilation — eliminating faulty sensor corruption from national weather forecasts."),
+         "Receive validated AWS data for NWP assimilation — faulty sensor readings are flagged and quarantined before they can corrupt a national forecast."),
         ("Field Technicians", ORANGE,
-         "Smart SHI/RUL dashboards dispatch preventive maintenance before sensor failure, reducing emergency callouts by estimated 60%."),
+         "Per-sensor health and RUL estimates prioritise maintenance visits by actual degradation, instead of a fixed calendar."),
         ("National Disaster\nManagement (NDMA)", SIH_CYAN,
-         "CAP v1.2 early warning alerts broadcast genuine storm confirmations within seconds, with false alarms eliminated by AI quarantine."),
+         "Confirmed storm events produce a CAP v1.2 alert record, while sensor-fault readings are quarantined rather than broadcast as weather."),
         ("Government / IMD HQ", GREEN,
-         "Live 24x7 network health KPIs across 1,350 stations with audit trail and XAI explainability for regulatory compliance."),
+         "Network health KPIs across the 21 registered stations, with an audit trail and per-flag physical reasoning for regulatory review."),
     ]
 
     for i, (name, color, desc) in enumerate(audiences):
@@ -613,17 +613,19 @@ def slide_impact(prs):
 
     # ── Right pillar cards ────────────────────────────────────────────────
     right_l = 8.4
+    # The coloured bar is drawn first: pptx z-order is insertion order, and
+    # drawing it after the label hid the header text behind the fill.
+    rrect(sl, right_l, 0.82, 4.8, 0.52, SIH_BLUE)
     textbox(sl, "Benefits of the Solution", right_l + 0.12, 0.88, 4.68, 0.42,
             size=13, bold=True, color=WHITE, align=PP_ALIGN.CENTER)
-    rrect(sl, right_l, 0.82, 4.8, 0.52, SIH_BLUE)
 
     pillars = [
         ("Social", SIH_BLUE,
-         "Builds trust in national weather forecasts with transparent XAI reasoning. Empowers field workers with explainable AI decisions."),
+         "Builds trust in national weather forecasts with per-flag physical reasoning a duty meteorologist can re-derive and defend."),
         ("Economic", ORANGE,
-         "Reduces false weather alerts that cost airlines, agriculture and disaster response billions annually. Prevents costly false evacuations."),
+         "Reduces false weather alerts that cost airlines, agriculture and disaster response. Prevents costly false evacuations."),
         ("Environmental", GREEN,
-         "Ensures early storm warnings protect lives and infrastructure. Higher quality NWP data improves climate research accuracy."),
+         "Earlier storm confirmation protects lives and infrastructure. Cleaner observational input improves NWP and climate records."),
     ]
 
     for i, (pillar, color, text) in enumerate(pillars):
@@ -638,8 +640,9 @@ def slide_impact(prs):
 
     # ── Quote banner ──────────────────────────────────────────────────────
     quote_text = (
-        '"India\'s first AI-powered Weather Station QMS — 97.8% F1, <4.2ms latency, '
-        '100% NWP data integrity, real alerts, real impact, real weather."'
+        '"Weather-station quality management built on auditable physics \u2014 98.7% macro F1 and p95 0.005 ms '
+        'per verdict on a seeded 20,000-frame benchmark, with 0 of 4,000 genuine storm frames '
+        'quarantined as sensor faults. No black box, no invented metrics."'
     )
     rect(sl, 0, H - 1.02, W, 0.55, GRAY_BG, border=SIH_BLUE_LT, border_w=0.5)
     textbox(sl, quote_text, 0.3, H - 1.0, W - 0.6, 0.5,
@@ -675,7 +678,7 @@ def slide_references(prs):
         ("Field & Applied Research", 15  , True , SIH_BLUE,    True),
         ("•  Surveyed IMD engineers and field technicians to identify data quality failure modes in AWS telemetry across remote and coastal stations.",
          10.5, False, DARK_TEXT, False),
-        ("•  Analysed NOAA/WMO Pub 8 anomaly-injection datasets and 50,000 synthetic AWS packets to benchmark Isolation Forest + Autoencoder ensemble performance.",
+        ("•  Built a reproducible seeded benchmark (20,000 synthetic AWS frames) and measured per-class precision, recall, F1 and latency; storm-vs-fault discrimination evaluated on 4,000 convective-storm frames.",
          10.5, False, DARK_TEXT, False),
         ("", 6, False, DARK_TEXT, False),
         ("Academic & Government Sources", 15, True, SIH_BLUE, True),
@@ -683,9 +686,9 @@ def slide_references(prs):
          10.5, False, DARK_TEXT, False),
         ("•  IMD Automatic Weather Station Network – Technical Manual (2024):  https://www.imd.gov.in/pages/aws_agromet_main.php",
          10.5, False, DARK_TEXT, False),
-        ("•  Scikit-learn Isolation Forest Documentation:  https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html",
+        ("•  WMO No.8 quality-control conventions, mapped to the five flag levels used by the engine (verified / weather event / suspect drift / corrupt hardware / packet loss).",
          10.5, False, DARK_TEXT, False),
-        ("•  OSGEO PyKrige Ordinary Kriging Interpolation:  https://pykrige.readthedocs.io/",
+        ("•  Open-Meteo API Documentation (model surface feed used for the live baseline):  https://open-meteo.com/en/docs",
          10.5, False, DARK_TEXT, False),
         ("•  ITU-T X.1303 Common Alerting Protocol (CAP) v1.2:  https://www.itu.int/rec/T-REC-X.1303",
          10.5, False, DARK_TEXT, False),
