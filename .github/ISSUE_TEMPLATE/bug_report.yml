@@ -1,0 +1,60 @@
+name: Bug report
+description: Something behaves differently from what the code claims
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: check [README §13](https://github.com/shivamkumarmehta64-sketch/MetShield-AI#13-honest-engineering-notes--known-limitations).
+        Several things that look like bugs are documented limitations.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include the route, the station id if relevant, and the exact text or number you saw.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. open /dashboard?tab=qc
+        2. select AWS-DEL-04
+        3. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      options:
+        - Landing page (/)
+        - Operations console (/dashboard)
+        - QC canvas (/canvas)
+        - Network (/stations)
+        - Incidents (/incidents)
+        - Analytics (/analytics)
+        - Mobile field client (/mobile)
+        - Benchmark (npm run bench / bench:real)
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: integrity
+    attributes:
+      label: Data integrity
+      options:
+        - label: This report does not include a claim that the code cannot support
+          required: false
