@@ -1,0 +1,496 @@
+{
+  "generatedBy": "scripts/benchmark-real-injected.ts",
+  "seed": 20260201,
+  "episodeHours": 720,
+  "dataSource": "Meteostat bulk hourly v2 (ISD/GHCN station reports)",
+  "stations": [
+    {
+      "wmo": "42182",
+      "stationId": "AWS-DEL-04",
+      "name": "Safdarjung, New Delhi",
+      "episodes": 106,
+      "rows": 76320,
+      "driftBands": {
+        "<=0.10 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "0.10-0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 222
+        },
+        ">0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 179
+        }
+      },
+      "verdicts": {
+        "FROZEN_VALUE": {
+          "NOMINAL_OPERATION": 131,
+          "FROZEN_VALUE": 195
+        },
+        "SENSOR_SPIKE": {
+          "SENSOR_SPIKE": 24,
+          "NOMINAL_OPERATION": 3
+        },
+        "CALIBRATION_DRIFT": {
+          "NOMINAL_OPERATION": 398,
+          "GENUINE_CONVECTIVE_EVENT": 3
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "TELEMETRY_PACKET_LOSS": 84
+        }
+      },
+      "engine": {
+        "FROZEN_VALUE": {
+          "tp": 195,
+          "fp": 0,
+          "fn": 131
+        },
+        "SENSOR_SPIKE": {
+          "tp": 24,
+          "fp": 0,
+          "fn": 3
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 401
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 84,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "naive": {
+        "FROZEN_VALUE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 326
+        },
+        "SENSOR_SPIKE": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 26
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 401
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 84,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "clean": {
+        "rows": 75482,
+        "engineFlags": 126,
+        "naiveFlags": 0,
+        "extremes": 3681,
+        "extremesFlagged": 4
+      },
+      "rootCauseHits": 303,
+      "rootCauseTotal": 303
+    },
+    {
+      "wmo": "43057",
+      "stationId": "AWS-MUM-01",
+      "name": "Colaba, Mumbai",
+      "episodes": 92,
+      "rows": 66240,
+      "driftBands": {
+        "<=0.10 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "0.10-0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 178
+        },
+        ">0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 154
+        }
+      },
+      "verdicts": {
+        "FROZEN_VALUE": {
+          "NOMINAL_OPERATION": 114,
+          "FROZEN_VALUE": 178
+        },
+        "SENSOR_SPIKE": {
+          "SENSOR_SPIKE": 23
+        },
+        "CALIBRATION_DRIFT": {
+          "NOMINAL_OPERATION": 332
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "TELEMETRY_PACKET_LOSS": 77
+        }
+      },
+      "engine": {
+        "FROZEN_VALUE": {
+          "tp": 178,
+          "fp": 0,
+          "fn": 114
+        },
+        "SENSOR_SPIKE": {
+          "tp": 23,
+          "fp": 0,
+          "fn": 0
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 332
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 77,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "naive": {
+        "FROZEN_VALUE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 292
+        },
+        "SENSOR_SPIKE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 23
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 332
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 77,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "clean": {
+        "rows": 65516,
+        "engineFlags": 72,
+        "naiveFlags": 0,
+        "extremes": 3469,
+        "extremesFlagged": 1
+      },
+      "rootCauseHits": 278,
+      "rootCauseTotal": 278
+    },
+    {
+      "wmo": "43279",
+      "stationId": "AWS-CHN-03",
+      "name": "Meenambakkam, Chennai",
+      "episodes": 94,
+      "rows": 67680,
+      "driftBands": {
+        "<=0.10 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "0.10-0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 169
+        },
+        ">0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 177
+        }
+      },
+      "verdicts": {
+        "FROZEN_VALUE": {
+          "NOMINAL_OPERATION": 111,
+          "FROZEN_VALUE": 183
+        },
+        "SENSOR_SPIKE": {
+          "SENSOR_SPIKE": 24
+        },
+        "CALIBRATION_DRIFT": {
+          "NOMINAL_OPERATION": 343,
+          "GENUINE_CONVECTIVE_EVENT": 3
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "TELEMETRY_PACKET_LOSS": 81
+        }
+      },
+      "engine": {
+        "FROZEN_VALUE": {
+          "tp": 183,
+          "fp": 0,
+          "fn": 111
+        },
+        "SENSOR_SPIKE": {
+          "tp": 24,
+          "fp": 0,
+          "fn": 0
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 346
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 81,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "naive": {
+        "FROZEN_VALUE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 294
+        },
+        "SENSOR_SPIKE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 24
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 346
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 81,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "clean": {
+        "rows": 66935,
+        "engineFlags": 513,
+        "naiveFlags": 0,
+        "extremes": 4626,
+        "extremesFlagged": 4
+      },
+      "rootCauseHits": 288,
+      "rootCauseTotal": 288
+    },
+    {
+      "wmo": "42807",
+      "stationId": "AWS-KOL-02",
+      "name": "Alipore, Kolkata",
+      "episodes": 54,
+      "rows": 38880,
+      "driftBands": {
+        "<=0.10 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "0.10-0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 84
+        },
+        ">0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 105
+        }
+      },
+      "verdicts": {
+        "FROZEN_VALUE": {
+          "NOMINAL_OPERATION": 70,
+          "FROZEN_VALUE": 94
+        },
+        "SENSOR_SPIKE": {
+          "SENSOR_SPIKE": 12,
+          "NOMINAL_OPERATION": 2
+        },
+        "CALIBRATION_DRIFT": {
+          "NOMINAL_OPERATION": 189
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "TELEMETRY_PACKET_LOSS": 43
+        }
+      },
+      "engine": {
+        "FROZEN_VALUE": {
+          "tp": 94,
+          "fp": 0,
+          "fn": 70
+        },
+        "SENSOR_SPIKE": {
+          "tp": 12,
+          "fp": 0,
+          "fn": 2
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 189
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 43,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "naive": {
+        "FROZEN_VALUE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 164
+        },
+        "SENSOR_SPIKE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 14
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 189
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 43,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "clean": {
+        "rows": 38470,
+        "engineFlags": 40,
+        "naiveFlags": 0,
+        "extremes": 1761,
+        "extremesFlagged": 5
+      },
+      "rootCauseHits": 149,
+      "rootCauseTotal": 149
+    },
+    {
+      "wmo": "43371",
+      "stationId": "AWS-TRV-15",
+      "name": "Thiruvananthapuram",
+      "episodes": 87,
+      "rows": 62640,
+      "driftBands": {
+        "<=0.10 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 23
+        },
+        "0.10-0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 106
+        },
+        ">0.25 hPa/h": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 173
+        }
+      },
+      "verdicts": {
+        "FROZEN_VALUE": {
+          "NOMINAL_OPERATION": 109,
+          "FROZEN_VALUE": 183
+        },
+        "SENSOR_SPIKE": {
+          "SENSOR_SPIKE": 20,
+          "NOMINAL_OPERATION": 2
+        },
+        "CALIBRATION_DRIFT": {
+          "NOMINAL_OPERATION": 302
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "TELEMETRY_PACKET_LOSS": 63
+        }
+      },
+      "engine": {
+        "FROZEN_VALUE": {
+          "tp": 183,
+          "fp": 0,
+          "fn": 109
+        },
+        "SENSOR_SPIKE": {
+          "tp": 20,
+          "fp": 0,
+          "fn": 2
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 302
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 63,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "naive": {
+        "FROZEN_VALUE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 292
+        },
+        "SENSOR_SPIKE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 22
+        },
+        "CALIBRATION_DRIFT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 302
+        },
+        "TELEMETRY_PACKET_LOSS": {
+          "tp": 63,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "clean": {
+        "rows": 61961,
+        "engineFlags": 29,
+        "naiveFlags": 0,
+        "extremes": 3881,
+        "extremesFlagged": 3
+      },
+      "rootCauseHits": 266,
+      "rootCauseTotal": 266
+    }
+  ],
+  "aggregate": {
+    "engine": {
+      "precision": 0.622093023255814,
+      "recall": 0.37809187279151946,
+      "f1": 0.4703296703296704
+    },
+    "naive": {
+      "precision": 1,
+      "recall": 0.10276796230859835,
+      "f1": 0.1863818424566088
+    },
+    "clean": {
+      "rows": 308364,
+      "engineFlags": 780,
+      "naiveFlags": 0,
+      "extremes": 17418,
+      "extremesFlagged": 17
+    },
+    "rootCause": {
+      "hits": 1284,
+      "total": 1284
+    }
+  }
+}
