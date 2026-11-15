@@ -57,6 +57,9 @@ function Cells({ station: s }: { station: StationSnapshot }) {
   );
 }
 
+/** How many rows a phone gets before the registry stops being a summary. */
+const MOBILE_ROWS = 5;
+
 export default function StationTableBand() {
   const snapshot = getNetworkSnapshot();
   const ordered = [...snapshot.stations].sort((a, b) => {
@@ -65,6 +68,7 @@ export default function StationTableBand() {
     const rank = (h: StationHealth) => (h === 'NOMINAL' ? 1 : 0);
     return rank(a.health) - rank(b.health) || a.stationId.localeCompare(b.stationId);
   });
+  const mobileRows = ordered.slice(0, MOBILE_ROWS);
 
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
@@ -108,8 +112,11 @@ export default function StationTableBand() {
         </table>
       </div>
 
+      {/* Phones get the five that need attention, not all twenty-one.
+          Twenty-one stacked rows ran to ~1,900px on a landing page whose job is
+          to answer one question; the full registry lives at /stations. */}
       <ul className="lg:hidden">
-        {ordered.map((s) => {
+        {mobileRows.map((s) => {
           const p = s.packet;
           return (
             <li key={s.stationId} style={{ borderBottom: '1px solid var(--hairline)', padding: '10px 13px' }}>
@@ -137,6 +144,9 @@ export default function StationTableBand() {
 
       <div style={{ padding: '10px 14px', background: 'var(--surface-alt)', borderTop: '1px solid var(--hairline)' }}>
         <p className="t-meta">
+          <span className="lg:hidden">
+            Showing {mobileRows.length} of {snapshot.stations.length}.{' '}
+          </span>
           Full registry with sensor kit, calibration certificate and RMC division:{' '}
           <Link href="/stations" style={{ color: 'var(--color-telemetry-text)' }}>/stations</Link>.
         </p>

@@ -233,10 +233,14 @@ function DashboardTabs() {
           pushes the last tab past a 390px viewport and gives the whole document
           a horizontal scrollbar. Scrolling the tab strip is contained; the
           document is not. */}
+      {/* Phones wrap the tabs instead of scrolling them. A horizontal strip cut
+          "Rule-based classification" to "RULE-B" with no affordance that the
+          strip scrolled, so the fourth view looked absent. Wrapping shows all
+          four; the single-line strip returns at `sm`. */}
       <div
         role="tablist"
         aria-label="Dashboard view"
-        className="flex gap-1 border-b border-hairline overflow-x-auto"
+        className="flex flex-wrap sm:flex-nowrap gap-1 border-b border-hairline sm:overflow-x-auto"
       >
         {TABS.map((tab) => {
           const selected = tab.key === activeTab;

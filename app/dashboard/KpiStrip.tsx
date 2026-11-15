@@ -68,7 +68,26 @@ export default function KpiStrip() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* Phones get one strip, not six cards.
+          The card grid costs ~450px before a single station row appears, and
+          four of the six numbers are usually zero — the most common value on
+          the screen was "0", three times, each in its own 150px card. The grid
+          returns at `sm`, where there is room for it. */}
+      <div className="sm:hidden card flex items-stretch">
+        {([
+          ['Stations', total, 'text-ink'],
+          ['Nominal', nominal, 'text-healthy-text'],
+          ['Watch', watch, 'text-warning-text'],
+          ['Fault', fault, 'text-fault-text'],
+        ] as const).map(([label, value, tone]) => (
+          <div key={label} className="flex-1 px-2 py-3 text-center border-r border-hairline last:border-r-0">
+            <div className={`t-mono text-[20px] font-bold leading-none ${tone}`}>{value}</div>
+            <div className="t-meta text-[11px] text-ink-muted mt-1.5">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden sm:grid grid-cols-3 lg:grid-cols-6 gap-3">
         {/* 1. Total Stations */}
         <div className="card p-4 flex flex-col items-center justify-center text-center gap-2">
           <div className="w-10 h-10 rounded-full bg-telemetry-bg flex items-center justify-center text-telemetry mb-1">

@@ -213,13 +213,17 @@ export default function LandingPage() {
                   <span className="w-2 h-2 rounded-full bg-healthy animate-pulse" />
                   Mobile Sensor PWA
                 </Link>
+                {/* Phones get the two destinations that matter. The other two
+                    are a section anchor and the registry, both reachable by
+                    scrolling and by the footer; four stacked CTAs turned the
+                    first screen into a menu. */}
                 <a
                   href="#qc-engine"
-                  className="text-[13px] font-semibold px-4 py-2 border border-hairline-strong text-navy bg-card hover:bg-surface-hover transition-colors rounded shadow-xs"
+                  className="hidden sm:inline-block text-[13px] font-semibold px-4 py-2 border border-hairline-strong text-navy bg-card hover:bg-surface-hover transition-colors rounded shadow-xs"
                 >
                   Explore QC engine
                 </a>
-                <Link href="/stations" className="t-body ml-2 text-sky-deep hover:underline text-[13px]">
+                <Link href="/stations" className="hidden sm:inline-block t-body ml-2 text-sky-deep hover:underline text-[13px]">
                   Station registry ({IMD_AWS_STATIONS.length} stations · {DISTRICT_REGISTRY_COUNTS.total} districts)
                 </Link>
               </div>
