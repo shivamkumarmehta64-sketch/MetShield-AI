@@ -233,27 +233,35 @@ export function useMobileSensors() {
 
   // 4. Battery Float Voltage & Diurnal Solar Irradiance
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !navigator.getBattery) return;
 
-    if (navigator.getBattery) {
-      navigator.getBattery().then((battery) => {
-        const updateBattery = () => {
-          const pct = Math.round(battery.level * 100);
-          setBatteryLevel(pct);
-          const v = Math.round((11.8 + (battery.level * 0.9)) * 100) / 100;
-          setBatteryVoltage(v);
-        };
-        updateBattery();
-        battery.addEventListener('levelchange', updateBattery);
-        battery.addEventListener('chargingchange', updateBattery);
-        return () => {
-          battery.removeEventListener('levelchange', updateBattery);
-          battery.removeEventListener('chargingchange', updateBattery);
-        };
-      }).catch(() => {
-        // Fallback default float voltage
-      });
-    }
+    let mounted = true;
+    let batteryRef: BatteryManager | null = null;
+    let updateBattery: (() => void) | null = null;
+
+    navigator.getBattery().then((battery) => {
+      if (!mounted) return;
+      batteryRef = battery;
+      updateBattery = () => {
+        const pct = Math.round(battery.level * 100);
+        setBatteryLevel(pct);
+        const v = Math.round((11.8 + (battery.level * 0.9)) * 100) / 100;
+        setBatteryVoltage(v);
+      };
+      updateBattery();
+      battery.addEventListener('levelchange', updateBattery);
+      battery.addEventListener('chargingchange', updateBattery);
+    }).catch(() => {
+      // Fallback default float voltage
+    });
+
+    return () => {
+      mounted = false;
+      if (batteryRef && updateBattery) {
+        batteryRef.removeEventListener('levelchange', updateBattery);
+        batteryRef.removeEventListener('chargingchange', updateBattery);
+      }
+    };
   }, []);
 
   // 5. Haptic Feedback Trigger

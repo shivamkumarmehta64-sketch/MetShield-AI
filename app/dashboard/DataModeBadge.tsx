@@ -2,6 +2,7 @@
 
 import { DATA_MODE, DATA_MODE_STATEMENT, type DataMode } from '@/lib/networkFeed';
 import { Radio, FlaskConical, RotateCcw, Sparkles } from 'lucide-react';
+import { useSystem } from './SystemContext';
 
 /**
  * §30 Data Integrity — the badge every data surface is required to render.
@@ -30,15 +31,18 @@ interface DataModeBadgeProps {
 }
 
 export default function DataModeBadge({
-  mode = DATA_MODE,
+  mode,
   withTooltip = true,
   className = '',
 }: DataModeBadgeProps) {
-  const { label, Icon, className: tone } = MODE_META[mode];
+  const { state } = useSystem();
+  const activeMode = mode ?? state.snapshot.dataMode ?? DATA_MODE;
+  const statement = state.snapshot.statement || DATA_MODE_STATEMENT;
+  const { label, Icon, className: tone } = MODE_META[activeMode];
   return (
     <span
       className={`t-label inline-flex items-center gap-1.5 rounded px-2 py-1 border ${tone} ${className}`}
-      title={withTooltip ? DATA_MODE_STATEMENT : undefined}
+      title={withTooltip ? statement : undefined}
     >
       <Icon size={12} strokeWidth={2} aria-hidden />
       {label}
@@ -47,11 +51,14 @@ export default function DataModeBadge({
 }
 
 /** The full sentence, for pages that should state it in prose, not a tooltip. */
-export function DataModeStatement({ mode = DATA_MODE }: { mode?: DataMode }) {
+export function DataModeStatement({ mode }: { mode?: DataMode }) {
+  const { state } = useSystem();
+  const activeMode = mode ?? state.snapshot.dataMode ?? DATA_MODE;
+  const statement = state.snapshot.statement || DATA_MODE_STATEMENT;
   return (
     <p className="t-meta flex items-start gap-2">
-      <DataModeBadge mode={mode} withTooltip={false} />
-      <span>{DATA_MODE_STATEMENT}</span>
+      <DataModeBadge mode={activeMode} withTooltip={false} />
+      <span>{statement}</span>
     </p>
   );
 }

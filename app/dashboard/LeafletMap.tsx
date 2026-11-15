@@ -7,13 +7,13 @@ import { clsx } from 'clsx';
 import { Layers, LocateFixed, Search, X } from 'lucide-react';
 import {
     classificationLabel,
-    getNetworkSnapshot,
     stationHistory,
     type StationHealth,
     type StationSnapshot,
 } from '@/lib/networkFeed';
 import type { TelemetryPacket } from '@/lib/anomalyLogic';
 import DataModeBadge from './DataModeBadge';
+import { useSystem } from './SystemContext';
 
 /**
  * §E — the national station map.
@@ -266,9 +266,9 @@ interface EvidenceTable {
     conjunctionHeld: boolean;
 }
 
-function evidenceTable(s: StationSnapshot): EvidenceTable {
+function evidenceTable(s: StationSnapshot, history?: TelemetryPacket[]): EvidenceTable {
     const p = s.decidedBy;
-    const roll = rollingDeltas(p, stationHistory(s.stationId));
+    const roll = rollingDeltas(p, history ?? stationHistory(s.stationId));
     const isStorm = p.classification === 'GENUINE_CONVECTIVE_EVENT';
 
     // Four channels, two windows. The rolling column is omitted when the packet
@@ -322,9 +322,9 @@ function evidenceTable(s: StationSnapshot): EvidenceTable {
     };
 }
 
-function evidenceHtml(s: StationSnapshot): string {
+function evidenceHtml(s: StationSnapshot, history?: TelemetryPacket[]): string {
     const p = s.decidedBy;
-    const table = evidenceTable(s);
+    const table = evidenceTable(s, history);
 
     // The conjunction note is only shown when the rule was the storm rule AND
     // some conjunct actually passes here. If neither window satisfies any bound,
@@ -363,7 +363,7 @@ function evidenceHtml(s: StationSnapshot): string {
     );
 }
 
-function popupHtml(s: StationSnapshot): string {
+function popupHtml(s: StationSnapshot, history?: TelemetryPacket[]): string {
     const g = HEALTH_GLYPH[s.health];
     const p = s.decidedBy;
     const isAnomaly = p.classification !== 'NOMINAL_OPERATION';
@@ -387,14 +387,16 @@ function popupHtml(s: StationSnapshot): string {
         `<div><dt>WMO block</dt><dd>${escapeHtml(s.wmoBlockNo)}</dd></div>` +
         `<div><dt>Elevation</dt><dd>${s.elevationM} m</dd></div>` +
         `</dl>` +
-        evidenceHtml(s) +
+        evidenceHtml(s, history) +
         `<p class="ms-map-popup-when">${escapeHtml(decidedAt)}observed ${escapeHtml(p.timeIST)} · ${s.historyDepth} ticks in buffer</p>` +
         `</div>`
     );
 }
 
 export default function LeafletMap() {
-    const snapshot = getNetworkSnapshot();
+    const { state, selectStation } = useSystem();
+    const snapshot = state.snapshot;
+    const scenarioHistories = state.scenarioHistories;
     const searchId = useId();
 
     const [query, setQuery] = useState('');
@@ -526,8 +528,11 @@ export default function LeafletMap() {
                     alt: `${s.stationId}, ${s.name}, ${HEALTH_GLYPH[s.health].label}`,
                     riseOnHover: true,
                 });
-                marker.bindPopup(popupHtml(s), { closeButton: true, className: 'station-popup' });
-                marker.on('click', () => setSelected(s.stationId));
+                marker.bindPopup(popupHtml(s, scenarioHistories[s.stationId]), { closeButton: true, className: 'station-popup' });
+                marker.on('click', () => {
+                    setSelected(s.stationId);
+                    selectStation(s.stationId);
+                });
                 marker.addTo(layer);
                 markerRef.current.set(s.stationId, marker);
                 continue;
@@ -544,7 +549,7 @@ export default function LeafletMap() {
             marker.on('click', () => map.flyTo([lat, lng], Math.min(12, map.getZoom() + 2)));
             marker.addTo(layer);
         }
-    }, [visible, selected, labelMode]);
+    }, [visible, selected, labelMode, scenarioHistories, selectStation]);
 
     useEffect(() => {
         renderRef.current = render;

@@ -103,18 +103,18 @@ export const telemetryBuffer = new InMemoryRingBuffer<StoredTelemetryPacket>(50)
 export const eventBuffer = new InMemoryRingBuffer<StoredFaultEvent>(100);
 
 export async function insertTelemetry(data: StoredTelemetryPacket) {
+  // Always keep the bounded local ring buffer up to date so client views and
+  // exports stay populated even when Supabase persistence succeeds.
+  telemetryBuffer.add(data);
   if (hasSupabase && supabase) {
     try {
       const { error } = await supabase.from('telemetry').insert([data]);
       if (error) {
-        console.warn('[Supabase Fallback] Telemetry insert failed, buffering locally:', error.message);
-        telemetryBuffer.add(data);
+        console.warn('[Supabase Fallback] Telemetry insert failed, buffered locally:', error.message);
       }
     } catch {
-      telemetryBuffer.add(data);
+      // Already buffered locally above
     }
-  } else {
-    telemetryBuffer.add(data);
   }
 }
 
@@ -142,21 +142,19 @@ function notifyEventSubscribers() {
 }
 
 export async function insertEvent(event: StoredFaultEvent) {
+  // Always update the local ring buffer and notify subscribers so audit CSV
+  // exports and useSyncExternalStore consumers stay synchronized in both modes.
+  eventBuffer.add(event);
+  notifyEventSubscribers();
   if (hasSupabase && supabase) {
     try {
       const { error } = await supabase.from('fault_events').insert([event]);
       if (error) {
-        console.warn('[Supabase Fallback] Event insert failed, buffering locally:', error.message);
-        eventBuffer.add(event);
-        notifyEventSubscribers();
+        console.warn('[Supabase Fallback] Event insert failed, buffered locally:', error.message);
       }
     } catch {
-      eventBuffer.add(event);
-      notifyEventSubscribers();
+      // Already buffered locally and notified above
     }
-  } else {
-    eventBuffer.add(event);
-    notifyEventSubscribers();
   }
 }
 

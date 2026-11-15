@@ -70,7 +70,7 @@ describe('KPI verdict — fault branch (outranks warning)', () => {
     ]);
     check(v);
     expect(v.tone).toBe('fault');
-    expect(v.headline).toBe('1 STATION REPORT HARDWARE FAULT');
+    expect(v.headline).toBe('1 STATION REPORTS HARDWARE FAULT');
     // The singular/plural bug: "1 STATIONS" would ship silently.
     expect(v.detail).toContain('AWS-DEL-04');
     expect(v.detail).toContain('not weather');
@@ -111,7 +111,7 @@ describe('KPI verdict — warning branch', () => {
     const v = computeVerdict(kpis({ nominal: 20, drift: 1, activeAnomalies: 1 }), []);
     check(v);
     expect(v.tone).toBe('warning');
-    expect(v.headline).toBe('1 STATION NEED ATTENTION');
+    expect(v.headline).toBe('1 STATION NEEDS ATTENTION');
     expect(v.detail).toBe('1 sensor drift.');
     expect(v.detail).not.toContain('0 ');
   });

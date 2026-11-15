@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Search, Download } from 'lucide-react';
 import { clsx } from 'clsx';
-import { getNetworkSnapshot, type StationHealth, type StationSnapshot } from '@/lib/networkFeed';
+import { type StationHealth, type StationSnapshot } from '@/lib/networkFeed';
 import { useSystem } from './SystemContext';
 import WmoFlagBadge from './WmoFlagBadge';
 
@@ -106,8 +106,8 @@ function downloadCsv(rows: StationSnapshot[], filename: string) {
  * design tokens like the rest of the console, not raw hex.
  */
 export default function StationTable() {
-  const snapshot = getNetworkSnapshot();
   const { selectStation, state } = useSystem();
+  const snapshot = state.snapshot;
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'ALL' | StationHealth>('ALL');
@@ -158,7 +158,7 @@ export default function StationTable() {
                 setPage(0);
               }}
               placeholder="AWS-ID, name, state…"
-              className="w-48 rounded border border-hairline bg-card py-1.5 pl-8 pr-2.5 text-[12.5px] placeholder:text-ink-faint"
+              className="w-48 rounded border border-hairline bg-card py-2 pl-8 pr-3 text-[12.5px] placeholder:text-ink-faint"
             />
           </div>
           <div>
@@ -172,7 +172,7 @@ export default function StationTable() {
                 setFilter(e.target.value as 'ALL' | StationHealth);
                 setPage(0);
               }}
-              className="rounded border border-hairline bg-card px-2.5 py-1.5 text-[12.5px]"
+              className="rounded border border-hairline bg-card px-3 py-2 text-[12.5px]"
             >
               {HEALTH_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -185,7 +185,7 @@ export default function StationTable() {
             type="button"
             onClick={() => downloadCsv(pageItems, 'metshield-stations-page.csv')}
             disabled={pageItems.length === 0}
-            className="touch-target inline-flex items-center gap-1.5 rounded border border-hairline-strong bg-card px-2.5 text-[12.5px] font-semibold text-navy hover:bg-surface-alt disabled:opacity-40"
+            className="touch-target inline-flex items-center gap-1.5 rounded border border-hairline-strong bg-card px-3 text-[12.5px] font-semibold text-navy hover:bg-surface-alt disabled:opacity-40"
           >
             <Download size={13} aria-hidden />
             CSV
@@ -211,7 +211,7 @@ export default function StationTable() {
                   key={h}
                   scope="col"
                   className={clsx(
-                    't-label whitespace-nowrap px-4 py-2.5',
+                    't-label whitespace-nowrap px-4 py-3',
                     (h === 'Temp' || h === 'Pressure' || h === 'RH' || h === 'Observed (UTC)') &&
                       'max-md:hidden'
                   )}
@@ -233,7 +233,7 @@ export default function StationTable() {
                     selected ? 'bg-telemetry-bg' : tint.row
                   )}
                 >
-                  <td className="relative px-4 py-2.5">
+                  <td className="relative px-4 py-3">
                     {tint.bar !== 'transparent' && (
                       <span
                         className="absolute inset-y-0 left-0 w-1"
@@ -247,7 +247,7 @@ export default function StationTable() {
                         columns. Same values, same units, same em-dash for a
                         missing channel — folded, not dropped, because a QC
                         console must never hide a channel it holds. */}
-                    <div className="t-mono mt-0.5 flex flex-wrap gap-x-2.5 text-[11.5px] text-ink-muted max-md:flex">
+                    <div className="t-mono mt-1 flex flex-wrap gap-x-2.5 text-[11.5px] text-ink-muted max-md:flex">
                       <span>
                         {s.packet.raw.temperature?.toFixed(1) ?? '—'}
                         <span className="text-[10px]"> °C</span>
@@ -263,25 +263,25 @@ export default function StationTable() {
                       <span>{new Date(s.packet.timestamp).toISOString().slice(11, 19)}Z</span>
                     </div>
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px] max-md:hidden">
+                  <td className="t-mono whitespace-nowrap px-4 py-3 text-[13px] max-md:hidden">
                     {s.packet.raw.temperature?.toFixed(1) ?? '—'}
                     <span className="ml-0.5 text-[10px] text-ink-faint">°C</span>
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px] max-md:hidden">
+                  <td className="t-mono whitespace-nowrap px-4 py-3 text-[13px] max-md:hidden">
                     {s.packet.raw.pressure?.toFixed(1) ?? '—'}
                     <span className="ml-0.5 text-[10px] text-ink-faint">hPa</span>
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[13px] max-md:hidden">
+                  <td className="t-mono whitespace-nowrap px-4 py-3 text-[13px] max-md:hidden">
                     {s.packet.raw.humidity?.toFixed(1) ?? '—'}
                     <span className="ml-0.5 text-[10px] text-ink-faint">%</span>
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-3">
                     <WmoFlagBadge flag={s.wmoFlag} />
                   </td>
-                  <td className="t-mono whitespace-nowrap px-4 py-2.5 text-[12px] text-ink-muted max-md:hidden">
+                  <td className="t-mono whitespace-nowrap px-4 py-3 text-[12px] text-ink-muted max-md:hidden">
                     {new Date(s.packet.timestamp).toISOString().slice(11, 19)}Z
                   </td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => selectStation(s.stationId)}

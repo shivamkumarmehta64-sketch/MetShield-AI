@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useSystem } from './SystemContext';
-import { getNetworkSnapshot, classificationLabel, type StationHealth } from '@/lib/networkFeed';
+import { classificationLabel, type StationHealth } from '@/lib/networkFeed';
 import WmoFlagBadge from './WmoFlagBadge';
 import WeatherReferencePanel from '@/components/dashboard/WeatherReferencePanel';
 
@@ -59,7 +59,7 @@ const HEALTH_CONFIG: Record<
 
 export function InvestigationPanel() {
   const { state } = useSystem();
-  const snapshot = getNetworkSnapshot();
+  const snapshot = state.snapshot;
   
   // Prefer the operator's explicitly picked station; fallback to first non-nominal station
   const station = state.selectedStationId
@@ -247,10 +247,10 @@ export function InvestigationPanel() {
           <div className="t-label text-ink-muted mb-1 text-[10.5px]">04 OPERATIONAL ACTION</div>
           <div className="font-bold text-xs text-navy leading-snug mb-1">
             {cfg.isStorm
-              ? 'RETAIN OBSERVATION FOR NWP ASSIMILATION'
+              ? 'Retain observation for NWP assimilation'
               : cfg.isFault
-                ? 'QUARANTINE OBSERVATION & DISPATCH WORK ORDER'
-                : 'ACCEPTED IN ROUTINE ASSIMILATION STREAM'}
+                ? 'Quarantine observation & dispatch work order'
+                : 'Accepted in routine assimilation stream'}
           </div>
           <p className="text-[11.5px] text-ink-muted leading-relaxed">
             {packet.operationalAction}

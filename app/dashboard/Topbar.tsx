@@ -15,7 +15,8 @@ import {
 import Link from 'next/link';
 import DataModeBadge from './DataModeBadge';
 import WmoFlagBadge from './WmoFlagBadge';
-import { getNetworkSnapshot, computeKpis, classificationLabel } from '@/lib/networkFeed';
+import { computeKpis, classificationLabel } from '@/lib/networkFeed';
+import { useSystem } from './SystemContext';
 
 interface TopbarProps {
   breadcrumb: string;
@@ -67,13 +68,14 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
     };
   }, []);
 
-  const snapshot = getNetworkSnapshot();
+  const { state } = useSystem();
+  const snapshot = state.snapshot;
   const kpis = computeKpis(snapshot);
   const alerts = kpis.activeAnomalies;
   const nonNominalStations = snapshot.stations.filter((s) => s.health !== 'NOMINAL');
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-card px-4 lg:px-6" style={{ height: 56 }}>
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-card px-4 lg:px-6 h-14">
       <button
         type="button"
         aria-label="Open navigation"
@@ -140,7 +142,7 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
 
           {/* Alerts Flyout Dropdown */}
           {isAlertsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-lg border border-hairline bg-card shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-lg border border-hairline bg-card shadow-xl z-50 overflow-hidden">
               <div className="flex items-center justify-between border-b border-hairline px-4 py-3 bg-surface-alt">
                 <div className="flex items-center gap-2">
                   <AlertTriangle size={15} className="text-warning" />
@@ -203,7 +205,7 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="settings-title"
-            className="w-full max-w-md rounded-xl border border-hairline bg-card shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className="w-full max-w-md rounded-xl border border-hairline bg-card shadow-2xl overflow-hidden"
           >
             <div className="flex items-center justify-between border-b border-hairline px-5 py-4 bg-surface-alt">
               <div className="flex items-center gap-2">
@@ -244,7 +246,7 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
                     onClick={() => setTimeFormat('UTC')}
                     className={`px-3 py-2 rounded border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
                       timeFormat === 'UTC'
-                        ? 'border-sky-deep bg-sky-50 text-sky-deep'
+                        ? 'border-sky-deep bg-telemetry-bg text-telemetry'
                         : 'border-hairline text-ink-muted hover:bg-surface-hover'
                     }`}
                   >
@@ -255,7 +257,7 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
                     onClick={() => setTimeFormat('IST')}
                     className={`px-3 py-2 rounded border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
                       timeFormat === 'IST'
-                        ? 'border-sky-deep bg-sky-50 text-sky-deep'
+                        ? 'border-sky-deep bg-telemetry-bg text-telemetry'
                         : 'border-hairline text-ink-muted hover:bg-surface-hover'
                     }`}
                   >

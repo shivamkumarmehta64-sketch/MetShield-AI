@@ -239,13 +239,32 @@ export default function MobileEdgeNodePage() {
     });
     const [chartMetric, setChartMetric] = useState<'all' | 'pressure' | 'elevation' | 'gust'>('all');
 
-    // Stream rolling real-time sensor history
+    const sensorReadRef = useRef({
+        isHardwareActive,
+        hardwarePressure,
+        press,
+        elevationDeltaMeters,
+        windGustKph,
+    });
+
+    useEffect(() => {
+        sensorReadRef.current = {
+            isHardwareActive,
+            hardwarePressure,
+            press,
+            elevationDeltaMeters,
+            windGustKph,
+        };
+    }, [isHardwareActive, hardwarePressure, press, elevationDeltaMeters, windGustKph]);
+
+    // Stream rolling real-time sensor history on a stable 1.5s cadence
     useEffect(() => {
         const interval = setInterval(() => {
+            const snap = sensorReadRef.current;
             const timeStr = new Date().toTimeString().split(' ')[0];
-            const curP = isHardwareActive && hardwarePressure !== null ? hardwarePressure : press;
-            const curElev = elevationDeltaMeters ?? Math.round((1013.25 - curP) * 8.4);
-            const curGust = windGustKph;
+            const curP = snap.isHardwareActive && snap.hardwarePressure !== null ? snap.hardwarePressure : snap.press;
+            const curElev = snap.elevationDeltaMeters ?? Math.round((1013.25 - curP) * 8.4);
+            const curGust = snap.windGustKph;
 
             setSensorHistory((prev) => [
                 ...prev.slice(-17),
@@ -259,7 +278,7 @@ export default function MobileEdgeNodePage() {
         }, 1500);
 
         return () => clearInterval(interval);
-    }, [isHardwareActive, hardwarePressure, press, elevationDeltaMeters, windGustKph]);
+    }, []);
 
     // Fetch real live weather for any latitude/longitude (Weatherstack + Open-Meteo)
     const fetchRealWeatherForCoords = useCallback(async (lat: number, lon: number, locationLabel?: string) => {
@@ -963,7 +982,7 @@ export default function MobileEdgeNodePage() {
                                     {windGustKph.toFixed(1)} <span className="text-[10px] text-slate-400">km/h (derived)</span>
                                 </div>
                                 <div className="text-[8px] text-amber-300/90 leading-none font-medium">
-                                    {isShaking ? '⚠️ Motion detected — derived estimate' : 'Derived from accelerometer, not anemometer'}
+                                    {isShaking ? 'Motion detected — derived estimate' : 'Derived from accelerometer, not anemometer'}
                                 </div>
                             </div>
                         </div>

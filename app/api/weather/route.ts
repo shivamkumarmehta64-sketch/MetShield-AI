@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
         3
       )}&longitude=${Number(lon).toFixed(3)}&current=temperature_2m,relative_humidity_2m,surface_pressure&elevation=${Number(elev).toFixed(
         0
-      )}&timezone=Asia%2/Kolkata`;
+      )}&timezone=Asia%2FKolkata`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);

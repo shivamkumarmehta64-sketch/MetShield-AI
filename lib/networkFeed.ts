@@ -1,4 +1,5 @@
 import {
+  NICWMOAnomalyEngine,
   nicWmoEngineInstance,
   getInitialSeededDataset,
   createWorkOrder,
@@ -10,6 +11,7 @@ import {
 } from './anomalyLogic';
 import { IMD_AWS_STATIONS, getStationProfile } from './stationData';
 import { getModelMetadata } from './mlAnomalyModel';
+import { type LiveObservation } from './liveWeatherService';
 
 /**
  * THE SINGLE DATA SOURCE FOR THE OPERATIONS CONSOLE.
@@ -554,6 +556,164 @@ export function classificationLabel(c: RootCauseClassification): string {
 
 export function stationNameOf(stationId: string): string {
   return getStationProfile(stationId)?.name ?? stationId;
+}
+
+/**
+ * Overlays a `runScenario` result onto the base `NetworkSnapshot` so interactive
+ * scenario triggers on `/dashboard` drive the exact same KPI strip, map, station
+ * matrix, and investigation panel as the baseline snapshot.
+ */
+export function buildScenarioSnapshot(
+  scenario: ScenarioId,
+  runs?: ScenarioRun[]
+): NetworkSnapshot {
+  const base = getNetworkSnapshot();
+  const scenarioRuns = runs ?? runScenario(scenario);
+  const byId: Record<string, StationSnapshot> = { ...base.byId };
+
+  if (scenario === 'normal') {
+    for (const s of base.stations) {
+      if (s.health !== 'NOMINAL') {
+        nicWmoEngineInstance.resetToNominal(s.stationId);
+        const packets: TelemetryPacket[] = [];
+        for (let i = 0; i < 14; i++) {
+          packets.push(
+            nicWmoEngineInstance.generatePacket(
+              s.stationId,
+              SEEDED_BASE_EPOCH + i * 2500,
+              i,
+              undefined,
+              true
+            )
+          );
+        }
+        const latest = packets[packets.length - 1];
+        byId[s.stationId] = {
+          ...s,
+          health: healthFromPacket(latest),
+          classification: latest.classification,
+          wmoFlag: latest.wmoFlag,
+          alertLevel: latest.alertLevel,
+          packet: latest,
+          decidedBy: latest,
+          resolved: false,
+          historyDepth: packets.length,
+        };
+      }
+    }
+  }
+
+  for (const run of scenarioRuns) {
+    const existing = byId[run.stationId];
+    if (!existing || run.packets.length === 0) continue;
+    const latest = run.packets[run.packets.length - 1];
+    const decidedBy =
+      [...run.packets].reverse().find((p) => p.classification !== 'NOMINAL_OPERATION') ?? latest;
+
+    byId[run.stationId] = {
+      ...existing,
+      health: healthFromPacket(decidedBy),
+      classification: decidedBy.classification,
+      wmoFlag: decidedBy.wmoFlag,
+      alertLevel: decidedBy.alertLevel,
+      packet: latest,
+      decidedBy,
+      resolved: decidedBy !== latest,
+      historyDepth: run.packets.length,
+    };
+  }
+
+  const stations = Object.values(byId).sort((a, b) => a.stationId.localeCompare(b.stationId));
+  const latestTimestamp = stations.reduce((max, s) => Math.max(max, s.packet.timestamp), 0);
+
+  return {
+    ...base,
+    stations,
+    byId,
+    latestTimestamp,
+    dataMode: scenario === 'normal' ? base.dataMode : 'REPLAY',
+  };
+}
+
+/**
+ * Evaluates live Open-Meteo observations across registered IMD station coordinates
+ * through `NICWMOAnomalyEngine` and overlays them onto a `NetworkSnapshot`.
+ *
+ * Stations missing from `observations` keep their fallback entry rather than being
+ * fabricated as live; `dataMode` becomes `'LIVE'` only when at least one real
+ * observation is present.
+ */
+export function buildLiveNetworkSnapshot(
+  observations: Record<string, LiveObservation>,
+  engine: NICWMOAnomalyEngine = new NICWMOAnomalyEngine(),
+  histories: Record<string, TelemetryPacket[]> = {}
+): { snapshot: NetworkSnapshot; histories: Record<string, TelemetryPacket[]> } {
+  const buildStart = typeof performance !== 'undefined' ? performance.now() : 0;
+  const base = getNetworkSnapshot();
+  const byId: Record<string, StationSnapshot> = { ...base.byId };
+  const nextHistories: Record<string, TelemetryPacket[]> = { ...histories };
+  let liveCount = 0;
+
+  for (const station of IMD_AWS_STATIONS) {
+    const obs = observations[station.stationId];
+    if (!obs || !obs.isLive) continue;
+    liveCount += 1;
+
+    const pkt = engine.processIngestedObservation(
+      station.stationId,
+      obs.temperature,
+      obs.pressure,
+      obs.humidity,
+      obs.timestamp,
+      obs.windSpeedKph ?? null,
+      obs.windDirectionDeg ?? null,
+      obs.rainfallMm10min ?? null
+    );
+
+    const prevHist = nextHistories[station.stationId] ?? [];
+    const updatedHist = [...prevHist, pkt].slice(-24);
+    nextHistories[station.stationId] = updatedHist;
+
+    const decidedBy =
+      [...updatedHist].reverse().find((p) => p.classification !== 'NOMINAL_OPERATION') ?? pkt;
+    const existing = byId[station.stationId];
+    if (!existing) continue;
+
+    byId[station.stationId] = {
+      ...existing,
+      health: healthFromPacket(decidedBy),
+      classification: decidedBy.classification,
+      wmoFlag: decidedBy.wmoFlag,
+      alertLevel: decidedBy.alertLevel,
+      packet: pkt,
+      decidedBy,
+      resolved: decidedBy !== pkt,
+      historyDepth: updatedHist.length,
+      seededInjection: false,
+    };
+  }
+
+  const stations = Object.values(byId).sort((a, b) => a.stationId.localeCompare(b.stationId));
+  const latestTimestamp = stations.reduce((max, s) => Math.max(max, s.packet.timestamp), 0);
+
+  return {
+    snapshot: {
+      ...base,
+      stations,
+      byId,
+      latestTimestamp,
+      buildDurationMs:
+        Math.round(
+          ((typeof performance !== 'undefined' ? performance.now() : 0) - buildStart) * 10
+        ) / 10,
+      dataMode: liveCount > 0 ? 'LIVE' : base.dataMode,
+      statement:
+        liveCount > 0
+          ? `Live Open-Meteo surface NWP analysis across ${liveCount} of ${IMD_AWS_STATIONS.length} IMD station coordinates (QNH reduced), evaluated by NICWMOAnomalyEngine. Not official IMD hardware telemetry.`
+          : base.statement,
+    },
+    histories: nextHistories,
+  };
 }
 
 /* ───────────────────────────── incident log ──────────────────────────────────

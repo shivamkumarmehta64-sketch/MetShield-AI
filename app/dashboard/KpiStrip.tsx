@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 import { Activity, AlertTriangle, Gauge, Radio, ShieldCheck } from 'lucide-react';
-import { computeKpis, getNetworkSnapshot, type NetworkKpis } from '@/lib/networkFeed';
+import { computeKpis, type NetworkKpis } from '@/lib/networkFeed';
+import { useSystem } from './SystemContext';
 
 export type Tone = 'healthy' | 'warning' | 'weather' | 'fault' | 'telemetry' | 'neutral';
 
@@ -17,7 +18,7 @@ export function computeVerdict(k: NetworkKpis, faultStations: string[]): Verdict
   if (k.activeFaults > 0) {
     return {
       tone: 'fault',
-      headline: `${k.activeFaults} STATION${k.activeFaults === 1 ? '' : 'S'} REPORT HARDWARE FAULT`,
+      headline: `${k.activeFaults === 1 ? '1 STATION REPORTS HARDWARE FAULT' : `${k.activeFaults} STATIONS REPORT HARDWARE FAULT`}`,
       detail: `${faultStations.join(' · ')} — transducer fault, not weather.`,
       faultStations,
     };
@@ -36,14 +37,15 @@ export function computeVerdict(k: NetworkKpis, faultStations: string[]): Verdict
   if (k.telemetryIssues > 0) parts.push(`${k.telemetryIssues} packet loss`);
   return {
     tone: 'warning',
-    headline: `${k.activeAnomalies} STATION${k.activeAnomalies === 1 ? '' : 'S'} NEED ATTENTION`,
+    headline: `${k.activeAnomalies === 1 ? '1 STATION NEEDS ATTENTION' : `${k.activeAnomalies} STATIONS NEED ATTENTION`}`,
     detail: `${parts.join(' · ')}.`,
     faultStations: [],
   };
 }
 
 export default function KpiStrip() {
-  const snapshot = getNetworkSnapshot();
+  const { state } = useSystem();
+  const snapshot = state.snapshot;
   const k = useMemo(() => computeKpis(snapshot), [snapshot]);
 
   // Derived values for the 6 KPIs based on real data
@@ -59,13 +61,17 @@ export default function KpiStrip() {
     <section aria-label="Network key figures" className="flex flex-col gap-4">
       <div>
         <h1 className="t-page-title text-navy text-[22px]">AWS Network Overview</h1>
-        <p className="t-body text-ink-muted mt-1">Operational view of benchmark station network</p>
+        <p className="t-body text-ink-muted mt-1">
+          {snapshot.dataMode === 'LIVE'
+            ? 'Live Open-Meteo surface NWP observations across 21 IMD station coordinates (QNH reduced)'
+            : 'Operational view of benchmark station network'}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* 1. Total Stations */}
         <div className="card p-4 flex flex-col items-center justify-center text-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-sky-deep mb-1">
+          <div className="w-10 h-10 rounded-full bg-telemetry-bg flex items-center justify-center text-telemetry mb-1">
             <Radio size={20} />
           </div>
           <div className="t-mono text-[22px] font-bold text-ink leading-none">{total}</div>
@@ -75,7 +81,7 @@ export default function KpiStrip() {
         {/* 2. Nominal */}
         <div className="card p-4 flex flex-col items-center justify-center text-center gap-2 relative">
           <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-healthy"></div>
-          <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-healthy mb-1">
+          <div className="w-10 h-10 rounded-full bg-healthy-bg flex items-center justify-center text-healthy mb-1">
             <ShieldCheck size={20} />
           </div>
           <div className="t-mono text-[22px] font-bold text-ink leading-none">{nominal}</div>
@@ -86,39 +92,39 @@ export default function KpiStrip() {
         {/* 3. Watch */}
         <div className="card p-4 flex flex-col items-center justify-center text-center gap-2 relative">
           <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-warning"></div>
-          <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-warning mb-1">
+          <div className="w-10 h-10 rounded-full bg-warning-bg flex items-center justify-center text-warning mb-1">
             <AlertTriangle size={20} />
           </div>
           <div className="t-mono text-[22px] font-bold text-ink leading-none">{watch}</div>
           <div className="t-meta text-ink-muted">Watch</div>
-          <div className="text-[11px] font-mono text-warning font-semibold">{pct(watch)}</div>
+          <div className="text-[11px] font-mono text-warning-text font-semibold">{pct(watch)}</div>
         </div>
 
         {/* 4. Fault */}
         <div className="card p-4 flex flex-col items-center justify-center text-center gap-2 relative">
           <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-fault"></div>
-          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-fault mb-1">
+          <div className="w-10 h-10 rounded-full bg-fault-bg flex items-center justify-center text-fault mb-1">
             <Activity size={20} />
           </div>
           <div className="t-mono text-[22px] font-bold text-ink leading-none">{fault}</div>
           <div className="t-meta text-ink-muted">Fault</div>
-          <div className="text-[11px] font-mono text-fault font-semibold">{pct(fault)}</div>
+          <div className="text-[11px] font-mono text-fault-text font-semibold">{pct(fault)}</div>
         </div>
 
         {/* 5. Weather Event */}
         <div className="card p-4 flex flex-col items-center justify-center text-center gap-2 relative">
           <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-weather"></div>
-          <div className="w-10 h-10 rounded-full bg-sky-50 flex items-center justify-center text-weather mb-1">
+          <div className="w-10 h-10 rounded-full bg-weather-bg flex items-center justify-center text-weather mb-1">
             <Activity size={20} />
           </div>
           <div className="t-mono text-[22px] font-bold text-ink leading-none">{weather}</div>
           <div className="t-meta text-ink-muted">Weather Event</div>
-          <div className="text-[11px] font-mono text-weather font-semibold">{pct(weather)}</div>
+          <div className="text-[11px] font-mono text-weather-text font-semibold">{pct(weather)}</div>
         </div>
 
         {/* 6. Channels */}
         <div className="card p-4 flex flex-col items-center justify-center text-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-ink-muted mb-1">
+          <div className="w-10 h-10 rounded-full bg-telemetry-bg flex items-center justify-center text-telemetry mb-1">
             <Gauge size={20} />
           </div>
           <div className="t-mono text-[22px] font-bold text-ink leading-none">5</div>
