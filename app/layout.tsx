@@ -81,10 +81,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               __html: `
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', function() {
+                    // No success log: this string is injected verbatim, so the
+                    // build's removeConsole pass cannot strip it and it would
+                    // print on every production page load. Failures still surface.
                     navigator.serviceWorker.register('/sw.js').then(
-                      function(registration) {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                      },
+                      function() {},
                       function(err) {
                         console.error('ServiceWorker registration failed: ', err);
                       }

@@ -1,39 +1,141 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import Shell from './Shell';
 import KpiStrip from './KpiStrip';
 import StationTable from './StationTable';
-import TelemetryConsole from './TelemetryConsole';
 import QcPanel from './QcPanel';
-import Testbench from './Testbench';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { InvestigationPanel } from './InvestigationPanel';
 import { useSystem } from './SystemContext';
 import { type ScenarioId } from '@/lib/networkFeed';
 
-import { getAuditLogRecords, generateAuditCsvContent } from '@/lib/supabaseClient';
+import type { StoredFaultEvent } from '@/lib/supabaseClient';
+import { type TelemetryPacket } from '@/lib/anomalyLogic';
 
-const LeafletMap = dynamic(() => import('./LeafletMap'), { ssr: false });
+/**
+ * The map is client-only and 340 px tall below `sm`, 420 px above it. Without a
+ * placeholder it mounted into zero height and pushed the console down as it
+ * appeared — measured as 0.19 of the 0.22 layout shift on this route. The
+ * placeholder reserves the same box, so the map fills space rather than creating it.
+ */
+const LeafletMap = dynamic(() => import('./LeafletMap'), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="card h-[340px] w-full animate-pulse sm:h-[420px]"
+      role="status"
+      aria-label="Loading national station map"
+    />
+  ),
+});
+
+/**
+ * Chart-bearing tabs, split out of the initial bundle.
+ *
+ * Both were statically imported, so `recharts` shipped on first paint even
+ * though `activeTab` starts at `matrix` and neither component rendered. They
+ * now load when their tab is opened.
+ */
+const TelemetryConsole = dynamic(() => import('./TelemetryConsole'), {
+  loading: () => <LoadingSkeleton title="Loading station telemetry" variant="cards" />,
+});
+
+const Testbench = dynamic(() => import('./Testbench'), {
+  loading: () => <LoadingSkeleton title="Loading testbench" variant="cards" />,
+});
+
+function packetToAuditEvent(p: TelemetryPacket): StoredFaultEvent {
+  const param = p.xaiAttribution.primaryParameter.toLowerCase();
+  const rawVal =
+    param.includes('temp')
+      ? (p.raw.temperature ?? 0)
+      : param.includes('press')
+      ? (p.raw.pressure ?? 0)
+      : (p.raw.humidity ?? 0);
+  const imputedVal =
+    param.includes('temp')
+      ? (p.imputed.temperature ?? rawVal)
+      : param.includes('press')
+      ? (p.imputed.pressure ?? rawVal)
+      : (p.imputed.humidity ?? rawVal);
+
+  return {
+    eventId: p.packetId,
+    stationId: p.stationId,
+    timestamp: new Date(p.timestamp).toISOString(),
+    timeIST: p.timeIST,
+    parameter: p.xaiAttribution.primaryParameter,
+    rawVal,
+    imputedVal,
+    temperatureC: p.raw.temperature ?? undefined,
+    pres_hPa: p.raw.pressure ?? undefined,
+    rh_pct: p.raw.humidity ?? undefined,
+    classification: p.classification,
+    severity:
+      p.classification === 'GENUINE_CONVECTIVE_EVENT'
+        ? 'GENUINE_WEATHER'
+        : p.wmoFlag === 'FLAG_4_CORRUPT_HARDWARE'
+        ? 'CRITICAL'
+        : p.wmoFlag === 'FLAG_1_VERIFIED_GOOD'
+        ? 'INFO'
+        : 'WARNING',
+    xaiAttribution: {
+      tempWeight: p.xaiAttribution.tempWeight,
+      pressWeight: p.xaiAttribution.pressWeight,
+      humWeight: p.xaiAttribution.humWeight,
+      explanation: p.xaiAttribution.diagnosticNote,
+    },
+    recommendedAction: p.operationalAction,
+  };
+}
 
 function ScenarioControls() {
-  const { state, setScenario } = useSystem();
+  const { state, setScenario, resumeLive } = useSystem();
   
-  const handleExport = () => {
-    const records = getAuditLogRecords();
-    const csvContent = generateAuditCsvContent(records);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `NIC_MoES_QC_Audit_Log_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // `@supabase/supabase-js` is ~239 KB unminified and was in this route's initial
+  // chunk for two functions reached only by this button. Importing it here keeps
+  // it off first paint and loads it the first time someone exports.
+  //
+  // The await makes this re-entrant, so the button is disabled while it runs:
+  // a second click would otherwise start a second import and a second download.
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const { getAuditLogRecords, generateAuditCsvContent } = await import('@/lib/supabaseClient');
+      let records = getAuditLogRecords();
+      if (records.length === 0) {
+        const flaggedFromScenario = state.packets.filter((p) => p.classification !== 'NOMINAL_OPERATION');
+        if (flaggedFromScenario.length > 0) {
+          records = flaggedFromScenario.map(packetToAuditEvent);
+        } else {
+          const flaggedStations = state.snapshot.stations.filter((s) => s.health !== 'NOMINAL');
+          const sourcePackets =
+            flaggedStations.length > 0
+              ? flaggedStations.map((s) => s.decidedBy)
+              : state.snapshot.stations.map((s) => s.packet);
+          records = sourcePackets.map(packetToAuditEvent);
+        }
+      }
+      const csvContent = generateAuditCsvContent(records);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `NIC_MoES_QC_Audit_Log_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const isActive = (id: ScenarioId) => state.scenario === id;
@@ -66,10 +168,19 @@ function ScenarioControls() {
         <div>
           <div className="t-label text-ink-muted mb-2 text-[10px]">INJECT FAULT SCENARIO</div>
           <div className="flex flex-wrap gap-2">
+            {state.scenario !== null && (
+              <button
+                type="button"
+                onClick={resumeLive}
+                className="px-3 py-2 text-[12px] font-mono border rounded bg-healthy-bg text-healthy-text border-healthy-border hover:bg-emerald-100"
+              >
+                Resume Live Open-Meteo Feed
+              </button>
+            )}
             {triggerButton('normal', 'Reset Network (Nominal)')}
             {triggerButton('temp-spike', 'Simulate Thermistor Open-Circuit')}
             {triggerButton('frozen', 'Simulate Probe Float Lock')}
-            {triggerButton('pressure-drop', 'Simulate Convective Front Dynamics')}
+            {triggerButton('convective-storm', 'Simulate Convective Front Dynamics')}
           </div>
         </div>
         
@@ -77,9 +188,11 @@ function ScenarioControls() {
           <div className="t-label text-ink-muted mb-2 text-[10px]">DATA EXPORT</div>
           <button 
             onClick={handleExport}
-            className="px-3 py-2 text-[12px] font-mono border border-hairline-strong rounded text-navy hover:bg-surface-alt flex items-center gap-2"
+            disabled={isExporting}
+            aria-busy={isExporting}
+            className="px-3 py-2 text-[12px] font-mono border border-hairline-strong rounded text-navy hover:bg-surface-alt flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Export QC Audit Log (.csv)
+            {isExporting ? 'Preparing export…' : 'Export QC Audit Log (.csv)'}
           </button>
         </div>
       </div>

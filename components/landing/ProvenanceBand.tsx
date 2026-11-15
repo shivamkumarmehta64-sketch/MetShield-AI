@@ -99,7 +99,7 @@ export default function ProvenanceBand() {
 
       {/* ── Every source, with its label ── */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+        <table className="prov-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
           <caption className="sr-only">Every named data source in this build, with its provenance label and description</caption>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--hairline-strong)' }}>

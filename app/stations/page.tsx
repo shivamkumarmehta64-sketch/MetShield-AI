@@ -10,7 +10,21 @@ import { getNetworkSnapshot, type StationHealth } from '@/lib/networkFeed';
 import { IMD_AWS_STATIONS } from '@/lib/stationData';
 import type { IMDStationProfile } from '@/lib/stationData';
 
-const LeafletMap = dynamic(() => import('../dashboard/LeafletMap'), { ssr: false });
+/**
+ * Client-only map, 340 px below `sm` and 420 px above it. The placeholder keeps
+ * that box reserved: without it the map mounted into zero height and pushed the
+ * registry table down, which surfaced as 0.22 layout shift on this route.
+ */
+const LeafletMap = dynamic(() => import('../dashboard/LeafletMap'), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="card h-[340px] w-full animate-pulse sm:h-[420px]"
+      role="status"
+      aria-label="Loading national station map"
+    />
+  ),
+});
 
 /** The five operational states, in the order they should be filtered. §E. */
 const FILTERS: { key: StationHealth | 'ALL'; label: string }[] = [

@@ -186,8 +186,7 @@ html {
 }
 
 body {
-    background: linear-gradient(180deg, var(--page) 0%, #F1F5F9 100%);
-    background-attachment: fixed;
+    background: var(--page);
     color: var(--ink);
     font-family: var(--font-sans);
     /* Overflow is NOT globally hidden any more. Hiding it hides layout bugs
@@ -215,7 +214,7 @@ body {
 .t-page-title {
     font-size: 30px;
     line-height: 1.2;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.02em;
 }
 
@@ -237,20 +236,30 @@ body {
     line-height: 1.55;
 }
 
-.t-meta {
-    font-size: 12px;
-    line-height: 1.45;
-    color: var(--ink-muted);
-}
+/* ── Typography defaults, in the components layer ──────────────────────────
+   These two rules set `color`. Unlayered, they outranked every Tailwind text
+   utility: `t-label text-white/50` on the dark console sidebar rendered
+   `--ink-muted` (#475569) on #0F172A — 2.36:1, and 31 contrast failures in the
+   audit, all traceable to this. Inside `@layer components` the utilities win,
+   which is what the markup always said it wanted. */
+@layer components {
 
-/* System / status label — one of the few places uppercase is correct. */
-.t-label {
-    font-size: 11px;
-    line-height: 1.35;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
+    .t-meta {
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--ink-muted);
+    }
+
+    /* System / status label — one of the few places uppercase is correct. */
+    .t-label {
+        font-size: 11px;
+        line-height: 1.35;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+    }
+
 }
 
 /* Telemetry, station IDs, timestamps, measurements, logs. */
@@ -930,6 +939,41 @@ body {
    heading a rail link just scrolled to. */
 .land-anchor {
     scroll-margin-top: 72px;
+}
+
+/* ── Provenance table: stacks below the sm breakpoint ─────────────────────
+   The table carries a long "what it actually is" column beside two short
+   ones. At 390 px the 560 px min-width made it a horizontal scroller whose
+   right-hand column — the only one that explains anything — sat off-screen,
+   and every row stretched to ~150 px of wrapped text. Below 640 px each
+   source becomes one stacked block instead. The `!important`s are required
+   because the cell padding and `white-space` are inline styles in
+   components/landing/ProvenanceBand.tsx. */
+@media (max-width: 639px) {
+    .prov-table {
+        min-width: 0 !important;
+    }
+
+    .prov-table thead {
+        display: none;
+    }
+
+    .prov-table,
+    .prov-table tbody,
+    .prov-table tr,
+    .prov-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .prov-table tr {
+        padding: 9px 0;
+    }
+
+    .prov-table td {
+        padding: 1px 14px !important;
+        white-space: normal !important;
+    }
 }
 
 /* The pipeline chain. Seven stages, each a bordered cell carrying the real
