@@ -294,7 +294,7 @@ export default function OperationsBand() {
         <Link
           href="/dashboard"
           className="t-label"
-          style={{ color: 'var(--accent-fg)', background: 'var(--brand)', padding: '6px 12px', borderRadius: 4, textDecoration: 'none' }}
+          style={{ color: 'var(--accent-fg)', background: 'var(--brand)', padding: '6px 12px', borderRadius: 4, textDecoration: 'none', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
         >
           Open the console
         </Link>

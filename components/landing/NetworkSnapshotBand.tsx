@@ -18,13 +18,18 @@ export default function NetworkSnapshotBand() {
   const snapshot = getNetworkSnapshot();
   const kpis = useMemo(() => computeKpis(snapshot), [snapshot]);
 
+  /* Asymmetric by intent: ATTENTION is the only number that carries a
+     decision, so it gets the dominant span and the largest type. A row of
+     five equal tiles reads as decoration, not as an operational state. */
   const cards = [
     {
-      number: String(kpis.total),
-      label: 'AWS STATIONS',
-      status: 'ALL REGISTERED',
-      statusTone: 'text-ink-muted',
-      dotColor: 'var(--color-navy)',
+      number: String(kpis.activeAnomalies),
+      label: 'ATTENTION',
+      status: `${kpis.activeFaults} FAULT · ${kpis.weatherEvents} STORM`,
+      statusTone: kpis.activeFaults > 0 ? 'text-fault-text' : 'text-weather-text',
+      dotColor: kpis.activeFaults > 0 ? 'var(--color-fault)' : 'var(--color-weather)',
+      span: 'col-span-2 lg:col-span-7',
+      size: 'text-[34px] sm:text-[38px]',
     },
     {
       number: String(kpis.nominal),
@@ -32,13 +37,17 @@ export default function NetworkSnapshotBand() {
       status: 'PASSING QC',
       statusTone: 'text-healthy-text',
       dotColor: 'var(--color-healthy)',
+      span: 'lg:col-span-5',
+      size: 'text-[28px]',
     },
     {
-      number: String(kpis.activeAnomalies),
-      label: 'ATTENTION',
-      status: `${kpis.activeFaults} FAULT · ${kpis.weatherEvents} STORM`,
-      statusTone: kpis.activeFaults > 0 ? 'text-fault-text' : 'text-weather-text',
-      dotColor: kpis.activeFaults > 0 ? 'var(--color-fault)' : 'var(--color-weather)',
+      number: String(kpis.total),
+      label: 'AWS STATIONS',
+      status: 'ALL REGISTERED',
+      statusTone: 'text-ink-muted',
+      dotColor: 'var(--color-navy)',
+      span: 'lg:col-span-4',
+      size: 'text-[24px]',
     },
     {
       number: '5',
@@ -46,6 +55,8 @@ export default function NetworkSnapshotBand() {
       status: 'T, P, RH, WIND, RAIN',
       statusTone: 'text-sky-deep',
       dotColor: 'var(--color-sky-deep)',
+      span: 'lg:col-span-4',
+      size: 'text-[24px]',
     },
     {
       number: snapshot.dataMode,
@@ -53,18 +64,19 @@ export default function NetworkSnapshotBand() {
       status: 'DETERMINISTIC RUN',
       statusTone: 'text-ink-faint',
       dotColor: 'var(--color-ink-faint)',
-      isBadgeNum: true,
+      span: 'col-span-2 lg:col-span-4',
+      size: 'text-[21px] leading-tight mt-1',
     },
   ];
 
   return (
     <div className="card overflow-hidden border border-hairline bg-card shadow-sm">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-hairline">
+      <div className="grid grid-cols-2 lg:grid-cols-12 divide-y sm:divide-y-0 sm:divide-x divide-hairline">
         {cards.map((c) => (
-          <div key={c.label} className="p-4 flex flex-col justify-between">
+          <div key={c.label} className={`p-4 flex flex-col justify-between ${c.span}`}>
             <div>
               <div className="t-label text-ink-muted mb-1">{c.label}</div>
-              <div className={`t-mono font-bold text-ink ${c.isBadgeNum ? 'text-[21px] leading-tight mt-1' : 'text-[28px] leading-none'}`}>
+              <div className={`t-mono font-bold text-ink ${c.size}`}>
                 {c.number}
               </div>
             </div>

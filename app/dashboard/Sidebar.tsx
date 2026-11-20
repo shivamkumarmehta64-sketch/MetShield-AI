@@ -132,7 +132,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                     onClick={onClose}
                     aria-current={active ? 'page' : undefined}
                     className={clsx(
-                      'flex items-center gap-3 border-l-2 px-4 text-[13.5px] transition-colors h-10',
+                      /* h-11, not h-10: the rail links are touch targets too,
+                         and §23 sets 44px as the floor. h-10 measured 40px. */
+                      'flex items-center gap-3 border-l-2 px-4 text-[13.5px] transition-colors h-11',
                       active
                         ? 'border-l-sky-deep bg-navy-deep/50 font-semibold text-white'
                         : 'border-l-transparent text-white/70 hover:bg-navy-deep/30 hover:text-white'

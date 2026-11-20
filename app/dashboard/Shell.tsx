@@ -43,7 +43,7 @@ export default function Shell({ breadcrumb, children }: ShellProps) {
         <Suspense fallback={null}>
           <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
         </Suspense>
-        <main id="main" className="px-4 py-5 lg:px-6">
+        <main id="main-content" tabIndex={-1} className="px-4 py-5 lg:px-6">
           {children}
         </main>
       </div>

@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "AWS-SIH2026-FINAL/**",
     ".agents/**",
+    // Agent workspaces hold their own checkouts and .next build output;
+    // the root .next/** ignore above does not match these nested paths.
+    ".claude/**",
     // Generated / one-off artefacts, not source.
     "tsconfig.tsbuildinfo",
   ]),

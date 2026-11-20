@@ -717,7 +717,7 @@ export default function MobileEdgeNodePage() {
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 p-3.5 space-y-3 max-w-lg mx-auto w-full">
+            <main id="main-content" tabIndex={-1} className="flex-1 p-3.5 space-y-3 max-w-lg mx-auto w-full">
                 {/* Hardware Status Strip */}
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 text-xs">
                     <div className="flex items-center justify-between text-slate-300">

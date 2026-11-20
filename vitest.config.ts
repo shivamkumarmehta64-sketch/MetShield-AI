@@ -8,7 +8,9 @@ export default defineConfig({
     // picking up its `*.test.mjs` files, failing every run with "No test suite
     // found" and blocking `npm run verify` for a reason unrelated to this app.
     // Run those with `node --test unslop/test/` instead.
-    exclude: ['**/node_modules/**', '**/dist/**', 'unslop/**'],
+    // `.claude/` holds agent workspaces: frozen checkouts whose tests duplicate
+    // the ones in `__tests__/` and can drift from the working tree.
+    exclude: ['**/node_modules/**', '**/dist/**', 'unslop/**', '.claude/**'],
   },
   resolve: {
     alias: {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { ArrowRight, ShieldCheck, AlertTriangle, Activity } from 'lucide-react';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
+import { ProvenanceBadge } from '@/components/ProvenanceBadge';
 
 /**
  * HeroVisual: A restrained, scientific meteorological operations visual.
@@ -65,10 +66,7 @@ export default function HeroVisual() {
                 <span className="text-[10px] text-ink-muted">hPa</span>
               </div>
               <div className="absolute top-2 right-2 flex items-center gap-1 bg-card px-1.5 py-0.5 rounded border border-hairline">
-                <span className={`w-1.5 h-1.5 rounded-full ${isHardwareActive ? 'bg-healthy animate-pulse' : 'bg-warning'}`}></span>
-                <span className="text-[8px] font-bold text-ink-muted">
-                  {isHardwareActive ? 'LIVE MOBILE HARDWARE FEED' : 'SIMULATED AWS FEED'}
-                </span>
+                <ProvenanceBadge provenance={isHardwareActive ? 'LIVE' : 'SIMULATED'} />
               </div>
             </div>
 
@@ -177,7 +175,7 @@ export default function HeroVisual() {
       {/* Footer Strip */}
       <div className="border-t border-hairline bg-surface-alt px-4 py-2 flex flex-wrap items-center justify-between text-[11.5px] text-ink-muted">
         <span>Deterministic Rule Ordering: Storm → Telemetry Loss → Frozen → Spike → Drift</span>
-        <span className="font-mono text-ink-faint">Zero Black-Box Latency · 0.2ms Cascade</span>
+        <span className="font-mono text-ink-faint">Threshold Cascade · No Model Inference</span>
       </div>
     </div>
   );

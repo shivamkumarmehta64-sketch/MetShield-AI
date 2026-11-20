@@ -124,7 +124,7 @@ export default function LandingPage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="t-body text-ink-muted hover:text-navy hover:bg-surface-hover transition-colors rounded px-2.5 py-1.5 text-[13px]"
+                className="t-body text-ink-muted hover:text-navy hover:bg-surface-hover transition-colors rounded px-2.5 py-1.5 text-[13px] min-h-11 flex items-center"
               >
                 {item.label}
               </Link>
@@ -141,7 +141,7 @@ export default function LandingPage() {
             </span>
             <Link
               href="/dashboard"
-              className="text-[12.5px] font-semibold px-3.5 py-1.5 bg-navy text-white hover:bg-navy-deep transition-colors rounded shadow-xs"
+              className="text-[12.5px] font-semibold px-3.5 py-1.5 bg-navy text-white hover:bg-navy-deep transition-all rounded shadow-xs active:scale-[0.98] min-h-11 inline-flex items-center"
             >
               Open console
             </Link>
@@ -179,7 +179,7 @@ export default function LandingPage() {
           </nav>
 
           {/* Main Content Stream */}
-          <main className="flex flex-col" style={{ gap: 40, minWidth: 0 }}>
+          <main id="main-content" tabIndex={-1} className="flex flex-col" style={{ gap: 40, minWidth: 0 }}>
             {/* ── 01 Platform Hero ── */}
             <section id="platform" className="land-anchor space-y-6" aria-labelledby="platform-h">
               <div style={{ maxWidth: '82ch' }}>
@@ -202,13 +202,13 @@ export default function LandingPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <Link
                   href="/dashboard"
-                  className="text-[13px] font-semibold px-4 py-2 bg-navy text-white hover:bg-navy-deep transition-colors rounded shadow-xs"
+                  className="text-[13px] font-semibold px-4 py-2 bg-navy text-white hover:bg-navy-deep transition-all rounded shadow-xs active:scale-[0.98] min-h-11 inline-flex items-center"
                 >
                   Open operations console
                 </Link>
                 <Link
                   href="/mobile"
-                  className="text-[13px] font-semibold px-3.5 py-2 border border-sky-deep/40 text-sky-deep bg-sky-50/50 hover:bg-sky-50 transition-colors rounded shadow-xs flex items-center gap-1.5"
+                  className="text-[13px] font-semibold px-3.5 py-2 border border-sky-deep/40 text-sky-deep bg-sky-50/50 hover:bg-sky-50 transition-all rounded shadow-xs flex items-center gap-1.5 active:scale-[0.98] min-h-11"
                 >
                   <span className="w-2 h-2 rounded-full bg-healthy animate-pulse" />
                   Mobile Sensor PWA
@@ -219,7 +219,7 @@ export default function LandingPage() {
                     first screen into a menu. */}
                 <a
                   href="#qc-engine"
-                  className="hidden sm:inline-block text-[13px] font-semibold px-4 py-2 border border-hairline-strong text-navy bg-card hover:bg-surface-hover transition-colors rounded shadow-xs"
+                  className="hidden sm:inline-block text-[13px] font-semibold px-4 py-2 border border-hairline-strong text-navy bg-card hover:bg-surface-hover transition-all rounded shadow-xs active:scale-[0.98] min-h-11 inline-flex items-center"
                 >
                   Explore QC engine
                 </a>
@@ -279,7 +279,7 @@ export default function LandingPage() {
               </div>
               <HowMetshieldDecidesBand />
               <details className="mt-4 border border-hairline rounded bg-surface-alt/40 p-3 group">
-                <summary className="cursor-pointer font-mono text-[12px] font-bold text-navy hover:text-sky-deep flex items-center justify-between">
+                <summary className="cursor-pointer font-mono text-[12px] font-bold text-navy hover:text-sky-deep flex items-center justify-between min-h-11">
                   <span>► VIEW LITERAL ENGINE THRESHOLDS IN CODE (lib/anomalyLogic.ts)</span>
                   <span className="text-[11px] text-ink-muted font-normal">Click to expand audit details</span>
                 </summary>
@@ -288,7 +288,7 @@ export default function LandingPage() {
                 </div>
               </details>
               <details className="mt-3 border border-hairline rounded bg-surface-alt/40 p-3 group">
-                <summary className="cursor-pointer font-mono text-[12px] font-bold text-navy hover:text-sky-deep flex items-center justify-between gap-3">
+                <summary className="cursor-pointer font-mono text-[12px] font-bold text-navy hover:text-sky-deep flex items-center justify-between gap-3 min-h-11">
                   <span>► INSPECT ENGINE RULE · STAGE 03 PHYSICAL CONSISTENCY</span>
                   <span className="text-[11px] text-ink-muted font-normal flex-none">
                     Open evaluate()
@@ -345,13 +345,13 @@ export default function LandingPage() {
             MetShield AI · Team AEROTECH1 (ID: 162136) · SIH 2026 Problem SIH26073 · Ministry of Earth Sciences / IMD
           </p>
           <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Link href="/dashboard" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Console</Link>
-            <Link href="/canvas" className="t-meta" style={{ color: 'var(--ink-muted)' }}>QC canvas</Link>
-            <Link href="/demo" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Demo lab</Link>
-            <Link href="/mobile" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Mobile Node (PWA)</Link>
-            <Link href="/stations" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Network</Link>
-            <Link href="/incidents" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Incidents</Link>
-            <Link href="/audit-report" className="t-meta" style={{ color: 'var(--ink-muted)' }}>Audit report</Link>
+            <Link href="/dashboard" className="t-meta min-h-11 inline-flex items-center" style={{ color: 'var(--ink-muted)' }}>Console</Link>
+            <Link href="/canvas" className="t-meta min-h-11 inline-flex items-center" style={{ color: 'var(--ink-muted)' }}>QC canvas</Link>
+            <Link href="/demo" className="t-meta min-h-11 inline-flex items-center" style={{ color: 'var(--ink-muted)' }}>Demo lab</Link>
+            <Link href="/mobile" className="t-meta min-h-11 inline-flex items-center" style={{ color: 'var(--ink-muted)' }}>Mobile Node (PWA)</Link>
+            <Link href="/stations" className="t-meta min-h-11 inline-flex items-center" style={{ color: 'var(--ink-muted)' }}>Network</Link>
+            <Link href="/incidents" className="t-meta min-h-11 inline-flex items-center" style={{ color: 'var(--ink-muted)' }}>Incidents</Link>
+            <Link href="/audit-report" className="t-meta min-h-11 inline-flex items-center" style={{ color: 'var(--ink-muted)' }}>Audit report</Link>
           </nav>
         </div>
       </footer>

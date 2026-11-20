@@ -677,7 +677,7 @@ export default function RealTimeQCCanvas() {
       </header>
 
       {/* ── Main Canvas Content Container ─────────────────────────────────── */}
-      <main className="flex-1 mx-auto w-full px-4 sm:px-6 py-5 flex flex-col gap-5" style={{ maxWidth: 1540 }}>
+      <main id="main-content" tabIndex={-1} className="flex-1 mx-auto w-full px-4 sm:px-6 py-5 flex flex-col gap-5" style={{ maxWidth: 1540 }}>
         {/* ── 3. Hero Telemetry Strip (3 Metric Cards) ──────────────────────── */}
         <section aria-label="Hero Telemetry Strip" className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Temperature (°C) */}

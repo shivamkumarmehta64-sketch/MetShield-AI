@@ -154,7 +154,7 @@ export default function WhatChangedBand() {
                 type="button"
                 aria-selected={isSelected}
                 onClick={() => setActiveTab(s.id)}
-                className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors min-h-11 flex items-center ${
                   isSelected
                     ? 'bg-navy text-white shadow-xs'
                     : 'text-ink-muted hover:text-ink hover:bg-surface-hover'

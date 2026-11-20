@@ -21,6 +21,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Relative og:image / twitter:image URLs resolve against this base; without
+  // it, crawlers receive a path with no host and render no card at all.
+  metadataBase: new URL('https://aws2026-nu.vercel.app'),
   title: 'MetShield AI | AWS-QMS — SIH 2026',
   description:
     'QC rules aligned with applicable WMO-No. 8 guidance for Automatic Weather Stations. Team AEROTECH — SIH26073.',
@@ -36,6 +39,18 @@ export const metadata: Metadata = {
     siteName: 'MetShield AI',
     locale: 'en_IN',
     type: 'website',
+    images: [{
+      url: '/og.png',
+      width: 1200,
+      height: 630,
+      alt: 'MetShield AI — automatic weather station quality control. Know whether the atmosphere changed, or the sensor did.',
+    }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MetShield AI — National AWS Telemetry Shield',
+    description: 'SIH26073 · Ministry of Earth Sciences · Team AEROTECH',
+    images: ['/og.png'],
   },
   robots: {
     index: true,
@@ -70,6 +85,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       className={`${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
+        {/* Keyboard users land here first; visually hidden until focused.
+            Targets #main-content, which every primary surface declares. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-navy focus:px-3 focus:py-2 focus:text-white focus:text-sm focus:font-semibold"
+        >
+          Skip to content
+        </a>
         <ClientProvider>
           {children}
         </ClientProvider>
