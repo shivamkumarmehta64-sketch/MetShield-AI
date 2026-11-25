@@ -75,19 +75,26 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
   const nonNominalStations = snapshot.stations.filter((s) => s.health !== 'NOMINAL');
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-card px-4 lg:px-6 h-14">
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-card/85 backdrop-blur-xl supports-[backdrop-filter]:bg-card/75 px-4 lg:px-6 h-14 transition-colors">
       <button
         type="button"
         aria-label="Open navigation"
         onClick={onOpenNav}
-        className="touch-target -ml-2 flex items-center justify-center text-ink-muted lg:hidden"
+        className="touch-target -ml-2 flex items-center justify-center rounded-lg text-ink-muted hover:text-ink hover:bg-surface-alt transition-colors lg:hidden"
       >
         <Menu size={20} />
       </button>
 
-      <div className="flex items-center gap-3 min-w-0">
-        <ArrowRight size={18} className="rotate-180 text-ink-muted" />
-        <div className="t-body text-ink font-medium truncate">{breadcrumb}</div>
+      <div className="flex items-center gap-2 min-w-0">
+        <Link
+          href="/"
+          aria-label="Back to Live QMS Portal"
+          title="Back to Live QMS Portal"
+          className="touch-target flex items-center justify-center rounded-lg text-ink-muted hover:text-ink hover:bg-surface-alt transition-colors"
+        >
+          <ArrowRight size={18} className="rotate-180" />
+        </Link>
+        <div className="t-body text-ink font-semibold tracking-tight truncate">{breadcrumb}</div>
       </div>
 
       <div className="ml-auto flex items-center gap-2 lg:gap-3">

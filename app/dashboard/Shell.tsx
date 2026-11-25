@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { Suspense } from 'react';
+import { MotionConfig } from 'framer-motion';
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
 import { ProvenanceStrip } from './ProvenanceStrip';
@@ -36,6 +37,7 @@ export default function Shell({ breadcrumb, children }: ShellProps) {
     : null;
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen bg-page">
       <ProvenanceStrip scenarioLabel={scenarioLabel} />
       <Topbar breadcrumb={breadcrumb} onOpenNav={() => setNavOpen(true)} />
@@ -48,5 +50,6 @@ export default function Shell({ breadcrumb, children }: ShellProps) {
         </main>
       </div>
     </div>
+    </MotionConfig>
   );
 }

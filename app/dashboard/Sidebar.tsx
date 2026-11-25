@@ -91,7 +91,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           type="button"
           aria-label="Close navigation"
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-navy/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-navy/40 backdrop-blur-xs lg:hidden transition-opacity"
         />
       )}
 
