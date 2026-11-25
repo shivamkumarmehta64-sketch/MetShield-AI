@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import {
   ResponsiveContainer,
   LineChart,
@@ -558,6 +559,7 @@ export default function RealTimeQCCanvas() {
   const rhCorrected = currentResult?.imputed.wasImputed && currentResult.imputed.humidity !== rhRaw;
 
   return (
+    <MotionConfig reducedMotion="user">
     <div
       className={`min-h-screen flex flex-col font-sans bg-[var(--color-page)] text-[var(--color-ink)] ${rootScaleClass}`}
     >
@@ -568,8 +570,8 @@ export default function RealTimeQCCanvas() {
         <div className="flex-1 bg-[#138808]" />
       </div>
 
-      {/* ── 2. Official Institutional Header Bar (GIGW Compliant) ─────────── */}
-      <header className="sticky top-0 z-40 bg-[var(--color-card)] border-b border-[var(--color-hairline)] shadow-xs">
+      {/* ── 2. Official Institutional Header Bar (GIGW + Apple Frosted Glass) ── */}
+      <header className="sticky top-0 z-40 bg-[var(--color-card)]/85 backdrop-blur-xl supports-[backdrop-filter]:bg-[var(--color-card)]/75 border-b border-[var(--color-hairline)] shadow-xs transition-colors">
         <div
           className="mx-auto flex items-center justify-between gap-4 px-4 sm:px-6"
           style={{ maxWidth: 1540, height: 60 }}
@@ -678,10 +680,16 @@ export default function RealTimeQCCanvas() {
 
       {/* ── Main Canvas Content Container ─────────────────────────────────── */}
       <main id="main-content" tabIndex={-1} className="flex-1 mx-auto w-full px-4 sm:px-6 py-5 flex flex-col gap-5" style={{ maxWidth: 1540 }}>
-        {/* ── 3. Hero Telemetry Strip (3 Metric Cards) ──────────────────────── */}
+        {/* ── 3. Hero Telemetry Strip (3 Apple-Craft Metric Cards) ─────────── */}
         <section aria-label="Hero Telemetry Strip" className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Temperature (°C) */}
-          <div className="card p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-temperature)]">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.03 }}
+            className="card rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-temperature)] shadow-xs hover:shadow-md transition-shadow"
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="t-label text-ink-muted flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-[var(--color-met-temperature)]" />
@@ -716,10 +724,16 @@ export default function RealTimeQCCanvas() {
                 <span className="text-healthy font-semibold">● SENSOR NOMINAL</span>
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 2: Atmospheric Pressure (hPa) with Mobile Hardware Badge */}
-          <div className="card p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-pressure)]">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.08 }}
+            className="card rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-pressure)] shadow-xs hover:shadow-md transition-shadow"
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="t-label text-ink-muted flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5 text-[var(--color-met-pressure)]" />
@@ -757,10 +771,16 @@ export default function RealTimeQCCanvas() {
               <span>Altimetry: ~8.4m elevation / 1 hPa</span>
               <span className="font-mono text-ink-faint">Reduced QNH</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 3: Relative Humidity (%) */}
-          <div className="card p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-humidity)]">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.13 }}
+            className="card rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-humidity)] shadow-xs hover:shadow-md transition-shadow"
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="t-label text-ink-muted flex items-center gap-1.5">
                 <Wind className="w-3.5 h-3.5 text-[var(--color-met-humidity)]" />
@@ -789,15 +809,52 @@ export default function RealTimeQCCanvas() {
                 <span className="text-healthy font-semibold">● SENSOR NOMINAL</span>
               )}
             </div>
-          </div>
+          </motion.div>
         </section>
+
+        {/* ── Quick Operational Status & One-Click Reset Bar ───────────────── */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-2xl bg-[var(--color-card)]/90 border border-hairline shadow-xs">
+          <div className="flex items-center gap-2 text-[12px] font-medium">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                currentResult?.severity === 'RED_HARDWARE_FAULT'
+                  ? 'bg-fault animate-ping'
+                  : currentResult?.severity === 'BLUE_GENUINE_WEATHER'
+                  ? 'bg-weather animate-pulse'
+                  : currentResult?.severity === 'AMBER_PROBE_FREEZE' || currentResult?.severity === 'AMBER_CALIBRATION_DRIFT'
+                  ? 'bg-warning'
+                  : 'bg-healthy'
+              }`}
+            />
+            <span className="font-bold text-navy">
+              {currentResult?.alertBadge.label ?? 'SYSTEM NOMINAL'}
+            </span>
+            <span className="hidden sm:inline text-ink-muted">
+              — {currentResult?.alertBadge.description ?? 'All 3-parameter channels verified against WMO-No. 8'}
+            </span>
+          </div>
+          {activeScenario !== 'nominal' && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              onClick={() => triggerScenario('nominal')}
+              className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-healthy-bg text-healthy-text border border-healthy-border hover:bg-healthy hover:text-white transition-colors flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset to Nominal
+            </motion.button>
+          )}
+        </div>
 
         {/* ── 4. Main Split Grid (65% / 35%) ─────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-[65%_1fr] gap-5 items-start">
           {/* Left Canvas (65%): Unified Recharts Time-Series Container */}
-          <section
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28, delay: 0.16 }}
             aria-label="Unified Telemetry Curves"
-            className="card overflow-hidden flex flex-col bg-card"
+            className="card rounded-2xl overflow-hidden flex flex-col bg-card shadow-xs"
           >
             {/* Header & Layer Toggles */}
             <div className="p-4 border-b border-hairline flex flex-wrap items-center justify-between gap-3">
@@ -990,12 +1047,15 @@ export default function RealTimeQCCanvas() {
                 TIER {currentResult?.tierPassed ?? 3} PASSED · WMO FLAG: {currentResult?.wmoFlag ?? 'FLAG_1_GOOD'}
               </span>
             </div>
-          </section>
+          </motion.section>
 
           {/* Right Canvas (35%): Real-Time Incident Stream */}
-          <section
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28, delay: 0.2 }}
             aria-label="Real-Time Incident Stream"
-            className="card overflow-hidden flex flex-col bg-card"
+            className="card rounded-2xl overflow-hidden flex flex-col bg-card shadow-xs"
           >
             <div className="p-4 border-b border-hairline flex items-center justify-between">
               <div>
@@ -1021,10 +1081,16 @@ export default function RealTimeQCCanvas() {
                   </p>
                 </div>
               ) : (
-                incidentList.map((inc) => (
-                  <div
+                <AnimatePresence initial={false}>
+                {incidentList.map((inc) => (
+                  <motion.div
+                    layout
                     key={inc.id}
-                    className={`p-3.5 rounded border transition-all ${
+                    initial={{ opacity: 0, x: 16, scale: 0.98 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+                    className={`p-3.5 rounded-xl border transition-colors ${
                       inc.severity === 'RED_HARDWARE_FAULT'
                         ? 'border-fault-border bg-fault-bg/40'
                         : inc.severity === 'BLUE_GENUINE_WEATHER'
@@ -1089,19 +1155,20 @@ export default function RealTimeQCCanvas() {
                     </div>
 
                     {/* Operational Action */}
-                    <div className="mt-2.5 p-2 rounded bg-card/80 border border-hairline text-[11px]">
+                    <div className="mt-2.5 p-2 rounded-lg bg-card/80 border border-hairline text-[11px]">
                       <span className="font-bold text-navy block text-[10px]">OPERATIONAL ACTION:</span>
                       <span className="text-ink-muted">{inc.recommendedAction}</span>
                     </div>
-                  </div>
-                ))
+                  </motion.div>
+                ))}
+                </AnimatePresence>
               )}
             </div>
-          </section>
+          </motion.section>
         </div>
 
         {/* ── 5. Stealth Diagnostic Drawer (Authorized Personnel Only) ──────── */}
-        <details className="card overflow-hidden group border border-hairline bg-card shadow-xs mt-2">
+        <details className="card rounded-2xl overflow-hidden group border border-hairline bg-card shadow-xs mt-2">
           <summary className="p-3.5 border-b border-hairline bg-surface-alt font-mono text-[12px] font-bold text-navy hover:text-ink cursor-pointer flex justify-between items-center select-none">
             <span className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-navy-deep" />
@@ -1218,5 +1285,6 @@ export default function RealTimeQCCanvas() {
         </div>
       </footer>
     </div>
+    </MotionConfig>
   );
 }
