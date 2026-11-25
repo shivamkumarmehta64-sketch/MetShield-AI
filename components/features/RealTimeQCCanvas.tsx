@@ -582,7 +582,7 @@ export default function RealTimeQCCanvas() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold tracking-tight text-navy text-[15px]">
-                  PROJECT JATAYU — NAWS-QMS v4.2
+                  METSHIELD AI — NAWS-QMS v4.2
                 </span>
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-surface-alt border border-hairline text-ink-muted">
                   WMO-No. 8 PROTOCOL
@@ -608,11 +608,11 @@ export default function RealTimeQCCanvas() {
                 dcpStatus === 'INGESTING' ? 'bg-telemetry animate-ping' : 'bg-telemetry'
               }`}
             />
-            <span className="text-ink font-semibold">LOCAL QC CADENCE: 2.5s</span>
+            <span className="text-ink font-semibold">2.5s DCP LINK: ACTIVE</span>
             <span className="text-ink-faint">|</span>
             <span className="text-ink-muted">NODE: AWS-DEL-04</span>
             <span className="text-ink-faint">|</span>
-            <span className="text-navy font-bold">{packetCount} PACKETS EVALUATED</span>
+            <span className="text-navy font-bold">{packetCount} PACKETS INGESTED</span>
           </div>
 
           {/* Right Controls: GIGW Accessibility & Nav */}
@@ -709,7 +709,7 @@ export default function RealTimeQCCanvas() {
               )}
             </div>
             <div className="mt-2 text-[11px] text-ink-muted flex items-center justify-between">
-              <span>Station: AWS-DEL-04 (Safdarjung)</span>
+              <span>Station: AWS-DEL-04 (Safdarjung){liveProvider ? ` · ${liveProvider.replace(/_/g, ' ')}` : ''}</span>
               {tCorrected || tRaw < WMO_LIMITS.TEMP_MIN || tRaw > WMO_LIMITS.TEMP_MAX ? (
                 <span className="text-fault font-semibold">● SENSOR FAULT</span>
               ) : (
@@ -734,17 +734,11 @@ export default function RealTimeQCCanvas() {
                 className={`t-meta font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1 text-[10px] ${
                   isHardwareActive
                     ? 'bg-healthy-bg text-healthy-text border border-healthy-border animate-pulse'
-                    : liveProvider && activeScenario === 'nominal'
-                      ? 'bg-telemetry-bg text-telemetry-text border border-telemetry-border'
-                      : 'bg-surface-alt text-navy border border-hairline'
+                    : 'bg-surface-alt text-navy border border-hairline'
                 }`}
               >
                 {isHardwareActive
                   ? '● LIVE MOBILE HARDWARE FEED'
-                  : activeScenario !== 'nominal'
-                  ? '● SIMULATED SCENARIO'
-                  : liveProvider
-                  ? `● ${liveProvider.replace(/_/g, ' ')} NWP BASELINE`
                   : '● SIMULATED AWS FEED'}
               </span>
             </div>
@@ -1111,10 +1105,10 @@ export default function RealTimeQCCanvas() {
           <summary className="p-3.5 border-b border-hairline bg-surface-alt font-mono text-[12px] font-bold text-navy hover:text-ink cursor-pointer flex justify-between items-center select-none">
             <span className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-navy-deep" />
-              Field Diagnostic &amp; Bench Test Tool (Authorized Personnel Only)
+              [🔧 NIC-MoES Field Diagnostic &amp; Bench Test Tool (Authorized Personnel Only)]
             </span>
             <span className="text-[11px] text-ink-muted group-open:hidden">
-              Click to expand test controls & export
+              Click to expand test controls &amp; export
             </span>
           </summary>
 

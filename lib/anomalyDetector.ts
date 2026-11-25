@@ -384,8 +384,7 @@ export function evaluate3ParamQC(
   }
 
   // Genuine Weather Event rule: ΔP ≤ -2.5 hPa coupled with ΔRH ≥ +15%
-  // Genuine Weather Event rule: ΔP ≤ -2.5 hPa coupled with ΔRH ≥ +15% and ΔT ≤ -0.5°C
-  const isConvectiveStorm = deltaP <= -2.5 && deltaRH >= 15.0 && deltaT <= -0.5;
+  const isConvectiveStorm = deltaP <= -2.5 && deltaRH >= 15.0;
 
   if (isConvectiveStorm) {
     // Both pressure plunge and moisture surge occurred together (thermodynamically coupled)
