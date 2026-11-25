@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { enforceAiRequestLimits, enforcePromptLength, enforceAiAccess } from '@/lib/aiLimits';
+import { readJsonWithLimit } from '@/lib/requestBody';
+
+const MAX_AI_BODY_BYTES = 8192;
 
 /**
  * Metshield AI Copilot: Natural Language Weather QMS Assistant
@@ -18,7 +21,9 @@ export async function POST(request: NextRequest) {
     const denied = enforceAiAccess(request.headers);
     if (denied) return denied;
 
-    const { prompt } = await request.json();
+    const bodyResult = await readJsonWithLimit<{ prompt?: unknown }>(request, MAX_AI_BODY_BYTES);
+    if (!bodyResult.ok) return bodyResult.response;
+    const { prompt } = bodyResult.data;
 
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json(
@@ -81,12 +86,11 @@ Respond concisely (3-4 sentences) with technical accuracy for weather station op
       compliance: 'Aligned with WMO-No. 8 QC guidance',
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[ai/copilot] Request failed:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       {
         success: false,
-        error: 'AI copilot query failed',
-        details: errorMessage,
+        error: 'AI copilot service temporarily unavailable.',
       },
       { status: 500 }
     );

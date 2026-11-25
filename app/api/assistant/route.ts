@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server';
+import { consume, clientKey } from '@/lib/rateLimit';
+import { readJsonWithLimit } from '@/lib/requestBody';
+
+const MAX_ASSISTANT_BODY_BYTES = 4096;
+const MAX_ASSISTANT_REQUESTS_PER_MINUTE = 20;
 
 // Node.js runtime, not 'edge'. The edge runtime is deprecated in Next.js 16,
 // and this route used no edge-only API, so the switch is behaviourally inert.
@@ -57,17 +62,25 @@ const FALLBACK =
   'For QC results, open the station registry or the QC workspace, both of which read the engine directly.';
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const query = typeof body?.query === 'string' ? body.query : '';
-
-    const hit = HELP_TOPICS.find((t) => t.match.test(query.toLowerCase()));
-
-    return NextResponse.json({ reply: hit ? hit.reply : FALLBACK, grounded: false });
-  } catch {
+  const verdict = consume(
+    `assistant:${clientKey(req.headers)}`,
+    MAX_ASSISTANT_REQUESTS_PER_MINUTE,
+    60_000
+  );
+  if (!verdict.allowed) {
     return NextResponse.json(
-      { reply: 'Could not read that request.', grounded: false },
-      { status: 400 }
+      { reply: 'Rate limit exceeded. Please wait before retrying.', grounded: false },
+      { status: 429, headers: { 'Retry-After': String(verdict.retryAfterSeconds) } }
     );
   }
+
+  const bodyResult = await readJsonWithLimit<{ query?: unknown }>(req, MAX_ASSISTANT_BODY_BYTES);
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const query = typeof bodyResult.data?.query === 'string' ? bodyResult.data.query : '';
+  const hit = HELP_TOPICS.find((t) => t.match.test(query.toLowerCase()));
+
+  return NextResponse.json({ reply: hit ? hit.reply : FALLBACK, grounded: false });
 }

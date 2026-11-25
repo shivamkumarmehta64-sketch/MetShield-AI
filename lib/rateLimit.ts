@@ -1,25 +1,20 @@
 /**
  * Fixed-window rate limiter for unauthenticated and authenticated endpoints.
  *
- * WHY A SEPARATE MODULE
- * ---------------------
- * Three routes needed limiting (telemetry ingestion, and the two AI endpoints)
- * and the first implementation was an inline `Map` copy-pasted into one of
- * them. Duplicated limiter state is duplicated limiter bugs: the copies drift,
- * and a bound that differs between two routes is a bound nobody can reason
- * about. One implementation, one set of semantics.
- *
- * THE LIMITATION, STATED PLAINLY
- * ------------------------------
- * State is per-process. On a serverless deployment each cold instance keeps its
- * own counters, so the effective limit is roughly `limit × instances`. This is
- * friction against a casual or accidental flood, not a guarantee against a
- * determined attacker — that requires a shared store (Upstash, Redis, or the
- * D1 binding this project already has). Saying so here is the point; the
- * previous inline limiter was presented as protection without that caveat.
- *
- * Entries are swept lazily on write, so an idle process does not accumulate one
- * Map entry per caller forever.
+ * BOUNDED MEMORY & PROXY TRUST
+ * ----------------------------
+ * 1. The bucket Map is strictly capped at `MAX_TRACKED_KEYS` (10,000). When the
+ *    Map reaches capacity and a sweep of expired windows frees zero slots (all
+ *    entries are still active), new unknown keys fail closed (allowed: false)
+ *    without inserting into the Map. Memory usage is strictly O(MAX_TRACKED_KEYS).
+ * 2. Caller-supplied `X-Forwarded-For` and `X-Real-IP` headers are NOT trusted
+ *    because any client can spoof them to rotate buckets. Only platform-verified
+ *    headers overwritten by the hosting edge (`x-vercel-forwarded-for`,
+ *    `cf-connecting-ip`) are used. When neither is present (e.g. local dev or
+ *    unproxied runtime), callers share a conservative fallback bucket
+ *    (`untrusted-client`).
+ * 3. State remains per-process. For multi-instance horizontal scaling, pair
+ *    this with a shared edge store (Upstash Redis / Cloudflare D1).
  */
 
 interface Window {
@@ -37,23 +32,40 @@ export interface RateLimitVerdict {
 
 const buckets = new Map<string, Window>();
 
-/** Cap on distinct tracked keys, so a rotating-IP flood cannot grow the Map. */
-const MAX_TRACKED_KEYS = 10_000;
+/** Hard cap on distinct tracked keys so a unique-key flood cannot grow the Map. */
+export const MAX_TRACKED_KEYS = 10_000;
 
 /**
  * Record a hit against `key` and report whether it is over `max`.
  *
- * @param windowMs  Length of the sliding window.
+ * @param key       Bucket identifier.
  * @param max       Requests permitted per window.
+ * @param windowMs  Length of the fixed window in milliseconds.
+ * @param maxKeys   Optional cap override (defaults to `MAX_TRACKED_KEYS`).
  */
-export function consume(key: string, max: number, windowMs: number): RateLimitVerdict {
+export function consume(
+  key: string,
+  max: number,
+  windowMs: number,
+  maxKeys: number = MAX_TRACKED_KEYS
+): RateLimitVerdict {
   const now = Date.now();
   const existing = buckets.get(key);
 
   if (!existing || existing.resetTime <= now) {
-    if (buckets.size >= MAX_TRACKED_KEYS) sweep(now);
+    if (buckets.size >= maxKeys) {
+      sweep(now);
+    }
+    // Fail closed if all tracked windows are still active at capacity.
+    if (buckets.size >= maxKeys) {
+      return {
+        allowed: false,
+        retryAfterSeconds: Math.max(1, Math.ceil(windowMs / 1000)),
+        remaining: 0,
+      };
+    }
     buckets.set(key, { count: 1, resetTime: now + windowMs });
-    return { allowed: true, retryAfterSeconds: 0, remaining: max - 1 };
+    return { allowed: true, retryAfterSeconds: 0, remaining: Math.max(0, max - 1) };
   }
 
   if (existing.count >= max) {
@@ -65,7 +77,7 @@ export function consume(key: string, max: number, windowMs: number): RateLimitVe
   }
 
   existing.count++;
-  return { allowed: true, retryAfterSeconds: 0, remaining: max - existing.count };
+  return { allowed: true, retryAfterSeconds: 0, remaining: Math.max(0, max - existing.count) };
 }
 
 /** Drop windows that have already rolled over. Called only when the Map is full. */
@@ -73,9 +85,11 @@ function sweep(now: number): void {
   for (const [key, window] of buckets) {
     if (window.resetTime <= now) buckets.delete(key);
   }
-  // If every window is still live the Map stays at its cap and the oldest
-  // tracked callers simply keep their counters; that is the intended
-  // fail-closed behaviour under sustained load.
+}
+
+/** Current number of tracked keys in memory (for diagnostics and tests). */
+export function getTrackedBucketCount(): number {
+  return buckets.size;
 }
 
 /** Clear all state. Exists so tests do not depend on execution order. */
@@ -84,19 +98,26 @@ export function resetRateLimits(): void {
 }
 
 /**
- * The client address to rate-limit against.
+ * Resolve a trusted client identifier for rate limiting.
  *
- * `x-forwarded-for` is a client-settable header. It is used because every
- * deployment this project targets is fronted by a proxy that sets it, and a
- * limiter keyed on nothing is worse than no limiter — but it does mean a caller
- * who sets it can rotate the key and get a fresh budget. Treat the resulting
- * limit as one layer, not as the boundary; see the note at the top of the file.
+ * Ignores arbitrary `x-forwarded-for` / `x-real-ip` headers that callers can
+ * spoof, trusting only edge-verified headers (`x-vercel-forwarded-for` on
+ * Vercel, `cf-connecting-ip` on Cloudflare). Falls back to a conservative
+ * shared key `'untrusted-client'` when no verified proxy header is present.
  */
 export function clientKey(headers: Headers): string {
-  const forwarded = headers.get('x-forwarded-for');
-  if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
+  const vercelIp = headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+  if (vercelIp) return vercelIp;
+
+  const cfIp = headers.get('cf-connecting-ip')?.trim();
+  if (cfIp) return cfIp;
+
+  if (process.env.TRUST_PROXY_HEADERS === '1') {
+    const forwarded = headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+    if (forwarded) return forwarded;
+    const realIp = headers.get('x-real-ip')?.trim();
+    if (realIp) return realIp;
   }
-  return headers.get('x-real-ip')?.trim() || 'unknown';
+
+  return 'untrusted-client';
 }

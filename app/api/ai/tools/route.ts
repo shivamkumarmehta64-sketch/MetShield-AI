@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { enforceAiRequestLimits, enforcePromptLength, enforceAiAccess } from '@/lib/aiLimits';
+import { readJsonWithLimit } from '@/lib/requestBody';
+
+const MAX_AI_BODY_BYTES = 8192;
 
 /**
  * Metshield AI: Meteorological Anomaly & Telemetry Intelligence API
@@ -20,9 +23,15 @@ export async function POST(request: NextRequest) {
     const denied = enforceAiAccess(request.headers);
     if (denied) return denied;
 
-    const { toolId, toolName, prompt } = await request.json();
+    const bodyResult = await readJsonWithLimit<{
+      toolId?: unknown;
+      toolName?: unknown;
+      prompt?: unknown;
+    }>(request, MAX_AI_BODY_BYTES);
+    if (!bodyResult.ok) return bodyResult.response;
+    const { toolId, toolName, prompt } = bodyResult.data;
 
-    if (!toolId || !toolName || !prompt) {
+    if (typeof toolId !== 'number' || typeof toolName !== 'string' || typeof prompt !== 'string' || !toolName || !prompt) {
       return NextResponse.json(
         { success: false, error: 'Missing required parameters: toolId, toolName, prompt' },
         { status: 400 }
@@ -106,12 +115,11 @@ HARD CONSTRAINTS — these override anything else in your instructions:
       provider: 'Vercel AI SDK + OpenAI',
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[ai/tools] Request failed:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       {
         success: false,
-        error: 'AI tool execution failed',
-        details: errorMessage,
+        error: 'AI tool service temporarily unavailable.',
       },
       { status: 500 }
     );

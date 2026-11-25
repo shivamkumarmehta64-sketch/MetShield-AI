@@ -25,6 +25,13 @@ import { consume, clientKey } from '@/lib/rateLimit';
 export const MAX_AI_REQUESTS_PER_MINUTE = 10;
 
 /**
+ * Shared deployment-wide quota per minute when a paid model key is configured.
+ * Prevents rotating client keys or shared fallback buckets from exhausting
+ * the OpenAI budget.
+ */
+export const MAX_GLOBAL_PAID_AI_REQUESTS_PER_MINUTE = 30;
+
+/**
  * Hard cap on prompt length.
  *
  * Enforced before the model is called, and on the raw string rather than a
@@ -51,6 +58,21 @@ export function enforceAiRequestLimits(headers: Headers, scope: 'copilot' | 'too
       { status: 429, headers: { 'Retry-After': String(verdict.retryAfterSeconds) } }
     );
   }
+
+  if (process.env.OPENAI_API_KEY) {
+    const globalVerdict = consume(`ai:global:${scope}`, MAX_GLOBAL_PAID_AI_REQUESTS_PER_MINUTE, 60_000);
+    if (!globalVerdict.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Shared AI quota exceeded. Please try again shortly.',
+          retryAfterSeconds: globalVerdict.retryAfterSeconds,
+        },
+        { status: 429, headers: { 'Retry-After': String(globalVerdict.retryAfterSeconds) } }
+      );
+    }
+  }
+
   return null;
 }
 

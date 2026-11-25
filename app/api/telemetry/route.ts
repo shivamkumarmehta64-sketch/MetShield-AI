@@ -5,7 +5,10 @@ import { IMD_AWS_STATIONS, getStationProfile } from '@/lib/stationData';
 import { fetchLiveStationObservation } from '@/lib/liveWeatherService';
 import { persistTelemetryToEdge, resolveWorkOrderOnEdge } from '@/lib/d1Adapter';
 import { authorizeWrite, signObservation, type AuthResult } from '@/lib/auth';
-import { consume } from '@/lib/rateLimit';
+import { consume, clientKey } from '@/lib/rateLimit';
+import { readJsonWithLimit } from '@/lib/requestBody';
+
+const MAX_TELEMETRY_BODY_BYTES = 15360;
 
 // In-memory ring buffer for live ingested telemetry from mobile phones / ESP32
 const liveIngestedBuffer: TelemetryPacket[] = [];
@@ -45,22 +48,28 @@ function authErrorResponse(result: Extract<AuthResult, { ok: false }>) {
  */
 export async function POST(request: NextRequest) {
   const startTime = performance.now();
-  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
+  const trustedClient = clientKey(request.headers);
 
-  // 1. Content Length Check (< 15 KB)
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 15360) {
+  // Rate limit by trusted proxy client key before reading body or creating per-station buckets.
+  const ipVerdict = consume(`telemetry:ip:${trustedClient}`, MAX_PACKETS_PER_MINUTE, RATE_WINDOW_MS);
+  if (!ipVerdict.allowed) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Payload Too Large. Maximum allowed size is 15 KB.',
+        error: `Rate limit exceeded. Maximum ${MAX_PACKETS_PER_MINUTE} packets per minute allowed.`,
       },
-      { status: 413 }
+      { status: 429, headers: { 'Retry-After': String(ipVerdict.retryAfterSeconds) } }
     );
   }
 
+  // Enforce actual streaming byte limit regardless of Content-Length header.
+  const bodyResult = await readJsonWithLimit<Record<string, unknown>>(request, MAX_TELEMETRY_BODY_BYTES);
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
   try {
-    const body = await request.json();
+    const body = bodyResult.data;
     const {
       stationId,
       temperature,
@@ -85,19 +94,6 @@ export async function POST(request: NextRequest) {
           error: 'Missing or invalid parameter: stationId (e.g. "AWS-MOB-01" or "AWS-DEL-04")',
         },
         { status: 400 }
-      );
-    }
-
-    // Rate limiting keyed by stationId or clientIp
-    const rateLimitKey = `${stationId}_${clientIp}`;
-    const verdict = consume(rateLimitKey, MAX_PACKETS_PER_MINUTE, RATE_WINDOW_MS);
-    if (!verdict.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Rate limit exceeded. Maximum ${MAX_PACKETS_PER_MINUTE} packets per minute allowed.`,
-        },
-        { status: 429, headers: { 'Retry-After': String(verdict.retryAfterSeconds) } }
       );
     }
 
@@ -287,22 +283,38 @@ export async function GET(request: NextRequest) {
   const isLatest = searchParams.get('latest') === 'true';
   const since = Number(searchParams.get('since') || 0);
 
-  // Return live ingested packets from mobile phones or external transmitters
+  // Return live ingested packets with identifying device/GPS metadata stripped
   if (isLatest) {
     const filtered = since > 0
       ? liveIngestedBuffer.filter((p) => p.timestamp > since)
       : liveIngestedBuffer.slice(0, 10);
 
+    const sanitizedPackets = filtered.map((p) => ({
+      packetId: p.packetId,
+      stationId: p.stationId,
+      timestamp: p.timestamp,
+      timeIST: p.timeIST,
+      raw: p.raw,
+      imputed: p.imputed,
+      ratesOfChange: p.ratesOfChange,
+      classification: p.classification,
+      wmoFlag: p.wmoFlag,
+      alertLevel: p.alertLevel,
+      faultProbability: p.faultProbability,
+      xaiAttribution: p.xaiAttribution,
+      operationalAction: p.operationalAction,
+      orographicQnhPressure: p.orographicQnhPressure ?? null,
+    }));
+
     return NextResponse.json(
       {
         success: true,
-        count: filtered.length,
-        packets: filtered,
+        count: sanitizedPackets.length,
+        packets: sanitizedPackets,
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=2, stale-while-revalidate=5',
-          'CDN-Cache-Control': 'public, s-maxage=2',
+          'Cache-Control': 'private, no-store',
         },
       }
     );
