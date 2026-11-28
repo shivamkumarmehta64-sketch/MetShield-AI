@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -224,8 +224,16 @@ function isTab(v: string | null): v is TabKey {
 function DashboardTabs() {
   const router = useRouter();
   const search = useSearchParams();
+  const { selectStation } = useSystem();
   const active = search.get('tab');
+  const stationParam = search.get('station');
   const activeTab: TabKey = isTab(active) ? active : 'matrix';
+
+  useEffect(() => {
+    if (stationParam) {
+      selectStation(stationParam);
+    }
+  }, [stationParam, selectStation]);
 
   return (
     <>

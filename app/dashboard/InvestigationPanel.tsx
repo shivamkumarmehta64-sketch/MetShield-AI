@@ -75,8 +75,9 @@ export function InvestigationPanel() {
   }
 
   const { packet } = station;
+  const decided = station.decidedBy ?? packet;
   const cfg = HEALTH_CONFIG[station.health] ?? HEALTH_CONFIG.NOMINAL;
-  const roc = packet.ratesOfChange;
+  const roc = decided.ratesOfChange;
 
   return (
     <div className="card overflow-hidden border border-hairline bg-card shadow-sm space-y-0">
@@ -99,6 +100,14 @@ export function InvestigationPanel() {
         <div className="text-right font-mono text-[11px] text-ink-faint">
           <div>{station.state} · {station.elevationM}m ASL</div>
           <div>WMO Block: {station.wmoBlockNo}</div>
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${station.latitude},${station.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-telemetry-text hover:underline inline-block mt-0.5"
+          >
+            Open in Google Maps
+          </a>
         </div>
       </div>
 
@@ -191,10 +200,10 @@ export function InvestigationPanel() {
             </span>
           </div>
           <p className="text-[12px] text-ink leading-relaxed">
-            {packet.xaiAttribution.diagnosticNote}
+            {decided.xaiAttribution.diagnosticNote}
           </p>
           <div className="text-[11px] font-mono text-ink-muted pt-1 border-t border-current/10 flex items-center justify-between">
-            <span>Primary Trigger: {packet.xaiAttribution.primaryParameter}</span>
+            <span>Primary Trigger: {decided.xaiAttribution.primaryParameter}</span>
             <span>Alert Level: {station.alertLevel}</span>
           </div>
         </div>

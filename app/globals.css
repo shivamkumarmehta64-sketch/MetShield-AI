@@ -91,22 +91,22 @@
     --color-info-text: #0284C7;
     --color-telemetry-text: #0284C7;
 
-    /* ── Light surfaces (operations console) ── */
-    --color-page: #F8FAFC;
+    /* ── Light surfaces (monochrome B&W operations console) ── */
+    --color-page: #FAFAFA;
     --color-card: #FFFFFF;
-    --color-surface-alt: #F1F5F9;
-    --color-surface-hover: #F8FAFC;
+    --color-surface-alt: #F4F4F5;
+    --color-surface-hover: #F4F4F5;
 
-    --color-ink: #0F172A;
+    --color-ink: #09090B;
     /* Primary text */
-    --color-ink-muted: #475569;
+    --color-ink-muted: #52525B;
     /* Secondary */
-    --color-ink-faint: #64748B;
+    --color-ink-faint: #71717A;
     /* Muted — AA on white */
     --color-ink-inverse: #FFFFFF;
 
-    --color-hairline: #E2E8F0;
-    --color-hairline-strong: #CBD5E1;
+    --color-hairline: #E4E4E7;
+    --color-hairline-strong: #D4D4D8;
 
     /* ── Semantic aliases (§B) ──
      These are purpose aliases, not a third ramp. `--color-brand` is the
@@ -172,11 +172,61 @@
     --weather-rain: var(--color-met-rain);
 }
 
-/* `data-theme` is retained as a hook but there is no second palette behind
-   it. Any page that sets it now gets these same light values, so a stray
-   override degrades to the default rather than to a black page. */
-[data-theme] {
-    color-scheme: light;
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --color-page: #09090B;
+    --color-card: #111113;
+    --color-surface-alt: #18181B;
+    --color-surface-hover: #27272A;
+
+    --color-ink: #FAFAFA;
+    --color-ink-muted: #A1A1AA;
+    --color-ink-faint: #71717A;
+    --color-ink-inverse: #09090B;
+
+    --color-hairline: rgba(250, 250, 250, 0.10);
+    --color-hairline-strong: rgba(250, 250, 250, 0.20);
+
+    --color-healthy-bg: rgba(34, 197, 94, 0.14);
+    --color-healthy-border: rgba(34, 197, 94, 0.30);
+    --color-healthy-text: #4ADE80;
+
+    --color-warning-bg: rgba(245, 158, 11, 0.14);
+    --color-warning-border: rgba(245, 158, 11, 0.30);
+    --color-warning-text: #FBBF24;
+
+    --color-weather-bg: rgba(14, 165, 233, 0.14);
+    --color-weather-border: rgba(14, 165, 233, 0.30);
+    --color-weather-text: #38BDF8;
+
+    --color-fault-bg: rgba(239, 68, 68, 0.14);
+    --color-fault-border: rgba(239, 68, 68, 0.30);
+    --color-fault-text: #F87171;
+
+    --color-ai-bg: rgba(139, 92, 246, 0.14);
+    --color-ai-border: rgba(139, 92, 246, 0.30);
+    --color-ai-text: #A78BFA;
+
+    --color-telemetry-bg: rgba(14, 165, 233, 0.14);
+    --color-telemetry-border: rgba(14, 165, 233, 0.30);
+    --color-telemetry-text: #38BDF8;
+
+    --page: var(--color-page);
+    --card: var(--color-card);
+    --surface-alt: var(--color-surface-alt);
+    --surface-hover: var(--color-surface-hover);
+
+    --ink: var(--color-ink);
+    --ink-muted: var(--color-ink-muted);
+    --ink-faint: var(--color-ink-faint);
+
+    --hairline: var(--color-hairline);
+    --hairline-strong: var(--color-hairline-strong);
+}
+
+[data-theme="dark"] .text-navy {
+    color: var(--color-ink);
 }
 
 html {
@@ -1059,6 +1109,33 @@ select {
     background-repeat: no-repeat;
     background-position: right 10px center;
     padding-right: 28px;
+}
+
+/* ── Smooth native <details> disclosure (modern-web-guidance accordion) ─── */
+details.qc-drawer summary {
+    list-style: none;
+}
+details.qc-drawer summary::-webkit-details-marker {
+    display: none;
+}
+details.qc-drawer summary .qc-drawer-chevron {
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+details.qc-drawer[open] summary .qc-drawer-chevron {
+    transform: rotate(90deg);
+}
+details.qc-drawer::details-content {
+    interpolate-size: allow-keywords;
+    overflow: clip;
+    contain: layout;
+}
+details.qc-drawer:not([open])::details-content {
+    block-size: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+    details.qc-drawer::details-content {
+        transition: block-size 0.28s cubic-bezier(0.22, 1, 0.36, 1), content-visibility 0.28s allow-discrete;
+    }
 }
 
 /* ── Print (§K: print-friendly audit report) ───────────────────────────── */

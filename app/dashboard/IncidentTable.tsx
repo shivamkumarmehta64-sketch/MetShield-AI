@@ -27,7 +27,57 @@ export default function IncidentTable({ rows }: { rows: Incident[] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Mobile card list (prevents horizontal panning on narrow viewports) */}
+      <div className="md:hidden divide-y divide-hairline">
+        {rows.map((inc) => {
+          const isStorm = inc.classification === 'GENUINE_CONVECTIVE_EVENT' || inc.wmoFlag.includes('FLAG_2');
+          const isFault = inc.classification === 'SENSOR_SPIKE' || inc.classification === 'FROZEN_VALUE' || inc.wmoFlag.includes('FLAG_4');
+          const isDrift = inc.classification === 'CALIBRATION_DRIFT' || inc.wmoFlag.includes('FLAG_3');
+
+          return (
+            <div key={inc.id} className="p-4 flex flex-col gap-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="t-mono text-xs font-semibold text-ink">{inc.stationId}</div>
+                  <div className="t-meta">{inc.stationName} · {inc.timeUtc}</div>
+                </div>
+                <WmoFlagBadge flag={inc.wmoFlag} />
+              </div>
+              <div className="text-sm font-medium text-ink">{inc.classificationLabel}</div>
+              <p className="text-xs text-ink-muted">{inc.diagnosticNote}</p>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                {isStorm ? (
+                  <span className="px-2 py-0.5 rounded font-mono text-[11px] bg-weather-bg text-weather-text border border-weather-border inline-flex items-center gap-1">
+                    <Activity size={11} aria-hidden />
+                    Weather event
+                  </span>
+                ) : isFault ? (
+                  <span className="px-2 py-0.5 rounded font-mono text-[11px] bg-fault-bg text-fault-text border border-fault-border inline-flex items-center gap-1">
+                    <AlertTriangle size={11} aria-hidden />
+                    Sensor fault
+                  </span>
+                ) : isDrift ? (
+                  <span className="px-2 py-0.5 rounded font-mono text-[11px] bg-warning-bg text-warning-text border border-warning-border inline-flex items-center gap-1">
+                    <AlertTriangle size={11} aria-hidden />
+                    Watch / drift
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded font-mono text-[11px] bg-surface-alt text-ink-muted border border-hairline">
+                    Telemetry
+                  </span>
+                )}
+                <span className={clsx('t-mono text-xs font-semibold', SEVERITY_TONE[inc.severity])}>
+                  {SEVERITY_ICON[inc.severity]} {inc.severity}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
       <table className="w-full border-collapse text-left">
         <caption className="sr-only">Flagged telemetry packets raised by the quality-control engine</caption>
         <thead>
@@ -133,5 +183,6 @@ export default function IncidentTable({ rows }: { rows: Incident[] }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }

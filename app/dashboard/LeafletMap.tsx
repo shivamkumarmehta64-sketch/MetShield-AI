@@ -93,20 +93,12 @@ const BASEMAPS = {
         maxZoom: 16,
         attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
     },
-    streets: {
-        label: 'Streets',
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    satellite: {
+        label: 'Satellite',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         subdomains: '',
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors',
-    },
-    terrain: {
-        label: 'Terrain',
-        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-        subdomains: 'abc',
-        maxZoom: 17,
-        attribution:
-            'Map data &copy; OpenStreetMap contributors, SRTM | Style &copy; OpenTopoMap (CC-BY-SA)',
+        maxZoom: 18,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
     },
 } as const;
 

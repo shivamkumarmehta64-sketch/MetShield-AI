@@ -116,9 +116,16 @@ is — treat it as a domain decision, not a tuning knob.
 Meteorological operations centre. Scientific monitoring. Government / deep-tech.
 Dense but readable.
 
-**The theme is LIGHT, not dark.** `app/globals.css` ships a light operations console
-(`--color-page: #F8FAFC`). There is no `data-theme="dark"` block any more. Do not
-reintroduce one, and do not reintroduce the retired brand red `#C0162C`.
+**The theme supports monochrome Light and Dark modes.** `app/globals.css` ships a
+monochrome B&W surface ramp (`--color-page: #FAFAFA` / `--color-card: #FFFFFF` in
+`[data-theme="light"]`, and `#09090B` / `#111113` in `[data-theme="dark"]`). Do not
+reintroduce the retired brand red `#C0162C`.
+
+- Keep `--color-navy` dark (`Sidebar.tsx` relies on `bg-navy text-white`); dark-mode
+  headings/labels using `.text-navy` are remapped to `var(--color-ink)` in `app/globals.css`.
+  Use `bg-ink text-ink-inverse` for primary buttons that should invert with the theme.
+- Client theme readers must use `useSyncExternalStore` (never `useEffect` + `setState`)
+  so `react-hooks/set-state-in-effect` and SSR hydration stay clean.
 
 ### Colour carries exactly one axis: operational status
 
@@ -218,6 +225,9 @@ So:
 - **Env vars are load-bearing.** `METSHIELD_STATION_CREDENTIALS` unset ⇒
   `POST /api/telemetry` refuses every write with 503. That is the designed
   fail-closed behaviour, not a bug — do not add a demo bypass. See `.env.example`.
+- **Recharts right-axis clipping.** 4-digit pressure ticks (`1020.9`) clip at the right
+  edge unless `yPres` has `width={64}` and `margin={{ right: 32 }}` (and the secondary
+  right `YAxis` is hidden while Pressure is shown).
 
 ---
 

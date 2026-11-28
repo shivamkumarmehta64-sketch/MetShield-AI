@@ -39,9 +39,9 @@ export default function Shell({ breadcrumb, children }: ShellProps) {
   return (
     <MotionConfig reducedMotion="user">
     <div className="min-h-screen bg-page">
-      <ProvenanceStrip scenarioLabel={scenarioLabel} />
-      <Topbar breadcrumb={breadcrumb} onOpenNav={() => setNavOpen(true)} />
       <div className="lg:pl-[248px]">
+        <ProvenanceStrip scenarioLabel={scenarioLabel} />
+        <Topbar breadcrumb={breadcrumb} onOpenNav={() => setNavOpen(true)} />
         <Suspense fallback={null}>
           <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
         </Suspense>

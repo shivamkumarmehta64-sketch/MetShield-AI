@@ -15,7 +15,9 @@ import {
 import Link from 'next/link';
 import DataModeBadge from './DataModeBadge';
 import WmoFlagBadge from './WmoFlagBadge';
+import ThemeToggle from '@/components/ThemeToggle';
 import { computeKpis, classificationLabel } from '@/lib/networkFeed';
+import { IMD_AWS_STATIONS } from '@/lib/stationData';
 import { useSystem } from './SystemContext';
 
 interface TopbarProps {
@@ -29,8 +31,11 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [timeFormat, setTimeFormat] = useState<'UTC' | 'IST'>('UTC');
   const [audioAlerts, setAudioAlerts] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const alertsRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const update = () =>
@@ -53,11 +58,15 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
       if (e.key === 'Escape') {
         setIsSettingsOpen(false);
         setIsAlertsOpen(false);
+        setSearchOpen(false);
       }
     }
     function handleClickOutside(e: MouseEvent) {
       if (alertsRef.current && !alertsRef.current.contains(e.target as Node)) {
         setIsAlertsOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -68,14 +77,24 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
     };
   }, []);
 
-  const { state } = useSystem();
+  const { state, selectStation } = useSystem();
+  const searchMatches = searchQuery.trim()
+    ? IMD_AWS_STATIONS.filter((s) => {
+        const q = searchQuery.trim().toLowerCase();
+        return (
+          s.stationId.toLowerCase().includes(q) ||
+          s.name.toLowerCase().includes(q) ||
+          s.state.toLowerCase().includes(q)
+        );
+      }).slice(0, 6)
+    : [];
   const snapshot = state.snapshot;
   const kpis = computeKpis(snapshot);
   const alerts = kpis.activeAnomalies;
   const nonNominalStations = snapshot.stations.filter((s) => s.health !== 'NOMINAL');
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-card/85 backdrop-blur-xl supports-[backdrop-filter]:bg-card/75 px-4 lg:px-6 h-14 transition-colors">
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hairline bg-card px-4 lg:px-6 h-14 transition-colors">
       <button
         type="button"
         aria-label="Open navigation"
@@ -101,17 +120,55 @@ export default function Topbar({ breadcrumb, onOpenNav }: TopbarProps) {
         <div className="hidden sm:block">
           <DataModeBadge />
         </div>
+        <ThemeToggle />
 
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center" ref={searchRef}>
           <div className="relative">
             <input
               type="text"
+              aria-label="Search station or location"
               placeholder="Search station, location..."
-              className="pl-9 pr-4 py-1.5 rounded-full border border-hairline bg-surface-alt text-[13px] w-64 focus:outline-none focus:border-sky-deep focus:ring-1 focus:ring-sky-deep transition-all"
+              value={searchQuery}
+              onFocus={() => setSearchOpen(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchMatches.length > 0) {
+                  selectStation(searchMatches[0].stationId);
+                  setSearchQuery('');
+                  setSearchOpen(false);
+                }
+              }}
+              className="pl-9 pr-4 py-1.5 rounded-lg border border-hairline bg-surface-alt text-[13px] w-64 focus:outline-none focus:border-sky-deep focus:ring-1 focus:ring-sky-deep transition-colors"
             />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </div>
+            {searchOpen && searchQuery.trim() !== '' && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 rounded-lg border border-hairline bg-card shadow-lg z-50 overflow-hidden">
+                {searchMatches.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-ink-muted">No matching station</div>
+                ) : (
+                  searchMatches.map((s) => (
+                    <button
+                      key={s.stationId}
+                      type="button"
+                      onClick={() => {
+                        selectStation(s.stationId);
+                        setSearchQuery('');
+                        setSearchOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-surface-hover flex items-center justify-between gap-2 border-b border-hairline last:border-b-0"
+                    >
+                      <span className="font-mono font-semibold text-ink">{s.stationId}</span>
+                      <span className="text-ink-muted truncate">{s.name.split(',')[0]}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 

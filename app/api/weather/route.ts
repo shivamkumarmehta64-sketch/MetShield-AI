@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStationProfile } from '@/lib/stationData';
+import { reduceToMeanSeaLevel } from '@/lib/pressureReduction';
 
 export type SupportedWeatherProvider = 'imd' | 'weatherstack' | 'openmeteo' | 'wttrin' | 'consensus' | 'auto';
 
@@ -9,26 +10,6 @@ interface ProviderObservation {
   pressure: number;
   humidity: number;
   locationName: string;
-}
-
-/**
- * WMO/ICAO standard atmosphere reduction: station pressure (QFE) -> MSL (QNH).
- *
- * Mirrors calculateQnhPressure() in lib/anomalyLogic.ts and
- * reduceToMeanSeaLevel() in lib/liveWeatherService.ts. Three copies is already
- * one too many; the next step is a single shared barometry helper. Kept local
- * here so this route does not import the QC engine.
- */
-function reduceToMeanSeaLevel(
-  stationPressureHpa: number,
-  elevationM: number,
-  tempC: number
-): number {
-  if (!Number.isFinite(stationPressureHpa) || elevationM <= 0) return stationPressureHpa;
-  const lapseRate = 0.0065; // K/m
-  const factor = 1 - (lapseRate * elevationM) / (tempC + lapseRate * elevationM + 273.15);
-  if (factor <= 0) return stationPressureHpa;
-  return Math.round(stationPressureHpa * Math.pow(factor, -5.257) * 10) / 10;
 }
 
 /**

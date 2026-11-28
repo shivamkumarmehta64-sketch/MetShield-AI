@@ -152,6 +152,7 @@ export default function StationTable() {
             <input
               id="station-table-search"
               type="search"
+              aria-label="Search stations by id, name or state"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -167,6 +168,7 @@ export default function StationTable() {
             </label>
             <select
               id="station-table-filter"
+              aria-label="Filter stations by QC state"
               value={filter}
               onChange={(e) => {
                 setFilter(e.target.value as 'ALL' | StationHealth);

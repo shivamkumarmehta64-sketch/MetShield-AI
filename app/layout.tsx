@@ -78,12 +78,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="en"
-      // The operations console is the light theme, and it is the only theme.
-      // There is no dark override: app/globals.css ships a single light ramp
-      // and every surface reads from those tokens.
       data-theme="light"
+      suppressHydrationWarning
       className={`${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('metshield-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col font-sans">
         {/* Keyboard users land here first; visually hidden until focused.
             Targets #main-content, which every primary surface declares. */}

@@ -14,20 +14,24 @@ import {
   ReferenceLine,
 } from 'recharts';
 import {
-  Activity,
   CheckCircle2,
+  ChevronRight,
   Download,
-  Flame,
+  Droplets,
+  Gauge,
   Radio,
   RotateCcw,
   Shield,
   ShieldAlert,
   Sliders,
+  Thermometer,
   Wind,
   Wrench,
   Zap,
 } from 'lucide-react';
 import { useMobileSensors } from '@/hooks/useMobileSensors';
+import ThemeToggle from '@/components/ThemeToggle';
+import { IMD_AWS_STATIONS, getStationProfile } from '@/lib/stationData';
 import {
   evaluate3ParamQC,
   type Reading3Param,
@@ -143,6 +147,11 @@ export default function RealTimeQCCanvas() {
   // ── Hardware Web Sensors Hook ──────────────────────────────────────────────
   const { pressure: hardwarePressure, isHardwareActive } = useMobileSensors();
 
+  // ── Selected IMD Station (21-station registry) ─────────────────────────────
+  const [selectedStationId, setSelectedStationId] = useState<string>('AWS-DEL-04');
+  const selectedStation = getStationProfile(selectedStationId) ?? IMD_AWS_STATIONS[0];
+  const selectedStationIdRef = useRef<string>('AWS-DEL-04');
+
   // ── Accessibility & Bilingual Controls ────────────────────────────────────
   const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
   const [lang, setLang] = useState<'en' | 'hi'>('en');
@@ -158,7 +167,6 @@ export default function RealTimeQCCanvas() {
 
   // ── Telemetry & Ring Buffer State ─────────────────────────────────────────
   const [packetCount, setPacketCount] = useState<number>(14);
-  const [dcpStatus, setDcpStatus] = useState<'SYNCED' | 'INGESTING'>('SYNCED');
   const [chartData, setChartData] = useState<ChartPoint[]>(BASELINE.initialPoints);
   const [currentResult, setCurrentResult] = useState<QCValidationResult | null>(BASELINE.initialQC);
   const [incidentList, setIncidentList] = useState<IncidentItem[]>([]);
@@ -189,12 +197,22 @@ export default function RealTimeQCCanvas() {
     hardwareRef.current = { pressure: hardwarePressure, isHardwareActive };
   }, [hardwarePressure, isHardwareActive]);
 
-  // Fetch real live meteorological readings for AWS-DEL-04 (Safdarjung) on mount + every 30s
+  useEffect(() => {
+    selectedStationIdRef.current = selectedStationId;
+  }, [selectedStationId]);
+
+  // Fetch real live meteorological readings for the selected station on mount/change + every 30s
   useEffect(() => {
     let cancelled = false;
+    const station = getStationProfile(selectedStationId) ?? IMD_AWS_STATIONS[0];
+    liveFeedRef.current = null;
+    lastApiHistoryStampRef.current = 0;
+
     const syncLiveWeather = async () => {
       try {
-        const res = await fetch('/api/weather?stationId=AWS-DEL-04&lat=28.585&lon=77.206');
+        const res = await fetch(
+          `/api/weather?stationId=${encodeURIComponent(station.stationId)}&lat=${station.latitude}&lon=${station.longitude}`
+        );
         if (!res.ok) return;
         const payload = (await res.json()) as {
           success?: boolean;
@@ -232,7 +250,7 @@ export default function RealTimeQCCanvas() {
             pressure: liveFeedRef.current.pressure,
             humidity: liveFeedRef.current.humidity,
             timestamp: liveTs,
-            stationId: 'AWS-DEL-04',
+            stationId: station.stationId,
           };
           historyRef.current = [liveReading];
           lastApiHistoryStampRef.current = fetchedAt;
@@ -269,13 +287,10 @@ export default function RealTimeQCCanvas() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [selectedStationId]);
 
-  // ── DCP Satellite Link Cadence Loop (2.5s) ─────────────────────────────────
+  // ── Local Evaluation Cadence Loop (2.5s) ─────────────────────────────────
   const processNextTick = useCallback(() => {
-    setDcpStatus('INGESTING');
-    setTimeout(() => setDcpStatus('SYNCED'), 400);
-
     const now = Date.now();
     const prevHistory = historyRef.current;
     const prevReading = prevHistory.length > 0 ? prevHistory[prevHistory.length - 1] : null;
@@ -335,12 +350,13 @@ export default function RealTimeQCCanvas() {
     nextP = Math.round(nextP * 10) / 10;
     nextRH = Math.round(nextRH * 10) / 10;
 
+    const activeStationId = selectedStationIdRef.current;
     const currentReading: Reading3Param = {
       temperature: nextT,
       pressure: nextP,
       humidity: nextRH,
       timestamp: now,
-      stationId: 'AWS-DEL-04',
+      stationId: activeStationId,
     };
 
     // Evaluate 3-tier QC engine.
@@ -395,7 +411,7 @@ export default function RealTimeQCCanvas() {
     // Persist into memory buffer / Supabase
     const telemetryPacket: StoredTelemetryPacket = {
       packetId: `PKT-${now}`,
-      stationId: 'AWS-DEL-04',
+      stationId: activeStationId,
       timestamp: now,
       timeIST: timeStr,
       temperature: qc.raw.temperature,
@@ -412,7 +428,7 @@ export default function RealTimeQCCanvas() {
     if (qc.severity !== 'NOMINAL') {
       const faultEvent: StoredFaultEvent = {
         eventId: `EVT-${now}`,
-        stationId: 'AWS-DEL-04',
+        stationId: activeStationId,
         timestamp: timeUTC,
         timeIST: timeStr,
         parameter: qc.xai.primaryParameter !== 'none' ? qc.xai.primaryParameter : 'multivariate',
@@ -489,7 +505,7 @@ export default function RealTimeQCCanvas() {
           pressure: live.pressure,
           humidity: live.humidity,
           timestamp: liveTs,
-          stationId: 'AWS-DEL-04',
+          stationId: selectedStationIdRef.current,
         },
       ];
       lastApiHistoryStampRef.current = live.fetchedAt;
@@ -546,9 +562,9 @@ export default function RealTimeQCCanvas() {
     URL.revokeObjectURL(url);
   };
 
-  // ── Font Size Scale Styles ────────────────────────────────────────────────
+  // ── Font Size Scale Styles (rem-based for OS/browser zoom compatibility) ──
   const rootScaleClass =
-    fontSize === 'sm' ? 'text-[13px]' : fontSize === 'lg' ? 'text-[15px]' : 'text-[14px]';
+    fontSize === 'sm' ? 'text-[0.8125rem]' : fontSize === 'lg' ? 'text-[0.9375rem]' : 'text-[0.875rem]';
 
   const tRaw = currentResult?.raw.temperature ?? 31.4;
   const pRaw = currentResult?.raw.pressure ?? 1008.2;
@@ -558,78 +574,73 @@ export default function RealTimeQCCanvas() {
   const pCorrected = currentResult?.imputed.wasImputed && currentResult.imputed.pressure !== pRaw;
   const rhCorrected = currentResult?.imputed.wasImputed && currentResult.imputed.humidity !== rhRaw;
 
+  const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
   return (
     <MotionConfig reducedMotion="user">
     <div
       className={`min-h-screen flex flex-col font-sans bg-[var(--color-page)] text-[var(--color-ink)] ${rootScaleClass}`}
     >
-      {/* ── 1. Tricolor Institutional Strip (2px) ─────────────────────────── */}
-      <div className="flex w-full h-[2.5px] shrink-0" aria-hidden="true">
+      {/* ── 1. Tricolor Institutional Rule (2px signature) ────────────────── */}
+      <div className="flex w-full h-[2px] shrink-0" aria-hidden="true">
         <div className="flex-1 bg-[#FF9933]" />
         <div className="flex-1 bg-white border-y border-hairline/40" />
         <div className="flex-1 bg-[#138808]" />
       </div>
 
-      {/* ── 2. Official Institutional Header Bar (GIGW + Apple Frosted Glass) ── */}
-      <header className="sticky top-0 z-40 bg-[var(--color-card)]/85 backdrop-blur-xl supports-[backdrop-filter]:bg-[var(--color-card)]/75 border-b border-[var(--color-hairline)] shadow-xs transition-colors">
+      {/* ── 2. Institutional Header Bar ───────────────────────────────────── */}
+      <header className="sticky top-0 z-40 bg-card border-b border-hairline">
         <div
-          className="mx-auto flex items-center justify-between gap-4 px-4 sm:px-6"
-          style={{ maxWidth: 1540, height: 60 }}
+          className="mx-auto flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6 py-2.5 min-h-[60px]"
+          style={{ maxWidth: 1440 }}
         >
           {/* Emblem & Titles */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-xs bg-navy flex items-center justify-center shrink-0 shadow-xs">
-              <Shield className="w-4 h-4 text-sky-deep" />
+            <div className="w-8 h-8 rounded-lg bg-ink text-ink-inverse flex items-center justify-center shrink-0">
+              <Shield className="w-4 h-4" strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold tracking-tight text-navy text-[15px]">
-                  METSHIELD AI — NAWS-QMS v4.2
-                </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-surface-alt border border-hairline text-ink-muted">
-                  WMO-No. 8 PROTOCOL
+                <h1 className="font-semibold tracking-tight text-ink text-base">
+                  MetShield AI — NAWS-QMS v4.2
+                </h1>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono text-ink-muted bg-surface-alt border border-hairline">
+                  WMO-No. 8
                 </span>
               </div>
-              <div className="text-[11px] text-ink-muted font-medium truncate">
+              <div className="text-xs text-ink-muted truncate">
                 {lang === 'hi'
-                  ? 'भारत सरकार | पृथ्वी विज्ञान मंत्रालय (MoES/IMD) | SIH26073'
-                  : 'भारत सरकार | Ministry of Earth Sciences (MoES/IMD) | SIH26073'}
+                  ? 'भारत सरकार · पृथ्वी विज्ञान मंत्रालय (MoES/IMD) · SIH26073'
+                  : 'भारत सरकार · Ministry of Earth Sciences (MoES/IMD) · SIH26073'}
               </div>
             </div>
           </div>
 
-          {/* Local evaluation cadence.
-              This pill previously read "DCP SATELLITE LINK: ACTIVE (2.5s)" beside
-              a pulsing green dot, over a counter labelled "PACKETS INGESTED".
-              There is no DCP satellite link: the count starts at 14 and is
-              incremented by a local timer. Green is the operational-status
-              axis and must not be spent on a link that does not exist. */}
-          <div className="hidden lg:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-surface-alt border border-hairline text-[11px] font-mono">
+          {/* Local evaluation cadence — honest telemetry meta */}
+          <div className="hidden lg:flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-surface-alt border border-hairline text-xs font-mono tabular-nums">
             <span
-              className={`w-2 h-2 rounded-full ${
-                dcpStatus === 'INGESTING' ? 'bg-telemetry animate-ping' : 'bg-telemetry'
-              }`}
+              className="w-2 h-2 rounded-full bg-ink-faint"
+              aria-hidden="true"
             />
-            <span className="text-ink font-semibold">2.5s DCP LINK: ACTIVE</span>
-            <span className="text-ink-faint">|</span>
-            <span className="text-ink-muted">NODE: AWS-DEL-04</span>
-            <span className="text-ink-faint">|</span>
-            <span className="text-navy font-bold">{packetCount} PACKETS INGESTED</span>
+            <span className="text-ink font-medium">2.5s cadence</span>
+            <span className="text-hairline-strong" aria-hidden="true">·</span>
+            <span className="text-ink-muted">{selectedStation.stationId}</span>
+            <span className="text-hairline-strong" aria-hidden="true">·</span>
+            <span className="text-ink font-medium">{packetCount} packets</span>
           </div>
 
-          {/* Right Controls: GIGW Accessibility & Nav */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Font scaling */}
+          {/* Right Controls: GIGW Accessibility, Theme & Nav */}
+          <div className="flex items-center gap-2 shrink-0">
             <div
-              className="flex items-center border border-hairline rounded bg-card overflow-hidden text-[11px] font-mono"
+              className="flex items-center border border-hairline rounded-lg bg-card overflow-hidden text-xs font-mono"
               role="group"
               aria-label="Text size"
             >
               <button
                 type="button"
                 onClick={() => setFontSize('sm')}
-                className={`px-2 py-1 hover:bg-surface-hover ${
-                  fontSize === 'sm' ? 'bg-surface-alt font-bold text-navy' : 'text-ink-muted'
+                className={`min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1.5 transition-colors duration-150 hover:bg-surface-hover ${
+                  fontSize === 'sm' ? 'bg-surface-alt font-semibold text-ink' : 'text-ink-muted'
                 }`}
                 title="Small text"
               >
@@ -638,8 +649,8 @@ export default function RealTimeQCCanvas() {
               <button
                 type="button"
                 onClick={() => setFontSize('md')}
-                className={`px-2 py-1 border-x border-hairline hover:bg-surface-hover ${
-                  fontSize === 'md' ? 'bg-surface-alt font-bold text-navy' : 'text-ink-muted'
+                className={`min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1.5 border-x border-hairline transition-colors duration-150 hover:bg-surface-hover ${
+                  fontSize === 'md' ? 'bg-surface-alt font-semibold text-ink' : 'text-ink-muted'
                 }`}
                 title="Default text"
               >
@@ -648,8 +659,8 @@ export default function RealTimeQCCanvas() {
               <button
                 type="button"
                 onClick={() => setFontSize('lg')}
-                className={`px-2 py-1 hover:bg-surface-hover ${
-                  fontSize === 'lg' ? 'bg-surface-alt font-bold text-navy' : 'text-ink-muted'
+                className={`min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1.5 transition-colors duration-150 hover:bg-surface-hover ${
+                  fontSize === 'lg' ? 'bg-surface-alt font-semibold text-ink' : 'text-ink-muted'
                 }`}
                 title="Large text"
               >
@@ -657,316 +668,350 @@ export default function RealTimeQCCanvas() {
               </button>
             </div>
 
-            {/* Bilingual toggle */}
             <button
               type="button"
               onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
-              className="px-2.5 py-1 text-[11px] font-bold border border-hairline rounded bg-card text-navy hover:bg-surface-alt"
-              title="Bilingual Switch"
+              className="min-h-11 sm:min-h-0 px-3 py-1.5 text-xs font-medium border border-hairline rounded-lg bg-card text-ink hover:bg-surface-alt transition-colors duration-150"
+              title="Switch language"
             >
               {lang === 'en' ? 'हिन्दी' : 'English'}
             </button>
 
-            {/* Navigation links */}
+            <ThemeToggle />
+
             <Link
-              href="/dashboard"
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-[12px] font-semibold rounded bg-navy text-white hover:bg-navy-deep shadow-xs transition-colors"
+              href={`/dashboard?station=${encodeURIComponent(selectedStation.stationId)}`}
+              className="hidden sm:inline-flex items-center px-3.5 py-1.5 text-xs font-medium rounded-lg bg-ink text-ink-inverse hover:opacity-90 transition-opacity duration-150"
             >
-              <span>Console</span>
+              Console
             </Link>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${selectedStation.latitude},${selectedStation.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden xl:inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-hairline bg-card text-ink-muted hover:text-ink hover:bg-surface-alt transition-colors duration-150"
+            >
+              Google Maps
+            </a>
           </div>
         </div>
       </header>
 
       {/* ── Main Canvas Content Container ─────────────────────────────────── */}
-      <main id="main-content" tabIndex={-1} className="flex-1 mx-auto w-full px-4 sm:px-6 py-5 flex flex-col gap-5" style={{ maxWidth: 1540 }}>
-        {/* ── 3. Hero Telemetry Strip (3 Apple-Craft Metric Cards) ─────────── */}
-        <section aria-label="Hero Telemetry Strip" className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <main id="main-content" tabIndex={-1} className="flex-1 mx-auto w-full px-4 sm:px-6 py-6 flex flex-col gap-5" style={{ maxWidth: 1440 }}>
+        {/* ── 3. Hero Telemetry Strip (3 Metric Cards) ────────────────────── */}
+        <section aria-label="Primary station readings" className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Temperature (°C) */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.03 }}
-            className="card rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-temperature)] shadow-xs hover:shadow-md transition-shadow"
+            transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.02 }}
+            className="rounded-xl border border-hairline bg-card p-5 flex flex-col justify-between shadow-2xs"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="t-label text-ink-muted flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-[var(--color-met-temperature)]" />
-                {lang === 'hi' ? 'शुष्क बल्ब तापमान' : 'DRY-BULB TEMPERATURE'}
+              <span className="text-xs font-medium text-ink-muted flex items-center gap-2">
+                <Thermometer className="w-4 h-4 text-ink-muted shrink-0" strokeWidth={1.5} />
+                {lang === 'hi' ? 'शुष्क बल्ब तापमान' : 'Dry-bulb temperature'}
               </span>
-              <span className="t-meta font-mono font-semibold px-1.5 py-0.5 rounded bg-surface-alt text-ink">
-                WMO: -10°C to 55°C
+              <span className="text-xs font-mono text-ink-faint">
+                −10 to 55 °C
               </span>
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
+            <div className="mt-3 flex items-baseline gap-1.5">
               <span
-                className={`t-mono text-[34px] font-extrabold leading-none ${
+                className={`font-mono text-3xl font-semibold leading-none tabular-nums tracking-tight ${
                   tRaw < WMO_LIMITS.TEMP_MIN || tRaw > WMO_LIMITS.TEMP_MAX
-                    ? 'text-fault'
+                    ? 'text-fault-text'
                     : 'text-ink'
                 }`}
               >
                 {tRaw.toFixed(1)}
               </span>
-              <span className="text-[16px] font-bold text-ink-muted">°C</span>
+              <span className="text-sm font-medium text-ink-muted">°C</span>
               {tCorrected && (
-                <span className="text-[11px] font-mono text-warning font-semibold ml-auto">
-                  Auto-Imputed: {currentResult?.imputed.temperature.toFixed(1)}°C
+                <span className="text-xs font-mono text-warning-text font-medium ml-auto tabular-nums">
+                  Imputed {currentResult?.imputed.temperature.toFixed(1)} °C
                 </span>
               )}
             </div>
-            <div className="mt-2 text-[11px] text-ink-muted flex items-center justify-between">
-              <span>Station: AWS-DEL-04 (Safdarjung){liveProvider ? ` · ${liveProvider.replace(/_/g, ' ')}` : ''}</span>
+            <div className="mt-3 pt-3 border-t border-hairline/70 text-xs text-ink-muted flex items-center justify-between gap-2">
+              <span className="truncate">
+                {selectedStation.stationId} · {selectedStation.name.split(',')[0]}{liveProvider ? ` · ${liveProvider.replace(/_/g, ' ').toLowerCase()}` : ''}
+              </span>
               {tCorrected || tRaw < WMO_LIMITS.TEMP_MIN || tRaw > WMO_LIMITS.TEMP_MAX ? (
-                <span className="text-fault font-semibold">● SENSOR FAULT</span>
+                <span className="text-fault-text font-medium shrink-0">Sensor fault</span>
               ) : (
-                <span className="text-healthy font-semibold">● SENSOR NOMINAL</span>
+                <span className="text-healthy-text font-medium shrink-0">Nominal</span>
               )}
             </div>
           </motion.div>
 
-          {/* Card 2: Atmospheric Pressure (hPa) with Mobile Hardware Badge */}
+          {/* Card 2: Atmospheric Pressure (hPa) */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.08 }}
-            className="card rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-pressure)] shadow-xs hover:shadow-md transition-shadow"
+            transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.06 }}
+            className="rounded-xl border border-hairline bg-card p-5 flex flex-col justify-between shadow-2xs"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="t-label text-ink-muted flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-[var(--color-met-pressure)]" />
-                {lang === 'hi' ? 'वायुमंडलीय दबाव' : 'ATMOSPHERIC PRESSURE'}
+              <span className="text-xs font-medium text-ink-muted flex items-center gap-2">
+                <Gauge className="w-4 h-4 text-ink-muted shrink-0" strokeWidth={1.5} />
+                {lang === 'hi' ? 'वायुमंडलीय दबाव' : 'Atmospheric pressure'}
               </span>
-              {/* Badge: Live Mobile Hardware Feed vs Live Open-Meteo Feed vs Simulated Feed */}
-              {/* Provenance badge. Open-Meteo is labelled an NWP baseline, not a
-                  live station feed: its `current` block is interpolated surface
-                  analysis, not an IMD AWS transducer reading. Only real device
-                  hardware earns the green "live" treatment. */}
               <span
-                className={`t-meta font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1 text-[10px] ${
+                className={`text-xs font-mono px-2 py-0.5 rounded-md border ${
                   isHardwareActive
-                    ? 'bg-healthy-bg text-healthy-text border border-healthy-border animate-pulse'
-                    : 'bg-surface-alt text-navy border border-hairline'
+                    ? 'bg-healthy-bg text-healthy-text border-healthy-border font-medium'
+                    : 'bg-surface-alt text-ink-muted border-hairline'
                 }`}
               >
-                {isHardwareActive
-                  ? '● LIVE MOBILE HARDWARE FEED'
-                  : '● SIMULATED AWS FEED'}
+                {isHardwareActive ? 'Live hardware' : 'Simulated AWS'}
               </span>
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="t-mono text-[34px] font-extrabold leading-none text-ink">
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="font-mono text-3xl font-semibold leading-none tabular-nums tracking-tight text-ink">
                 {pRaw.toFixed(1)}
               </span>
-              <span className="text-[16px] font-bold text-ink-muted">hPa</span>
+              <span className="text-sm font-medium text-ink-muted">hPa</span>
               {pCorrected && (
-                <span className="text-[11px] font-mono text-warning font-semibold ml-auto">
-                  Auto-Imputed: {currentResult?.imputed.pressure.toFixed(1)} hPa
+                <span className="text-xs font-mono text-warning-text font-medium ml-auto tabular-nums">
+                  Imputed {currentResult?.imputed.pressure.toFixed(1)} hPa
                 </span>
               )}
             </div>
-            <div className="mt-2 text-[11px] text-ink-muted flex items-center justify-between">
-              <span>Altimetry: ~8.4m elevation / 1 hPa</span>
-              <span className="font-mono text-ink-faint">Reduced QNH</span>
+            <div className="mt-3 pt-3 border-t border-hairline/70 text-xs text-ink-muted flex items-center justify-between gap-2">
+              <span>~8.4 m elevation per 1 hPa</span>
+              <span className="font-mono text-ink-faint">QNH</span>
             </div>
           </motion.div>
 
           {/* Card 3: Relative Humidity (%) */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.13 }}
-            className="card rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-[var(--color-met-humidity)] shadow-xs hover:shadow-md transition-shadow"
+            transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.1 }}
+            className="rounded-xl border border-hairline bg-card p-5 flex flex-col justify-between shadow-2xs"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="t-label text-ink-muted flex items-center gap-1.5">
-                <Wind className="w-3.5 h-3.5 text-[var(--color-met-humidity)]" />
-                {lang === 'hi' ? 'सापेक्षिक आर्द्रता' : 'RELATIVE HUMIDITY'}
+              <span className="text-xs font-medium text-ink-muted flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-ink-muted shrink-0" strokeWidth={1.5} />
+                {lang === 'hi' ? 'सापेक्षिक आर्द्रता' : 'Relative humidity'}
               </span>
-              <span className="t-meta font-mono font-semibold px-1.5 py-0.5 rounded bg-surface-alt text-ink">
-                Range: 5% to 100%
+              <span className="text-xs font-mono text-ink-faint">
+                5% to 100%
               </span>
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="t-mono text-[34px] font-extrabold leading-none text-ink">
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="font-mono text-3xl font-semibold leading-none tabular-nums tracking-tight text-ink">
                 {rhRaw.toFixed(1)}
               </span>
-              <span className="text-[16px] font-bold text-ink-muted">%</span>
+              <span className="text-sm font-medium text-ink-muted">%</span>
               {rhCorrected && (
-                <span className="text-[11px] font-mono text-warning font-semibold ml-auto">
-                  Auto-Imputed: {currentResult?.imputed.humidity.toFixed(1)}%
+                <span className="text-xs font-mono text-warning-text font-medium ml-auto tabular-nums">
+                  Imputed {currentResult?.imputed.humidity.toFixed(1)}%
                 </span>
               )}
             </div>
-            <div className="mt-2 text-[11px] text-ink-muted flex items-center justify-between">
-              <span>Coupled Threshold: ΔRH ≥ +15%</span>
+            <div className="mt-3 pt-3 border-t border-hairline/70 text-xs text-ink-muted flex items-center justify-between gap-2">
+              <span>Storm threshold: ΔRH ≥ +15%</span>
               {rhCorrected || rhRaw < WMO_LIMITS.HUM_MIN || rhRaw > WMO_LIMITS.HUM_MAX ? (
-                <span className="text-fault font-semibold">● TRANSDUCER FAULT</span>
+                <span className="text-fault-text font-medium shrink-0">Transducer fault</span>
               ) : (
-                <span className="text-healthy font-semibold">● SENSOR NOMINAL</span>
+                <span className="text-healthy-text font-medium shrink-0">Nominal</span>
               )}
             </div>
           </motion.div>
         </section>
 
-        {/* ── Quick Operational Status & One-Click Reset Bar ───────────────── */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-2xl bg-[var(--color-card)]/90 border border-hairline shadow-xs">
-          <div className="flex items-center gap-2 text-[12px] font-medium">
+        {/* ── Operational Status, Station Picker & One-Click Reset Bar ───── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-card border border-hairline">
+          <div className="flex items-center gap-2.5 text-xs min-w-0">
             <span
-              className={`w-2.5 h-2.5 rounded-full ${
+              className={`w-2 h-2 rounded-full shrink-0 ${
                 currentResult?.severity === 'RED_HARDWARE_FAULT'
-                  ? 'bg-fault animate-ping'
+                  ? 'bg-fault'
                   : currentResult?.severity === 'BLUE_GENUINE_WEATHER'
-                  ? 'bg-weather animate-pulse'
+                  ? 'bg-weather'
                   : currentResult?.severity === 'AMBER_PROBE_FREEZE' || currentResult?.severity === 'AMBER_CALIBRATION_DRIFT'
                   ? 'bg-warning'
                   : 'bg-healthy'
               }`}
+              aria-hidden="true"
             />
-            <span className="font-bold text-navy">
-              {currentResult?.alertBadge.label ?? 'SYSTEM NOMINAL'}
+            <span className="font-semibold text-ink shrink-0">
+              {currentResult?.alertBadge.label ?? 'Nominal (verified)'}
             </span>
-            <span className="hidden sm:inline text-ink-muted">
-              — {currentResult?.alertBadge.description ?? 'All 3-parameter channels verified against WMO-No. 8'}
+            <span className="hidden md:inline text-ink-muted truncate">
+              — {currentResult?.alertBadge.description ?? 'All three QC tiers passed within WMO-No. 8 limits.'}
             </span>
           </div>
-          {activeScenario !== 'nominal' && (
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.96 }}
-              onClick={() => triggerScenario('nominal')}
-              className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-healthy-bg text-healthy-text border border-healthy-border hover:bg-healthy hover:text-white transition-colors flex items-center gap-1.5"
+          <div className="flex items-center gap-2 flex-wrap">
+            <label htmlFor="station-selector" className="sr-only">
+              Select IMD station
+            </label>
+            <select
+              id="station-selector"
+              aria-label="Select IMD station"
+              value={selectedStation.stationId}
+              onChange={(e) => {
+                setSelectedStationId(e.target.value);
+                setActiveScenario('nominal');
+                activeScenarioRef.current = 'nominal';
+                scenarioStepRef.current = 0;
+                freezeBufferRef.current = [];
+              }}
+              className="min-h-11 sm:min-h-0 px-3 py-1.5 rounded-lg text-xs font-mono bg-surface-alt text-ink border border-hairline hover:border-hairline-strong transition-colors duration-150"
             >
-              <RotateCcw className="w-3 h-3" />
-              Reset to Nominal
-            </motion.button>
-          )}
+              {IMD_AWS_STATIONS.map((s) => (
+                <option key={s.stationId} value={s.stationId}>
+                  {s.stationId} — {s.name.split(',')[0]}
+                </option>
+              ))}
+            </select>
+            {activeScenario !== 'nominal' && (
+              <button
+                type="button"
+                onClick={() => triggerScenario('nominal')}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-alt text-ink border border-hairline hover:bg-surface-hover transition-colors duration-150 flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-ink-muted" strokeWidth={1.5} />
+                Reset to nominal
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* ── 4. Main Split Grid (65% / 35%) ─────────────────────────────────── */}
+        {/* ── 4. Main Split Grid (65% / 35%) ───────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-[65%_1fr] gap-5 items-start">
           {/* Left Canvas (65%): Unified Recharts Time-Series Container */}
           <motion.section
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 28, delay: 0.16 }}
-            aria-label="Unified Telemetry Curves"
-            className="card rounded-2xl overflow-hidden flex flex-col bg-card shadow-xs"
+            transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.14 }}
+            aria-label="Multivariate telemetry stream"
+            className="rounded-xl border border-hairline overflow-hidden flex flex-col bg-card shadow-2xs"
           >
             {/* Header & Layer Toggles */}
-            <div className="p-4 border-b border-hairline flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 sm:p-5 border-b border-hairline flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="t-card-title text-navy font-bold flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-sky-deep" />
-                  {lang === 'hi' ? 'वास्तविक समय बहु-पैरामीटर टेलीमेट्री' : 'REAL-TIME MULTIVARIATE TELEMETRY STREAM'}
+                <h2 className="text-sm font-semibold text-ink">
+                  {lang === 'hi' ? 'बहु-पैरामीटर टेलीमेट्री स्ट्रीम' : 'Multivariate telemetry stream'}
                 </h2>
-                <p className="t-meta mt-0.5">
-                  2.5 s evaluation cadence · 30-frame sliding window · WMO-No. 8 physical limits
+                <p className="text-xs text-ink-muted mt-0.5">
+                  30-frame sliding window · WMO-No. 8 physical limits
                 </p>
               </div>
 
-              {/* Interactive Layer Toggles */}
+              {/* Quiet Series Toggles */}
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setShowTemp(!showTemp)}
-                  className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold flex items-center gap-1.5 border transition-all ${
+                  aria-pressed={showTemp}
+                  className={`min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors duration-150 ${
                     showTemp
-                      ? 'bg-amber-50 text-amber-900 border-amber-300'
-                      : 'bg-card text-ink-muted border-hairline opacity-60'
+                      ? 'bg-surface-alt text-ink border-hairline-strong'
+                      : 'bg-card text-ink-faint border-hairline'
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-[var(--color-met-temperature)]" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--color-met-temperature)]" aria-hidden="true" />
                   Temp (°C)
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowPres(!showPres)}
-                  className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold flex items-center gap-1.5 border transition-all ${
+                  aria-pressed={showPres}
+                  className={`min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors duration-150 ${
                     showPres
-                      ? 'bg-purple-50 text-purple-900 border-purple-300'
-                      : 'bg-card text-ink-muted border-hairline opacity-60'
+                      ? 'bg-surface-alt text-ink border-hairline-strong'
+                      : 'bg-card text-ink-faint border-hairline'
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-[var(--color-met-pressure)]" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--color-met-pressure)]" aria-hidden="true" />
                   Pressure (hPa)
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowHum(!showHum)}
-                  className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold flex items-center gap-1.5 border transition-all ${
+                  aria-pressed={showHum}
+                  className={`min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors duration-150 ${
                     showHum
-                      ? 'bg-cyan-50 text-cyan-900 border-cyan-300'
-                      : 'bg-card text-ink-muted border-hairline opacity-60'
+                      ? 'bg-surface-alt text-ink border-hairline-strong'
+                      : 'bg-card text-ink-faint border-hairline'
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-[var(--color-met-humidity)]" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--color-met-humidity)]" aria-hidden="true" />
                   Humidity (%)
                 </button>
               </div>
             </div>
 
             {/* Recharts Canvas */}
-            <div className="p-4" style={{ height: 380 }}>
+            <div
+              className="p-4 sm:p-5"
+              style={{ height: 360 }}
+              role="img"
+              aria-label={`Multivariate time series for ${selectedStation.stationId}: temperature ${tRaw.toFixed(1)} °C, pressure ${pRaw.toFixed(1)} hPa, relative humidity ${rhRaw.toFixed(1)}%.`}
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 12, right: 16, bottom: 4, left: 4 }}>
-                  <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" opacity={0.6} />
+                <LineChart data={chartData} margin={{ top: 12, right: 32, bottom: 4, left: 4 }}>
+                  <CartesianGrid stroke="var(--color-hairline)" strokeDasharray="3 3" opacity={0.7} />
                   <XAxis
                     dataKey="timeStr"
-                    tick={{ fontSize: 10, fill: 'var(--color-ink-muted)' }}
-                    tickMargin={6}
+                    tick={{ fontSize: 11, fill: 'var(--color-ink-faint)', fontFamily: 'var(--font-mono)' }}
+                    tickMargin={8}
+                    stroke="var(--color-hairline)"
                   />
-                  {/* Axis 1: Temperature */}
+                  {/* Left Axis: Temperature */}
                   <YAxis
                     yAxisId="yTemp"
                     domain={['dataMin - 3', 'dataMax + 3']}
                     orientation="left"
-                    tick={{ fontSize: 10, fill: 'var(--color-met-temperature)' }}
-                    width={36}
+                    tick={{ fontSize: 11, fill: 'var(--color-ink-muted)', fontFamily: 'var(--font-mono)' }}
+                    width={40}
+                    stroke="var(--color-hairline)"
                     hide={!showTemp}
                   />
-                  {/* Axis 2: Pressure */}
+                  {/* Right Axis: Pressure */}
                   <YAxis
                     yAxisId="yPres"
                     domain={['dataMin - 2', 'dataMax + 2']}
                     orientation="right"
-                    tick={{ fontSize: 10, fill: 'var(--color-met-pressure)' }}
-                    width={48}
+                    tick={{ fontSize: 11, fill: 'var(--color-ink-muted)', fontFamily: 'var(--font-mono)' }}
+                    width={64}
+                    stroke="var(--color-hairline)"
                     hide={!showPres}
                   />
-                  {/* Axis 3: Humidity */}
+                  {/* Humidity Axis (shown only when Pressure is hidden to prevent dual right-axis crowding) */}
                   <YAxis
                     yAxisId="yHum"
                     domain={[0, 100]}
                     orientation="right"
-                    tick={{ fontSize: 10, fill: 'var(--color-met-humidity)' }}
-                    width={36}
-                    hide={!showHum}
+                    tick={{ fontSize: 11, fill: 'var(--color-ink-muted)', fontFamily: 'var(--font-mono)' }}
+                    width={40}
+                    stroke="var(--color-hairline)"
+                    hide={!showHum || showPres}
                   />
 
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'var(--color-card)',
                       borderColor: 'var(--color-hairline)',
-                      borderRadius: 6,
+                      borderRadius: 8,
                       fontSize: 12,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      fontFamily: 'var(--font-mono)',
+                      boxShadow: '0 4px 12px rgba(15,23,42,0.06)',
                     }}
                   />
 
-                  {/* Reference line for nominal baseline */}
                   <ReferenceLine
                     yAxisId="yTemp"
                     y={55.0}
                     stroke="var(--color-fault)"
                     strokeDasharray="4 4"
-                    label={{ value: 'WMO Max 55°C', fill: 'var(--color-fault)', fontSize: 10 }}
+                    label={{ value: 'WMO Max 55 °C', fill: 'var(--color-fault-text)', fontSize: 10 }}
                   />
 
-                  {/* Temperature Curve */}
                   {showTemp && (
                     <Line
                       yAxisId="yTemp"
@@ -974,7 +1019,8 @@ export default function RealTimeQCCanvas() {
                       dataKey="temperature"
                       name="Temp (°C)"
                       stroke="var(--color-met-temperature)"
-                      strokeWidth={2.2}
+                      strokeWidth={2}
+                      isAnimationActive={false}
                       dot={(props: { cx?: number; cy?: number; index?: number; payload?: ChartPoint }) => {
                         const pt = props.payload ?? chartData[props.index ?? 0];
                         const key = `dot-${pt?.index ?? props.index ?? 0}`;
@@ -984,7 +1030,7 @@ export default function RealTimeQCCanvas() {
                               key={key}
                               cx={props.cx}
                               cy={props.cy}
-                              r={5}
+                              r={4.5}
                               fill="var(--color-fault)"
                               stroke="#fff"
                               strokeWidth={1.5}
@@ -997,7 +1043,7 @@ export default function RealTimeQCCanvas() {
                               key={key}
                               cx={props.cx}
                               cy={props.cy}
-                              r={5}
+                              r={4.5}
                               fill="var(--color-weather)"
                               stroke="#fff"
                               strokeWidth={1.5}
@@ -1009,7 +1055,6 @@ export default function RealTimeQCCanvas() {
                     />
                   )}
 
-                  {/* Pressure Curve */}
                   {showPres && (
                     <Line
                       yAxisId="yPres"
@@ -1017,12 +1062,12 @@ export default function RealTimeQCCanvas() {
                       dataKey="pressure"
                       name="Pressure (hPa)"
                       stroke="var(--color-met-pressure)"
-                      strokeWidth={2.2}
+                      strokeWidth={2}
+                      isAnimationActive={false}
                       dot={{ r: 2 }}
                     />
                   )}
 
-                  {/* Humidity Curve */}
                   {showHum && (
                     <Line
                       yAxisId="yHum"
@@ -1030,7 +1075,8 @@ export default function RealTimeQCCanvas() {
                       dataKey="humidity"
                       name="Humidity (%)"
                       stroke="var(--color-met-humidity)"
-                      strokeWidth={2.2}
+                      strokeWidth={2}
+                      isAnimationActive={false}
                       dot={{ r: 2 }}
                     />
                   )}
@@ -1038,46 +1084,46 @@ export default function RealTimeQCCanvas() {
               </ResponsiveContainer>
             </div>
 
-            {/* Bottom Status Ticker */}
-            <div className="px-4 py-2.5 bg-surface-alt border-t border-hairline flex items-center justify-between text-[11px] font-mono">
-              <span className="text-ink-muted">
-                {currentResult?.alertBadge.description ?? 'System nominal. Multi-sensor cross-correlation within limits.'}
+            {/* Bottom Status Ticker (distinct from top status bar) */}
+            <div className="px-4 sm:px-5 py-2.5 bg-surface-alt border-t border-hairline flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-ink-muted tabular-nums">
+              <span>
+                {liveProvider ? `Baseline: ${liveProvider.replace(/_/g, ' ').toLowerCase()}` : 'Baseline: local station model'}
               </span>
-              <span className="font-bold text-navy">
-                TIER {currentResult?.tierPassed ?? 3} PASSED · WMO FLAG: {currentResult?.wmoFlag ?? 'FLAG_1_GOOD'}
+              <span className="font-medium text-ink">
+                Tier {currentResult?.tierPassed ?? 3} passed · Flag {currentResult?.wmoFlag ?? 'FLAG_1_GOOD'}
               </span>
             </div>
           </motion.section>
 
-          {/* Right Canvas (35%): Real-Time Incident Stream */}
+          {/* Right Canvas (35%): Incident Stream */}
           <motion.section
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 28, delay: 0.2 }}
-            aria-label="Real-Time Incident Stream"
-            className="card rounded-2xl overflow-hidden flex flex-col bg-card shadow-xs"
+            transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.18 }}
+            aria-label="Incident stream"
+            className="rounded-xl border border-hairline overflow-hidden flex flex-col bg-card shadow-2xs"
           >
-            <div className="p-4 border-b border-hairline flex items-center justify-between">
+            <div className="p-4 sm:p-5 border-b border-hairline flex items-center justify-between gap-2">
               <div>
-                <h2 className="t-card-title text-navy font-bold flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-fault" />
-                  {lang === 'hi' ? 'वास्तविक समय घटना स्ट्रीम' : 'REAL-TIME INCIDENT STREAM'}
+                <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-ink-muted" strokeWidth={1.5} />
+                  {lang === 'hi' ? 'घटना स्ट्रीम' : 'Incident stream'}
                 </h2>
-                <p className="t-meta">Root-cause identification &amp; rule-weighted XAI attribution</p>
+                <p className="text-xs text-ink-muted mt-0.5">Root-cause classification and parameter weights</p>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-surface-alt text-ink">
-                {incidentList.length} INCIDENTS
+              <span className="px-2 py-0.5 rounded-md text-xs font-mono text-ink-muted bg-surface-alt border border-hairline tabular-nums">
+                {incidentList.length} {incidentList.length === 1 ? 'incident' : 'incidents'}
               </span>
             </div>
 
             {/* Incident Cards List */}
-            <div className="p-3 flex flex-col gap-3 overflow-y-auto max-h-[480px]">
+            <div className="p-4 flex flex-col gap-3 overflow-y-auto max-h-[440px]">
               {incidentList.length === 0 ? (
-                <div className="p-6 text-center text-ink-muted flex flex-col items-center justify-center gap-2">
-                  <CheckCircle2 className="w-8 h-8 text-healthy stroke-[1.5]" />
-                  <p className="t-body font-medium">Zero Quarantined Anomalies</p>
-                  <p className="text-[11px] text-ink-faint">
-                    All telemetry packets currently comply with WMO-No. 8 physical & thermodynamic envelopes.
+                <div className="py-10 px-4 text-center text-ink-muted flex flex-col items-center justify-center gap-2">
+                  <CheckCircle2 className="w-6 h-6 text-healthy-text" strokeWidth={1.5} />
+                  <p className="text-sm font-medium text-ink">No quarantined anomalies</p>
+                  <p className="text-xs text-ink-muted max-w-[28ch]">
+                    Incoming readings are within WMO-No. 8 physical and thermodynamic limits.
                   </p>
                 </div>
               ) : (
@@ -1086,11 +1132,11 @@ export default function RealTimeQCCanvas() {
                   <motion.div
                     layout
                     key={inc.id}
-                    initial={{ opacity: 0, x: 16, scale: 0.98 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-                    className={`p-3.5 rounded-xl border transition-colors ${
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: EASE_OUT }}
+                    className={`p-3.5 rounded-lg border transition-colors duration-150 ${
                       inc.severity === 'RED_HARDWARE_FAULT'
                         ? 'border-fault-border bg-fault-bg/40'
                         : inc.severity === 'BLUE_GENUINE_WEATHER'
@@ -1100,13 +1146,13 @@ export default function RealTimeQCCanvas() {
                   >
                     {/* Header Row */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-ink">
+                      <div className="flex items-center gap-1.5 font-mono text-xs font-medium text-ink tabular-nums">
                         <span>{inc.stationId}</span>
-                        <span className="text-ink-faint">·</span>
+                        <span className="text-ink-faint" aria-hidden="true">·</span>
                         <span className="text-ink-muted">{inc.timestampIST} IST</span>
                       </div>
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        className={`px-2 py-0.5 rounded-md text-[0.6875rem] font-mono font-medium ${
                           inc.severity === 'RED_HARDWARE_FAULT'
                             ? 'bg-fault text-white'
                             : inc.severity === 'BLUE_GENUINE_WEATHER'
@@ -1119,18 +1165,17 @@ export default function RealTimeQCCanvas() {
                     </div>
 
                     {/* Diagnostic Explanation */}
-                    <p className="text-[11px] text-ink font-medium mt-2 leading-relaxed">
+                    <p className="text-xs text-ink mt-2 leading-relaxed">
                       {inc.xai.diagnosticExplanation}
                     </p>
 
-                    {/* SHAP / XAI Attribution Bars */}
-                    <div className="mt-2.5 pt-2 border-t border-hairline/60">
-                      <div className="flex items-center justify-between text-[10px] font-mono text-ink-muted mb-1">
-                        <span>XAI ATTRIBUTION (RULE WEIGHTS)</span>
-                        <span>PRIMARY: {inc.xai.primaryParameter.toUpperCase()}</span>
+                    {/* Parameter Attribution Bars */}
+                    <div className="mt-3 pt-2.5 border-t border-hairline/70">
+                      <div className="flex items-center justify-between text-[0.6875rem] font-mono text-ink-muted mb-1.5">
+                        <span>Parameter weights</span>
+                        <span>Primary: {inc.xai.primaryParameter}</span>
                       </div>
-                      {/* Attribution Progress Bar */}
-                      <div className="w-full h-2 rounded-full overflow-hidden flex bg-surface-alt border border-hairline">
+                      <div className="w-full h-1.5 rounded-full overflow-hidden flex bg-surface-alt">
                         <div
                           style={{ width: `${inc.xai.tempWeight}%` }}
                           className="bg-[var(--color-met-temperature)] h-full"
@@ -1147,17 +1192,25 @@ export default function RealTimeQCCanvas() {
                           title={`Humidity: ${inc.xai.humWeight}%`}
                         />
                       </div>
-                      <div className="flex justify-between text-[9px] font-mono text-ink-faint mt-1">
-                        <span>Temp: {inc.xai.tempWeight}%</span>
-                        <span>Pres: {inc.xai.pressWeight}%</span>
-                        <span>Hum: {inc.xai.humWeight}%</span>
+                      <div className="flex justify-between text-[0.6875rem] font-mono text-ink-faint mt-1.5 tabular-nums">
+                        <span>Temp {inc.xai.tempWeight}%</span>
+                        <span>Pres {inc.xai.pressWeight}%</span>
+                        <span>Hum {inc.xai.humWeight}%</span>
                       </div>
                     </div>
 
                     {/* Operational Action */}
-                    <div className="mt-2.5 p-2 rounded-lg bg-card/80 border border-hairline text-[11px]">
-                      <span className="font-bold text-navy block text-[10px]">OPERATIONAL ACTION:</span>
-                      <span className="text-ink-muted">{inc.recommendedAction}</span>
+                    <div className="mt-2.5 p-2.5 rounded-md bg-card border border-hairline text-xs flex flex-col gap-1.5">
+                      <div>
+                        <span className="font-medium text-ink block mb-0.5">Recommended action</span>
+                        <span className="text-ink-muted">{inc.recommendedAction}</span>
+                      </div>
+                      <Link
+                        href={`/dashboard?station=${encodeURIComponent(inc.stationId)}`}
+                        className="text-xs font-medium text-telemetry-text hover:underline self-start"
+                      >
+                        Inspect in Console
+                      </Link>
                     </div>
                   </motion.div>
                 ))}
@@ -1167,75 +1220,76 @@ export default function RealTimeQCCanvas() {
           </motion.section>
         </div>
 
-        {/* ── 5. Stealth Diagnostic Drawer (Authorized Personnel Only) ──────── */}
-        <details className="card rounded-2xl overflow-hidden group border border-hairline bg-card shadow-xs mt-2">
-          <summary className="p-3.5 border-b border-hairline bg-surface-alt font-mono text-[12px] font-bold text-navy hover:text-ink cursor-pointer flex justify-between items-center select-none">
+        {/* ── 5. Field Diagnostic & Bench Test Drawer ─────────────────────── */}
+        <details className="qc-drawer rounded-xl overflow-hidden group border border-hairline bg-card shadow-2xs">
+          <summary className="px-4 py-3 bg-surface-alt text-xs font-medium text-ink hover:bg-surface-hover cursor-pointer flex justify-between items-center select-none transition-colors duration-150">
             <span className="flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-navy-deep" />
-              [🔧 NIC-MoES Field Diagnostic &amp; Bench Test Tool (Authorized Personnel Only)]
+              <ChevronRight className="qc-drawer-chevron w-4 h-4 text-ink-muted shrink-0" strokeWidth={1.5} />
+              <Wrench className="w-4 h-4 text-ink-muted shrink-0" strokeWidth={1.5} />
+              <span>NIC-MoES Field Diagnostic &amp; Bench Test Tool</span>
             </span>
-            <span className="text-[11px] text-ink-muted group-open:hidden">
-              Click to expand test controls &amp; export
+            <span className="text-xs text-ink-muted group-open:hidden">
+              Expand test controls and CSV export
             </span>
           </summary>
 
-          <div className="p-5 flex flex-col gap-5 bg-card">
+          <div className="p-5 border-t border-hairline flex flex-col gap-5 bg-card">
             {/* Fault Scenario Injections */}
             <div>
-              <div className="t-label text-ink-muted mb-2.5 text-[11px] flex items-center gap-1.5 font-bold">
-                <Sliders className="w-3.5 h-3.5 text-navy" />
-                SIMULATE HARDWARE FAULT & WEATHER ANOMALIES
+              <div className="text-xs font-medium text-ink-muted mb-2.5 flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-ink-muted" strokeWidth={1.5} />
+                Simulate hardware fault or weather event
               </div>
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => triggerScenario('nominal')}
-                  className={`px-3.5 py-2 text-[12px] font-mono font-semibold border rounded transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 text-xs font-medium border rounded-lg transition-colors duration-150 flex items-center gap-1.5 ${
                     activeScenario === 'nominal'
-                      ? 'bg-healthy text-white border-healthy-border shadow-xs'
+                      ? 'bg-healthy text-white border-healthy'
                       : 'bg-card text-ink border-hairline hover:bg-surface-hover'
                   }`}
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Reset Network (Nominal)
                 </button>
 
                 <button
                   type="button"
                   onClick={() => triggerScenario('temp-spike')}
-                  className={`px-3.5 py-2 text-[12px] font-mono font-semibold border rounded transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 text-xs font-medium border rounded-lg transition-colors duration-150 flex items-center gap-1.5 ${
                     activeScenario === 'temp-spike'
-                      ? 'bg-fault text-white border-fault-border shadow-xs'
+                      ? 'bg-fault text-white border-fault'
                       : 'bg-card text-fault-text border-hairline hover:bg-fault-bg'
                   }`}
                 >
-                  <Zap className="w-3.5 h-3.5" />
+                  <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Simulate Thermistor Open-Circuit
                 </button>
 
                 <button
                   type="button"
                   onClick={() => triggerScenario('probe-freeze')}
-                  className={`px-3.5 py-2 text-[12px] font-mono font-semibold border rounded transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 text-xs font-medium border rounded-lg transition-colors duration-150 flex items-center gap-1.5 ${
                     activeScenario === 'probe-freeze'
-                      ? 'bg-warning text-white border-warning-border shadow-xs'
+                      ? 'bg-warning text-white border-warning'
                       : 'bg-card text-warning-text border-hairline hover:bg-warning-bg'
                   }`}
                 >
-                  <Radio className="w-3.5 h-3.5" />
+                  <Radio className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Simulate Probe Float Lock
                 </button>
 
                 <button
                   type="button"
                   onClick={() => triggerScenario('convective-storm')}
-                  className={`px-3.5 py-2 text-[12px] font-mono font-semibold border rounded transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 text-xs font-medium border rounded-lg transition-colors duration-150 flex items-center gap-1.5 ${
                     activeScenario === 'convective-storm'
-                      ? 'bg-weather text-white border-weather-border shadow-xs'
+                      ? 'bg-weather text-white border-weather'
                       : 'bg-card text-weather-text border-hairline hover:bg-weather-bg'
                   }`}
                 >
-                  <Wind className="w-3.5 h-3.5" />
+                  <Wind className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Simulate Convective Front Dynamics
                 </button>
               </div>
@@ -1244,20 +1298,20 @@ export default function RealTimeQCCanvas() {
             {/* Compliance Audit Log CSV Exporter */}
             <div className="border-t border-hairline pt-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="t-label text-ink-muted text-[11px] font-bold">
-                  OFFICIAL METEOROLOGICAL AUDIT EXPORT
+                <div className="text-xs font-medium text-ink">
+                  Meteorological audit export
                 </div>
-                <p className="t-meta text-[11px] text-ink-muted mt-0.5">
-                  Compliant with WMO-No. 8 & NIC/IMD standards. Includes formula injection sanitization.
+                <p className="text-xs text-ink-muted mt-0.5">
+                  Formatted to WMO-No. 8 and NIC/IMD headers with CSV formula sanitization.
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleExportAuditCsv}
-                className="px-4 py-2 text-[12px] font-mono font-bold border border-navy rounded bg-navy text-white hover:bg-navy-deep flex items-center gap-2 shadow-xs transition-colors"
+                className="px-4 py-2 text-xs font-medium rounded-lg bg-ink text-ink-inverse hover:opacity-90 flex items-center gap-2 transition-opacity duration-150"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4" strokeWidth={1.5} />
                 Export QC Audit Log (.csv)
               </button>
             </div>
@@ -1266,21 +1320,21 @@ export default function RealTimeQCCanvas() {
       </main>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer className="mt-auto border-t border-hairline bg-card py-3 px-4 sm:px-6 text-[11px] text-ink-muted font-mono flex flex-wrap justify-between items-center gap-2">
-        <div>
-          <span>METSHIELD AI — NAWS-QMS v4.2</span>
-          <span className="mx-2 text-ink-faint">|</span>
+      <footer className="mt-auto border-t border-hairline bg-card py-3.5 px-4 sm:px-6 text-xs text-ink-muted flex flex-wrap justify-between items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-ink">MetShield AI — NAWS-QMS v4.2</span>
+          <span className="text-hairline-strong" aria-hidden="true">·</span>
           <span>MoES / IMD, Government of India</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/audit-report" className="hover:text-ink underline">
+          <Link href="/audit-report" className="py-2 sm:py-0 hover:text-ink transition-colors duration-150">
             Documentation
           </Link>
-          <Link href="/mobile" className="hover:text-ink underline">
+          <Link href="/mobile" className="py-2 sm:py-0 hover:text-ink transition-colors duration-150">
             Mobile Field Node
           </Link>
-          <Link href="/dashboard" className="hover:text-ink underline font-bold text-navy">
-            Operations Console →
+          <Link href="/dashboard" className="py-2 sm:py-0 hover:text-ink font-medium text-ink transition-colors duration-150">
+            Operations Console
           </Link>
         </div>
       </footer>
