@@ -1,0 +1,32 @@
+name: 0security AI Scan
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Run 0security scan
+        uses: 0sec-labs/0security@v0.46.0
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY || secrets.GEMINI_API_KEY }}
+        with:
+          version: "0.46.0"
+          target: "."
+          budget: "2"
+          fail-on: "high"
+          upload: "${{ !github.event.repository.private }}"
+          allow-partial: "true"
